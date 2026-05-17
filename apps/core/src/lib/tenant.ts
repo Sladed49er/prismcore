@@ -17,7 +17,17 @@ export const DEMO_TENANT: TenantConfig = {
   id: "demo",
   name: "Demo Agency",
   slug: "demo",
-  enabledModuleIds: ["clients", "documents", "telephony"],
+  enabledModuleIds: [
+    "clients",
+    "policies",
+    "documents",
+    "tasks",
+    "renewals",
+    "carriers",
+    "accounting",
+    "reports",
+    "telephony",
+  ],
 };
 
 /** A serializable module summary safe to hand to client components (the composer). */
