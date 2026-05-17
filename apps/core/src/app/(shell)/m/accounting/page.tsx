@@ -63,17 +63,30 @@ const BUILT = [
     name: "Estimates",
     desc: "Client quotes and estimates.",
   },
+  {
+    href: "/m/accounting/checks",
+    name: "Checks & Positive Pay",
+    desc: "The check register, tracked through clearing.",
+  },
+  {
+    href: "/m/accounting/fiscal-periods",
+    name: "Fiscal Periods",
+    desc: "Accounting periods, opened and closed.",
+  },
+  {
+    href: "/m/accounting/surplus-lines",
+    name: "Surplus Lines Tax",
+    desc: "Per-state surplus-lines premium tax and fees.",
+  },
+  {
+    href: "/m/accounting/quarterly-taxes",
+    name: "Quarterly Taxes",
+    desc: "Estimated quarterly tax payment schedule.",
+  },
 ];
 
 /** The remaining accounting sub-modules, ported in over the coming turns. */
-const PLANNED = [
-  "Checks & Positive Pay",
-  "Fiscal Periods",
-  "Surplus Lines Tax",
-  "Quarterly Taxes",
-  "1099 / W-2 Reporting",
-  "Financial Reports",
-];
+const PLANNED = ["1099 / W-2 Reporting", "Financial Reports"];
 
 export default async function AccountingHub() {
   await requireModule("accounting");

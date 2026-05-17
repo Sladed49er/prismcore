@@ -533,4 +533,49 @@ if (estCount[0].n === 0) {
   console.log("• estimates already present — skipped");
 }
 
+// 16. Checks, fiscal periods, surplus lines, quarterly taxes demo data.
+const checkCount = await sql.query("SELECT count(*)::int AS n FROM check_register WHERE tenant_id = $1", [demo]);
+if (checkCount[0].n === 0) {
+  await sql.query(
+    "INSERT INTO check_register (tenant_id, check_number, payee, amount_cents, check_date, memo, status) VALUES ($1,'1042','Travelers Insurance',1850000,'2026-04-12','April premium remittance','cleared'),($1,'1043','Acme Office Supply',23400,'2026-04-18','Printer toner','cleared'),($1,'1044','Westfield Property Mgmt',420000,'2026-05-01','May office rent','printed')",
+    [demo],
+  );
+  console.log("✓ seeded 3 checks");
+} else {
+  console.log("• checks already present — skipped");
+}
+
+const periodCount = await sql.query("SELECT count(*)::int AS n FROM accounting_periods WHERE tenant_id = $1", [demo]);
+if (periodCount[0].n === 0) {
+  await sql.query(
+    "INSERT INTO accounting_periods (tenant_id, name, start_date, end_date, status) VALUES ($1,'2026-Q1','2026-01-01','2026-03-31','closed'),($1,'2026-Q2','2026-04-01','2026-06-30','open')",
+    [demo],
+  );
+  console.log("✓ seeded 2 fiscal periods");
+} else {
+  console.log("• fiscal periods already present — skipped");
+}
+
+const slCount = await sql.query("SELECT count(*)::int AS n FROM surplus_lines_tax WHERE tenant_id = $1", [demo]);
+if (slCount[0].n === 0) {
+  await sql.query(
+    "INSERT INTO surplus_lines_tax (tenant_id, policy_reference, state, premium_cents, tax_rate_percent, tax_cents, stamping_fee_cents, filing_fee_cents, due_date, status) VALUES ($1,'SL-2026-008 — Coastal Cannery','CA',4200000,'3',126000,8400,2500,'2026-06-15','filed'),($1,'SL-2026-012 — Harbor Logistics','TX',2750000,'4.85',133375,0,3000,'2026-07-01','pending')",
+    [demo],
+  );
+  console.log("✓ seeded 2 surplus-lines filings");
+} else {
+  console.log("• surplus-lines tax already present — skipped");
+}
+
+const qtCount = await sql.query("SELECT count(*)::int AS n FROM quarterly_tax_payments WHERE tenant_id = $1", [demo]);
+if (qtCount[0].n === 0) {
+  await sql.query(
+    "INSERT INTO quarterly_tax_payments (tenant_id, tax_type, year, quarter, estimated_cents, paid_cents, due_date, status) VALUES ($1,'Federal estimated','2026','Q1',850000,850000,'2026-04-15','paid'),($1,'Federal estimated','2026','Q2',850000,0,'2026-06-15','scheduled'),($1,'State estimated','2026','Q2',210000,0,'2026-06-15','scheduled')",
+    [demo],
+  );
+  console.log("✓ seeded 3 quarterly tax payments");
+} else {
+  console.log("• quarterly taxes already present — skipped");
+}
+
 console.log("✓ demo tenant seeded: modules, custom fields, 3 carrier connections, VoIP");

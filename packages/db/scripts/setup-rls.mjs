@@ -71,6 +71,10 @@ const TENANT_TABLES = [
   "budget_lines",
   "fixed_assets",
   "estimates",
+  "check_register",
+  "accounting_periods",
+  "surplus_lines_tax",
+  "quarterly_tax_payments",
 ];
 
 const owner = neon(ownerUrl);
