@@ -33,6 +33,41 @@ export async function createQuarterlyTax(input: {
   });
 }
 
+export async function updateQuarterlyTax(input: {
+  tenantId: string;
+  id: string;
+  taxType: string;
+  year: string;
+  quarter: string;
+  estimatedCents: number;
+  dueDate: string | null;
+}): Promise<void> {
+  await withTenantContext(input.tenantId, async (tx) => {
+    await tx
+      .update(quarterlyTaxPayments)
+      .set({
+        taxType: input.taxType,
+        year: input.year,
+        quarter: input.quarter,
+        estimatedCents: input.estimatedCents,
+        dueDate: input.dueDate,
+        updatedAt: new Date(),
+      })
+      .where(eq(quarterlyTaxPayments.id, input.id));
+  });
+}
+
+export async function deleteQuarterlyTax(
+  tenantId: string,
+  id: string,
+): Promise<void> {
+  await withTenantContext(tenantId, async (tx) => {
+    await tx
+      .delete(quarterlyTaxPayments)
+      .where(eq(quarterlyTaxPayments.id, id));
+  });
+}
+
 export async function markQuarterlyTaxPaid(input: {
   tenantId: string;
   id: string;

@@ -68,3 +68,40 @@ export async function createFixedAsset(input: {
     await tx.insert(fixedAssets).values(input);
   });
 }
+
+export async function updateFixedAsset(input: {
+  tenantId: string;
+  id: string;
+  name: string;
+  category: string;
+  acquisitionCostCents: number;
+  salvageValueCents: number;
+  usefulLifeYears: number;
+  method: DepreciationMethod;
+  acquiredDate: string | null;
+}): Promise<void> {
+  await withTenantContext(input.tenantId, async (tx) => {
+    await tx
+      .update(fixedAssets)
+      .set({
+        name: input.name,
+        category: input.category,
+        acquisitionCostCents: input.acquisitionCostCents,
+        salvageValueCents: input.salvageValueCents,
+        usefulLifeYears: input.usefulLifeYears,
+        method: input.method,
+        acquiredDate: input.acquiredDate,
+        updatedAt: new Date(),
+      })
+      .where(eq(fixedAssets.id, input.id));
+  });
+}
+
+export async function deleteFixedAsset(
+  tenantId: string,
+  id: string,
+): Promise<void> {
+  await withTenantContext(tenantId, async (tx) => {
+    await tx.delete(fixedAssets).where(eq(fixedAssets.id, id));
+  });
+}

@@ -1,13 +1,19 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { addAsset } from "@/app/(shell)/m/accounting/fixed-assets/actions";
+import {
+  addAsset,
+  editAsset,
+  removeAsset,
+} from "@/app/(shell)/m/accounting/fixed-assets/actions";
 
 export interface FixedAssetDTO {
   id: string;
   name: string;
   category: string;
   acquisitionCostCents: number;
+  salvageValueCents: number;
+  usefulLifeYears: number;
   accumulatedDepreciationCents: number;
   bookValueCents: number;
   method: string;
@@ -31,15 +37,43 @@ const EMPTY = {
 export function FixedAssetsPanel({ assets }: { assets: FixedAssetDTO[] }) {
   const [pending, startTransition] = useTransition();
   const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState({ ...EMPTY });
+  const [query, setQuery] = useState("");
 
   function set(key: keyof typeof EMPTY, value: string): void {
     setForm((f) => ({ ...f, [key]: value }));
   }
 
+  function startCreate(): void {
+    setForm({ ...EMPTY });
+    setEditingId(null);
+    setShowForm(true);
+  }
+
+  function startEdit(a: FixedAssetDTO): void {
+    setForm({
+      name: a.name,
+      category: a.category,
+      costDollars: String(a.acquisitionCostCents / 100),
+      salvageDollars: String(a.salvageValueCents / 100),
+      usefulLifeYears: String(a.usefulLifeYears),
+      method: a.method,
+      acquiredDate: a.acquiredDate ?? "",
+    });
+    setEditingId(a.id);
+    setShowForm(true);
+  }
+
+  function close(): void {
+    setShowForm(false);
+    setEditingId(null);
+    setForm({ ...EMPTY });
+  }
+
   function submit(): void {
     startTransition(async () => {
-      await addAsset({
+      const payload = {
         name: form.name,
         category: form.category,
         costDollars: form.costDollars,
@@ -47,11 +81,29 @@ export function FixedAssetsPanel({ assets }: { assets: FixedAssetDTO[] }) {
         usefulLifeYears: form.usefulLifeYears,
         method: form.method as "straight_line" | "declining_balance",
         acquiredDate: form.acquiredDate,
-      });
-      setForm({ ...EMPTY });
-      setShowForm(false);
+      };
+      if (editingId) {
+        await editAsset({ id: editingId, ...payload });
+      } else {
+        await addAsset(payload);
+      }
+      close();
     });
   }
+
+  function remove(a: FixedAssetDTO): void {
+    if (!confirm(`Delete asset "${a.name}"? This cannot be undone.`)) return;
+    startTransition(async () => {
+      await removeAsset(a.id);
+    });
+  }
+
+  const q = query.trim().toLowerCase();
+  const visible = q
+    ? assets.filter((a) =>
+        [a.name, a.category].join(" ").toLowerCase().includes(q),
+      )
+    : assets;
 
   const totalBook = assets.reduce((s, a) => s + a.bookValueCents, 0);
   const inputClass =
@@ -61,24 +113,34 @@ export function FixedAssetsPanel({ assets }: { assets: FixedAssetDTO[] }) {
 
   return (
     <div className="mt-6">
-      <div className="flex items-center justify-between">
-        <p className="text-sm text-gray-500">
-          {assets.length} asset{assets.length === 1 ? "" : "s"} ·{" "}
-          {money(totalBook)} net book value
-        </p>
-        {!showForm ? (
-          <button
-            type="button"
-            onClick={() => setShowForm(true)}
-            className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-700"
-          >
-            + New asset
-          </button>
-        ) : null}
+      <div className="flex items-center justify-between gap-3">
+        <input
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Search assets…"
+          className="w-56 rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-indigo-500"
+        />
+        <div className="flex items-center gap-3">
+          <span className="text-sm text-gray-500">
+            {money(totalBook)} net book value
+          </span>
+          {!showForm ? (
+            <button
+              type="button"
+              onClick={startCreate}
+              className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-700"
+            >
+              + New asset
+            </button>
+          ) : null}
+        </div>
       </div>
 
       {showForm ? (
         <div className="mt-4 rounded-xl border border-gray-200 bg-white p-5">
+          <p className="mb-3 text-sm font-semibold text-gray-700">
+            {editingId ? "Edit asset" : "New asset"}
+          </p>
           <div className="grid gap-3 sm:grid-cols-2">
             <label className={labelClass}>
               Asset name
@@ -152,11 +214,15 @@ export function FixedAssetsPanel({ assets }: { assets: FixedAssetDTO[] }) {
               disabled={pending || !form.name.trim()}
               className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-700 disabled:opacity-40"
             >
-              {pending ? "Saving…" : "Save asset"}
+              {pending
+                ? "Saving…"
+                : editingId
+                  ? "Update asset"
+                  : "Save asset"}
             </button>
             <button
               type="button"
-              onClick={() => setShowForm(false)}
+              onClick={close}
               className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-600"
             >
               Cancel
@@ -166,9 +232,11 @@ export function FixedAssetsPanel({ assets }: { assets: FixedAssetDTO[] }) {
       ) : null}
 
       <div className="mt-5 overflow-hidden rounded-xl border border-gray-200 bg-white">
-        {assets.length === 0 ? (
+        {visible.length === 0 ? (
           <p className="px-5 py-8 text-center text-sm text-gray-500">
-            No fixed assets yet.
+            {assets.length === 0
+              ? "No fixed assets yet."
+              : "No assets match your search."}
           </p>
         ) : (
           <table className="w-full text-sm">
@@ -178,10 +246,11 @@ export function FixedAssetsPanel({ assets }: { assets: FixedAssetDTO[] }) {
                 <th className="px-4 py-3 font-semibold">Cost</th>
                 <th className="px-4 py-3 font-semibold">Accum. deprec.</th>
                 <th className="px-4 py-3 font-semibold">Book value</th>
+                <th className="px-4 py-3" />
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {assets.map((a) => (
+              {visible.map((a) => (
                 <tr key={a.id}>
                   <td className="px-4 py-3">
                     <span className="font-medium">{a.name}</span>
@@ -199,6 +268,23 @@ export function FixedAssetsPanel({ assets }: { assets: FixedAssetDTO[] }) {
                   </td>
                   <td className="px-4 py-3 font-medium text-gray-900">
                     {money(a.bookValueCents)}
+                  </td>
+                  <td className="px-4 py-3 text-right whitespace-nowrap">
+                    <button
+                      type="button"
+                      onClick={() => startEdit(a)}
+                      className="text-xs font-semibold text-indigo-600 transition hover:text-indigo-700"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      type="button"
+                      disabled={pending}
+                      onClick={() => remove(a)}
+                      className="ml-3 text-xs font-semibold text-rose-600 transition hover:text-rose-700 disabled:opacity-40"
+                    >
+                      Delete
+                    </button>
                   </td>
                 </tr>
               ))}

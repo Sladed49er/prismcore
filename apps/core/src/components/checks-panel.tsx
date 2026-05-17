@@ -4,6 +4,8 @@ import { useState, useTransition } from "react";
 import {
   newCheck,
   updateCheckStatus,
+  editCheck,
+  removeCheck,
 } from "@/app/(shell)/m/accounting/checks/actions";
 
 export interface CheckDTO {
@@ -37,17 +39,46 @@ const STATUS_COLOR: Record<CheckDTO["status"], string> = {
 export function ChecksPanel({ checks }: { checks: CheckDTO[] }) {
   const [pending, startTransition] = useTransition();
   const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState({ ...EMPTY });
+  const [query, setQuery] = useState("");
 
   function set(key: keyof typeof EMPTY, value: string): void {
     setForm((f) => ({ ...f, [key]: value }));
   }
 
+  function startCreate(): void {
+    setForm({ ...EMPTY });
+    setEditingId(null);
+    setShowForm(true);
+  }
+
+  function startEdit(c: CheckDTO): void {
+    setForm({
+      checkNumber: c.checkNumber,
+      payee: c.payee,
+      amountDollars: String(c.amountCents / 100),
+      checkDate: c.checkDate ?? "",
+      memo: c.memo,
+    });
+    setEditingId(c.id);
+    setShowForm(true);
+  }
+
+  function close(): void {
+    setShowForm(false);
+    setEditingId(null);
+    setForm({ ...EMPTY });
+  }
+
   function submit(): void {
     startTransition(async () => {
-      await newCheck(form);
-      setForm({ ...EMPTY });
-      setShowForm(false);
+      if (editingId) {
+        await editCheck({ id: editingId, ...form });
+      } else {
+        await newCheck(form);
+      }
+      close();
     });
   }
 
@@ -56,6 +87,21 @@ export function ChecksPanel({ checks }: { checks: CheckDTO[] }) {
       await updateCheckStatus({ id, status });
     });
   }
+
+  function remove(c: CheckDTO): void {
+    if (!confirm(`Delete check ${c.checkNumber}? This cannot be undone.`))
+      return;
+    startTransition(async () => {
+      await removeCheck(c.id);
+    });
+  }
+
+  const q = query.trim().toLowerCase();
+  const visible = q
+    ? checks.filter((c) =>
+        [c.checkNumber, c.payee, c.memo].join(" ").toLowerCase().includes(q),
+      )
+    : checks;
 
   const outstanding = checks
     .filter((c) => c.status === "printed")
@@ -67,24 +113,34 @@ export function ChecksPanel({ checks }: { checks: CheckDTO[] }) {
 
   return (
     <div className="mt-6">
-      <div className="flex items-center justify-between">
-        <p className="text-sm text-gray-500">
-          {checks.length} check{checks.length === 1 ? "" : "s"} ·{" "}
-          {money(outstanding)} outstanding
-        </p>
-        {!showForm ? (
-          <button
-            type="button"
-            onClick={() => setShowForm(true)}
-            className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-700"
-          >
-            + Record check
-          </button>
-        ) : null}
+      <div className="flex items-center justify-between gap-3">
+        <input
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Search checks…"
+          className="w-56 rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-indigo-500"
+        />
+        <div className="flex items-center gap-3">
+          <span className="text-sm text-gray-500">
+            {money(outstanding)} outstanding
+          </span>
+          {!showForm ? (
+            <button
+              type="button"
+              onClick={startCreate}
+              className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-700"
+            >
+              + Record check
+            </button>
+          ) : null}
+        </div>
       </div>
 
       {showForm ? (
         <div className="mt-4 rounded-xl border border-gray-200 bg-white p-5">
+          <p className="mb-3 text-sm font-semibold text-gray-700">
+            {editingId ? "Edit check" : "Record check"}
+          </p>
           <div className="grid gap-3 sm:grid-cols-2">
             <label className={labelClass}>
               Check number
@@ -138,11 +194,15 @@ export function ChecksPanel({ checks }: { checks: CheckDTO[] }) {
               }
               className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-700 disabled:opacity-40"
             >
-              {pending ? "Saving…" : "Save check"}
+              {pending
+                ? "Saving…"
+                : editingId
+                  ? "Update check"
+                  : "Save check"}
             </button>
             <button
               type="button"
-              onClick={() => setShowForm(false)}
+              onClick={close}
               className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-600"
             >
               Cancel
@@ -152,9 +212,11 @@ export function ChecksPanel({ checks }: { checks: CheckDTO[] }) {
       ) : null}
 
       <div className="mt-5 overflow-hidden rounded-xl border border-gray-200 bg-white">
-        {checks.length === 0 ? (
+        {visible.length === 0 ? (
           <p className="px-5 py-8 text-center text-sm text-gray-500">
-            No checks recorded yet.
+            {checks.length === 0
+              ? "No checks recorded yet."
+              : "No checks match your search."}
           </p>
         ) : (
           <table className="w-full text-sm">
@@ -165,10 +227,11 @@ export function ChecksPanel({ checks }: { checks: CheckDTO[] }) {
                 <th className="px-4 py-3 font-semibold">Date</th>
                 <th className="px-4 py-3 font-semibold">Amount</th>
                 <th className="px-4 py-3 font-semibold">Status</th>
+                <th className="px-4 py-3" />
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {checks.map((c) => (
+              {visible.map((c) => (
                 <tr key={c.id}>
                   <td className="px-4 py-3 font-medium">{c.checkNumber}</td>
                   <td className="px-4 py-3">
@@ -201,6 +264,23 @@ export function ChecksPanel({ checks }: { checks: CheckDTO[] }) {
                       <option value="cleared">cleared</option>
                       <option value="voided">voided</option>
                     </select>
+                  </td>
+                  <td className="px-4 py-3 text-right whitespace-nowrap">
+                    <button
+                      type="button"
+                      onClick={() => startEdit(c)}
+                      className="text-xs font-semibold text-indigo-600 transition hover:text-indigo-700"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      type="button"
+                      disabled={pending}
+                      onClick={() => remove(c)}
+                      className="ml-3 text-xs font-semibold text-rose-600 transition hover:text-rose-700 disabled:opacity-40"
+                    >
+                      Delete
+                    </button>
                   </td>
                 </tr>
               ))}

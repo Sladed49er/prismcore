@@ -4,6 +4,8 @@ import { useState, useTransition } from "react";
 import {
   newQuarterlyTax,
   payQuarterlyTax,
+  editQuarterlyTax,
+  removeQuarterlyTax,
 } from "@/app/(shell)/m/accounting/quarterly-taxes/actions";
 
 export interface QuarterlyTaxDTO {
@@ -32,18 +34,47 @@ const EMPTY = {
 export function QuarterlyTaxesPanel({ rows }: { rows: QuarterlyTaxDTO[] }) {
   const [pending, startTransition] = useTransition();
   const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState({ ...EMPTY });
   const [payInput, setPayInput] = useState<Record<string, string>>({});
+  const [query, setQuery] = useState("");
 
   function set(key: keyof typeof EMPTY, value: string): void {
     setForm((f) => ({ ...f, [key]: value }));
   }
 
+  function startCreate(): void {
+    setForm({ ...EMPTY });
+    setEditingId(null);
+    setShowForm(true);
+  }
+
+  function startEdit(r: QuarterlyTaxDTO): void {
+    setForm({
+      taxType: r.taxType,
+      year: r.year,
+      quarter: r.quarter,
+      estimatedDollars: String(r.estimatedCents / 100),
+      dueDate: r.dueDate ?? "",
+    });
+    setEditingId(r.id);
+    setShowForm(true);
+  }
+
+  function close(): void {
+    setShowForm(false);
+    setEditingId(null);
+    setForm({ ...EMPTY });
+  }
+
   function submit(): void {
     startTransition(async () => {
-      await newQuarterlyTax(form);
-      setForm({ ...EMPTY });
-      setShowForm(false);
+      if (editingId) {
+        await editQuarterlyTax({ id: editingId, ...form });
+      } else {
+        await newQuarterlyTax(form);
+      }
+      close();
     });
   }
 
@@ -56,6 +87,20 @@ export function QuarterlyTaxesPanel({ rows }: { rows: QuarterlyTaxDTO[] }) {
     });
   }
 
+  function remove(r: QuarterlyTaxDTO): void {
+    if (!confirm(`Delete ${r.taxType} ${r.year} ${r.quarter}?`)) return;
+    startTransition(async () => {
+      await removeQuarterlyTax(r.id);
+    });
+  }
+
+  const q = query.trim().toLowerCase();
+  const visible = q
+    ? rows.filter((r) =>
+        [r.taxType, r.year, r.quarter].join(" ").toLowerCase().includes(q),
+      )
+    : rows;
+
   const scheduled = rows
     .filter((r) => r.status === "scheduled")
     .reduce((s, r) => s + r.estimatedCents, 0);
@@ -66,24 +111,34 @@ export function QuarterlyTaxesPanel({ rows }: { rows: QuarterlyTaxDTO[] }) {
 
   return (
     <div className="mt-6">
-      <div className="flex items-center justify-between">
-        <p className="text-sm text-gray-500">
-          {rows.length} payment{rows.length === 1 ? "" : "s"} ·{" "}
-          {money(scheduled)} scheduled
-        </p>
-        {!showForm ? (
-          <button
-            type="button"
-            onClick={() => setShowForm(true)}
-            className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-700"
-          >
-            + Schedule payment
-          </button>
-        ) : null}
+      <div className="flex items-center justify-between gap-3">
+        <input
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Search payments…"
+          className="w-56 rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-indigo-500"
+        />
+        <div className="flex items-center gap-3">
+          <span className="text-sm text-gray-500">
+            {money(scheduled)} scheduled
+          </span>
+          {!showForm ? (
+            <button
+              type="button"
+              onClick={startCreate}
+              className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-700"
+            >
+              + Schedule payment
+            </button>
+          ) : null}
+        </div>
       </div>
 
       {showForm ? (
         <div className="mt-4 rounded-xl border border-gray-200 bg-white p-5">
+          <p className="mb-3 text-sm font-semibold text-gray-700">
+            {editingId ? "Edit payment" : "Schedule payment"}
+          </p>
           <div className="grid gap-3 sm:grid-cols-2">
             <label className={labelClass}>
               Tax type
@@ -141,11 +196,15 @@ export function QuarterlyTaxesPanel({ rows }: { rows: QuarterlyTaxDTO[] }) {
               disabled={pending || !form.taxType.trim()}
               className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-700 disabled:opacity-40"
             >
-              {pending ? "Saving…" : "Save payment"}
+              {pending
+                ? "Saving…"
+                : editingId
+                  ? "Update payment"
+                  : "Save payment"}
             </button>
             <button
               type="button"
-              onClick={() => setShowForm(false)}
+              onClick={close}
               className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-600"
             >
               Cancel
@@ -155,9 +214,11 @@ export function QuarterlyTaxesPanel({ rows }: { rows: QuarterlyTaxDTO[] }) {
       ) : null}
 
       <div className="mt-5 overflow-hidden rounded-xl border border-gray-200 bg-white">
-        {rows.length === 0 ? (
+        {visible.length === 0 ? (
           <p className="px-5 py-8 text-center text-sm text-gray-500">
-            No quarterly tax payments scheduled yet.
+            {rows.length === 0
+              ? "No quarterly tax payments scheduled yet."
+              : "No payments match your search."}
           </p>
         ) : (
           <table className="w-full text-sm">
@@ -169,10 +230,11 @@ export function QuarterlyTaxesPanel({ rows }: { rows: QuarterlyTaxDTO[] }) {
                 <th className="px-4 py-3 font-semibold">Estimated</th>
                 <th className="px-4 py-3 font-semibold">Paid</th>
                 <th className="px-4 py-3 font-semibold">Status</th>
+                <th className="px-4 py-3" />
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {rows.map((r) => (
+              {visible.map((r) => (
                 <tr key={r.id}>
                   <td className="px-4 py-3 font-medium">{r.taxType}</td>
                   <td className="px-4 py-3 text-gray-500">
@@ -224,6 +286,23 @@ export function QuarterlyTaxesPanel({ rows }: { rows: QuarterlyTaxDTO[] }) {
                     >
                       {r.status}
                     </span>
+                  </td>
+                  <td className="px-4 py-3 text-right whitespace-nowrap">
+                    <button
+                      type="button"
+                      onClick={() => startEdit(r)}
+                      className="text-xs font-semibold text-indigo-600 transition hover:text-indigo-700"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      type="button"
+                      disabled={pending}
+                      onClick={() => remove(r)}
+                      className="ml-3 text-xs font-semibold text-rose-600 transition hover:text-rose-700 disabled:opacity-40"
+                    >
+                      Delete
+                    </button>
                   </td>
                 </tr>
               ))}

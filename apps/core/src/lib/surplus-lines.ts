@@ -47,6 +47,46 @@ export async function createSurplusLines(input: {
   });
 }
 
+export async function updateSurplusLines(input: {
+  tenantId: string;
+  id: string;
+  policyReference: string;
+  state: string;
+  premiumCents: number;
+  taxRatePercent: string;
+  stampingFeeCents: number;
+  filingFeeCents: number;
+  dueDate: string | null;
+}): Promise<void> {
+  const rate = Number.parseFloat(input.taxRatePercent) || 0;
+  const taxCents = Math.round((input.premiumCents * rate) / 100);
+  await withTenantContext(input.tenantId, async (tx) => {
+    await tx
+      .update(surplusLinesTax)
+      .set({
+        policyReference: input.policyReference,
+        state: input.state,
+        premiumCents: input.premiumCents,
+        taxRatePercent: input.taxRatePercent,
+        taxCents,
+        stampingFeeCents: input.stampingFeeCents,
+        filingFeeCents: input.filingFeeCents,
+        dueDate: input.dueDate,
+        updatedAt: new Date(),
+      })
+      .where(eq(surplusLinesTax.id, input.id));
+  });
+}
+
+export async function deleteSurplusLines(
+  tenantId: string,
+  id: string,
+): Promise<void> {
+  await withTenantContext(tenantId, async (tx) => {
+    await tx.delete(surplusLinesTax).where(eq(surplusLinesTax.id, id));
+  });
+}
+
 export async function setSurplusLinesStatus(input: {
   tenantId: string;
   id: string;

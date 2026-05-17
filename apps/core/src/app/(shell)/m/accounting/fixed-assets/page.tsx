@@ -16,6 +16,8 @@ export default async function FixedAssetsPage() {
     name: a.name,
     category: a.category,
     acquisitionCostCents: a.acquisitionCostCents,
+    salvageValueCents: a.salvageValueCents,
+    usefulLifeYears: a.usefulLifeYears,
     accumulatedDepreciationCents: a.accumulatedDepreciationCents,
     bookValueCents: a.bookValueCents,
     method: a.method,
