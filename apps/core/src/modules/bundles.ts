@@ -77,7 +77,7 @@ export const addOns: AddOn[] = [
   {
     moduleId: "telephony",
     question: "Log your phone calls automatically",
-    description: "Inbound and outbound calls, screen pop, and AI call notes.",
+    description: "PrismVoice — calls screen-pop, log, and summarize themselves.",
     icon: "phone",
   },
   {

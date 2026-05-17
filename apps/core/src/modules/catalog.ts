@@ -74,7 +74,7 @@ const CATALOG: CatalogRow[] = [
   { id: "member_benefits", name: "Member Benefits", description: "Catalog of partner perks, discounts, and resources.", category: "association", icon: "gift", dependsOn: ["memberships"], price: 700 },
 
   // ── Communications ─────────────────────────────────────────────
-  { id: "telephony", name: "Call Center", description: "VoIP integration, screen pop, and AI call logging — CallIntel, inside Prism.", category: "communications", icon: "phone", dependsOn: ["clients"], price: 3500 },
+  { id: "telephony", name: "PrismVoice", description: "The call center inside Prism — VoIP screen pop, AI call notes, and one-click provider connections.", category: "communications", icon: "phone", dependsOn: ["clients"], price: 3500 },
 
   // ── Integrations ───────────────────────────────────────────────
   { id: "api_clearinghouse", name: "API Clearinghouse", description: "Universal carrier and MGA integrations — no SDK fees, no per-call charges.", category: "integration", icon: "plug", price: 0, unit: "per_tenant" },

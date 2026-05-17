@@ -5,6 +5,8 @@ const isPublicRoute = createRouteMatcher([
   "/",
   "/sign-in(.*)",
   "/sign-up(.*)",
+  // VoIP providers POST call events here — no user session.
+  "/api/voip(.*)",
 ]);
 
 export default clerkMiddleware(async (auth, req) => {
