@@ -42,6 +42,41 @@ export async function createEmployee(input: {
   });
 }
 
+export async function updateEmployee(input: {
+  tenantId: string;
+  id: string;
+  name: string;
+  email: string;
+  title: string;
+  employmentType: EmploymentType;
+  periodPayCents: number;
+  isActive: boolean;
+}): Promise<void> {
+  await withTenantContext(input.tenantId, async (tx) => {
+    await tx
+      .update(payrollEmployees)
+      .set({
+        name: input.name,
+        email: input.email,
+        title: input.title,
+        employmentType: input.employmentType,
+        periodPayCents: input.periodPayCents,
+        isActive: input.isActive,
+        updatedAt: new Date(),
+      })
+      .where(eq(payrollEmployees.id, input.id));
+  });
+}
+
+export async function deleteEmployee(
+  tenantId: string,
+  id: string,
+): Promise<void> {
+  await withTenantContext(tenantId, async (tx) => {
+    await tx.delete(payrollEmployees).where(eq(payrollEmployees.id, id));
+  });
+}
+
 /* ── Pay runs ───────────────────────────────────────────────────── */
 
 export interface PayRunRow extends PayRun {

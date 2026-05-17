@@ -63,3 +63,38 @@ export async function setEstimateStatus(
       .where(eq(estimates.id, estimateId));
   });
 }
+
+export async function updateEstimate(input: {
+  tenantId: string;
+  id: string;
+  clientId: string;
+  estimateNumber: string;
+  description: string;
+  amountCents: number;
+  status: EstimateStatus;
+  validUntil: string | null;
+}): Promise<void> {
+  await withTenantContext(input.tenantId, async (tx) => {
+    await tx
+      .update(estimates)
+      .set({
+        clientId: input.clientId,
+        estimateNumber: input.estimateNumber,
+        description: input.description,
+        amountCents: input.amountCents,
+        status: input.status,
+        validUntil: input.validUntil,
+        updatedAt: new Date(),
+      })
+      .where(eq(estimates.id, input.id));
+  });
+}
+
+export async function deleteEstimate(
+  tenantId: string,
+  id: string,
+): Promise<void> {
+  await withTenantContext(tenantId, async (tx) => {
+    await tx.delete(estimates).where(eq(estimates.id, id));
+  });
+}

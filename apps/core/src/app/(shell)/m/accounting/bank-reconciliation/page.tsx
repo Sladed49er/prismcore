@@ -19,6 +19,7 @@ export default async function BankReconciliationPage() {
     reconciledBalanceCents: r.reconciledBalanceCents,
     differenceCents: r.differenceCents,
     status: r.status,
+    notes: r.notes,
   }));
 
   return (

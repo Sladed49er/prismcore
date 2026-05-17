@@ -31,6 +31,35 @@ export async function createPeriod(input: {
   });
 }
 
+export async function updatePeriod(input: {
+  tenantId: string;
+  id: string;
+  name: string;
+  startDate: string | null;
+  endDate: string | null;
+}): Promise<void> {
+  await withTenantContext(input.tenantId, async (tx) => {
+    await tx
+      .update(accountingPeriods)
+      .set({
+        name: input.name,
+        startDate: input.startDate,
+        endDate: input.endDate,
+        updatedAt: new Date(),
+      })
+      .where(eq(accountingPeriods.id, input.id));
+  });
+}
+
+export async function deletePeriod(
+  tenantId: string,
+  id: string,
+): Promise<void> {
+  await withTenantContext(tenantId, async (tx) => {
+    await tx.delete(accountingPeriods).where(eq(accountingPeriods.id, id));
+  });
+}
+
 export async function setPeriodStatus(input: {
   tenantId: string;
   id: string;

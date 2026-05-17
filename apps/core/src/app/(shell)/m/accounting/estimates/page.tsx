@@ -18,6 +18,7 @@ export default async function EstimatesPage() {
 
   const estimates: EstimateDTO[] = estimateRows.map((e) => ({
     id: e.id,
+    clientId: e.clientId,
     estimateNumber: e.estimateNumber,
     clientName: e.clientName,
     description: e.description,
