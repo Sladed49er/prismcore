@@ -60,6 +60,9 @@ const TENANT_TABLES = [
   "chart_of_accounts",
   "journal_entries",
   "journal_entry_lines",
+  "vendors",
+  "bills",
+  "trust_ledger_entries",
 ];
 
 const owner = neon(ownerUrl);

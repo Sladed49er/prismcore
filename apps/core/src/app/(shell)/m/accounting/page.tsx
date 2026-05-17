@@ -18,12 +18,25 @@ const BUILT = [
     name: "Invoices",
     desc: "Client billing and accounts receivable.",
   },
+  {
+    href: "/m/accounting/vendors",
+    name: "Vendors",
+    desc: "The accounts-payable master — carriers, suppliers, services.",
+  },
+  {
+    href: "/m/accounting/bills",
+    name: "Bills",
+    desc: "Vendor bills and payables, paid down to zero.",
+  },
+  {
+    href: "/m/accounting/trust",
+    name: "Trust Accounting",
+    desc: "The fiduciary premium trust ledger with a running balance.",
+  },
 ];
 
 /** The remaining accounting sub-modules, ported in over the coming turns. */
 const PLANNED = [
-  "Vendors & Bills (AP)",
-  "Trust Accounting",
   "Payroll",
   "Bank Reconciliation",
   "Checks & Positive Pay",

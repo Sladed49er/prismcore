@@ -368,4 +368,49 @@ if (coaCount[0].n === 0) {
   console.log("• chart of accounts already present — skipped");
 }
 
+// 12. Accounts payable + trust demo data.
+const vendorCount = await sql.query("SELECT count(*)::int AS n FROM vendors WHERE tenant_id = $1", [demo]);
+if (vendorCount[0].n === 0) {
+  const VENDORS = [
+    ["Cascade Mutual Insurance", "carrier", "ap@cascademutual.example", "+1 800-555-0110", "Net 15", false],
+    ["Westline Office Properties", "service", "billing@westlineprops.example", "+1 503-555-0301", "Net 30", false],
+    ["Brightleaf IT Services", "service", "invoices@brightleafit.example", "+1 503-555-0322", "Net 30", true],
+  ];
+  const vid = [];
+  for (const [name, type, email, phone, terms, is1099] of VENDORS) {
+    const r = await sql.query(
+      "INSERT INTO vendors (tenant_id, name, type, email, phone, payment_terms, is_1099) VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING id",
+      [demo, name, type, email, phone, terms, is1099],
+    );
+    vid.push(r[0].id);
+  }
+  await sql.query(
+    "INSERT INTO bills (tenant_id, vendor_id, bill_number, bill_date, due_date, amount_cents, amount_paid_cents, status, memo) VALUES ($1,$2,'BILL-3301','2026-04-01','2026-04-30',380000,380000,'paid','April office rent')",
+    [demo, vid[1]],
+  );
+  await sql.query(
+    "INSERT INTO bills (tenant_id, vendor_id, bill_number, bill_date, due_date, amount_cents, amount_paid_cents, status, memo) VALUES ($1,$2,'BILL-3318','2026-05-01','2026-05-31',124500,0,'pending','May IT support and software licenses')",
+    [demo, vid[2]],
+  );
+  await sql.query(
+    "INSERT INTO bills (tenant_id, vendor_id, bill_number, bill_date, due_date, amount_cents, amount_paid_cents, status, memo) VALUES ($1,$2,'BILL-3325','2026-05-05','2026-05-20',965000,0,'pending','Premium remittance — April production')",
+    [demo, vid[0]],
+  );
+  const TRUST = [
+    ["premium_received", 1240000, "Premium received from Becker Construction", "Becker Construction LLC", "WA", "2026-03-15"],
+    ["premium_received", 487500, "Premium received from Maria Delgado", "Maria Delgado", "OR", "2026-04-02"],
+    ["remitted", 1240000, "Remitted to Cascade Mutual", "Cascade Mutual Insurance", "WA", "2026-04-10"],
+    ["fee", 73125, "Agency commission drawn to operating", "Cascade Mutual Insurance", "OR", "2026-04-12"],
+  ];
+  for (const [type, amt, desc, party, state, dt] of TRUST) {
+    await sql.query(
+      "INSERT INTO trust_ledger_entries (tenant_id, entry_type, amount_cents, description, party, state, entry_date) VALUES ($1,$2,$3,$4,$5,$6,$7)",
+      [demo, type, amt, desc, party, state, dt],
+    );
+  }
+  console.log("✓ seeded 3 vendors, 3 bills, 4 trust ledger entries");
+} else {
+  console.log("• AP / trust demo data already present — skipped");
+}
+
 console.log("✓ demo tenant seeded: modules, custom fields, 3 carrier connections, VoIP");
