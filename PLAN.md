@@ -58,7 +58,7 @@ They adapt to the module-SDK contract and get poured in. Multi-tenancy (RLS,
 |------|-----------|--------|
 | 1–2  | Repo scaffold, module-SDK contract, `packages/db` (kernel schema) | ✅ 2026-05-16 |
 | 3–6  | Kernel: registry + runtime loader + new shell; composer onboarding skeleton | ✅ 2026-05-16 |
-| 7–10 | Pour in AMS modules onto the SDK; customization engine MVP (fields + forms) | 🔄 catalog + Neon/DB done 2026-05-16; guided onboarding + customization engine next |
+| 7–10 | Pour in AMS modules onto the SDK; customization engine MVP (fields + forms) | ✅ 2026-05-16 — catalog, Neon/DB, guided onboarding, custom fields |
 | 11–14| API clearinghouse MVP + carrier marketplace stub; `apps/voice` screen-pop demo | todo |
 | 15–17| Demo tenant — all 4 pillars working end-to-end; marketing capture | todo |
 | 18   | Dry run with Tony | todo |
@@ -172,6 +172,24 @@ https://prismcore-gray.vercel.app.
 
 Open / deferred: RLS policies on the kernel tables and a `DATABASE_URL_APP`
 NOBYPASSRLS app role (hardening — no real tenant data in the DB yet).
+
+### Days 7–10 (part 3) — 2026-05-16 ✅ Guided onboarding + customization engine
+
+- **Bundles** (`modules/bundles.ts`) — 4 curated business-type bundles (Insurance,
+  Wealth, Association, CRM) ported from PrismAMS vertical presets, plus 4
+  cross-cutting add-ons.
+- **Guided onboarding** — `/compose` is now a 3-step questionnaire: pick a business
+  type → toggle add-ons → review/adjust in the (pre-filled) composer → create.
+  The raw 36-module wall is gone; the composer is now the review step.
+- **Customization engine MVP** — `tenant_custom_fields` table + migration 0001;
+  `/settings/customize` lets a tenant add/remove custom fields on any entity its
+  modules declare via `customizableEntities`. The self-service pillar, shipped.
+- Verified live: `/compose` (questionnaire), `/settings/customize`, `/dashboard`
+  all 200 on the deployment.
+
+Days 7–10 complete for the planned scope. Follow-ons (not blockers): the
+form-builder / workflow-builder slices of customization, and pouring in real
+module service/schema logic module by module behind the contract.
 
 ## Reference
 
