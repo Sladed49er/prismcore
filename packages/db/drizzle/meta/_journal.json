@@ -57,6 +57,13 @@
       "when": 1778991662644,
       "tag": "0007_lethal_maggott",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1778991853114,
+      "tag": "0008_famous_smasher",
+      "breakpoints": true
     }
   ]
 }

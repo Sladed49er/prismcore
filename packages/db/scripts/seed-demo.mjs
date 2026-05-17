@@ -170,4 +170,23 @@ if (renewalCount[0].n === 0) {
   console.log("• renewals already present — skipped");
 }
 
+// 8. Carriers — the agency's appointed markets.
+const carrierCount = await sql.query("SELECT count(*)::int AS n FROM carriers WHERE tenant_id = $1", [demo]);
+if (carrierCount[0].n === 0) {
+  const AGENCY_CARRIERS = [
+    ["Cascade Mutual Insurance", "10923", "Standard P&C — property, commercial auto, homeowners", "Dana Reyes", "dreyes@cascademutual.example", "+1 800-555-0110", "active"],
+    ["HaulGuard Underwriters", "31887", "Commercial trucking and motor carrier fleets", "Marcus Hill", "underwriting@haulguard.example", "+1 800-555-0144", "active"],
+    ["Greenleaf Specialty", "44021", "Cannabis and hemp operations, product liability", "Priya Anand", "newbusiness@greenleafspecialty.example", "+1 800-555-0188", "prospective"],
+  ];
+  for (const [name, naic, appetite, cname, cemail, cphone, status] of AGENCY_CARRIERS) {
+    await sql.query(
+      "INSERT INTO carriers (tenant_id, name, naic_code, appetite, contact_name, contact_email, contact_phone, status) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)",
+      [demo, name, naic, appetite, cname, cemail, cphone, status],
+    );
+  }
+  console.log("✓ seeded 3 carriers");
+} else {
+  console.log("• carriers already present — skipped");
+}
+
 console.log("✓ demo tenant seeded: modules, custom fields, 3 carrier connections, VoIP");

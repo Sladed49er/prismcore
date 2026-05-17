@@ -307,14 +307,14 @@ admin + ticketing, and PrismVoice — deployed and demo-ready.
 The 18-day platform plan is done; this is the next phase: turning the 36-module
 catalog from shells into real, functional modules. Each module = schema + RLS +
 lib (withTenantContext) + a real page, built and verified before the next. The
-pattern is set by `clients`. **5 of 36 real; 31 to go.** Order: insurance core first.
-Real so far: clients, policies, renewals, telephony, api_clearinghouse.
+pattern is set by `clients`. **6 of 36 real; 30 to go.** Order: insurance core first.
+Real so far: clients, policies, renewals, carriers, telephony, api_clearinghouse.
 
 Core: [x] clients · [ ] documents · [ ] tasks · [ ] esign · [ ] reports ·
 [ ] ai_reports · [ ] marketing · [ ] vault · [ ] contracts · [ ] leads ·
 [ ] migration
 Accounting: [ ] accounting
-Insurance: [x] policies · [ ] pipeline · [x] renewals · [ ] carriers ·
+Insurance: [x] policies · [ ] pipeline · [x] renewals · [x] carriers ·
 [ ] claims · [ ] certificates · [ ] acord_forms · [ ] intake_forms ·
 [ ] commissions · [ ] trust_accounting · [ ] client_portal · [ ] cross_sell ·
 [ ] specialty_markets · [ ] bookscan
