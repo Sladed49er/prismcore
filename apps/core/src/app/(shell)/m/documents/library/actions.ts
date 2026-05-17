@@ -19,5 +19,5 @@ export async function addDocument(input: {
     notes: input.notes.trim(),
     customValues: input.customValues,
   });
-  revalidatePath("/m/documents");
+  revalidatePath("/m/documents/library");
 }

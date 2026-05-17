@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { addDocument } from "@/app/(shell)/m/documents/actions";
+import { addDocument } from "@/app/(shell)/m/documents/library/actions";
 
 export interface DocumentDTO {
   id: string;

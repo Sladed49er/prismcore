@@ -57,3 +57,6 @@ export * from "./client-locations";
 export * from "./leads";
 export * from "./lead-sources";
 export * from "./campaigns";
+export * from "./document-templates";
+export * from "./document-folders";
+export * from "./document-shares";

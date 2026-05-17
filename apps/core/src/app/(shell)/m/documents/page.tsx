@@ -1,34 +1,35 @@
-import { loadCurrentTenant, requireModule } from "@/lib/kernel";
-import { listDocuments } from "@/lib/documents";
-import { listCustomFields } from "@/lib/customization";
-import {
-  DocumentsPanel,
-  type DocumentDTO,
-  type CustomFieldDTO,
-} from "@/components/documents-panel";
+import Link from "next/link";
+import { requireModule } from "@/lib/kernel";
 
-export default async function DocumentsPage() {
+/** Sub-modules that are built and live. */
+const BUILT = [
+  {
+    href: "/m/documents/library",
+    name: "Document Library",
+    desc: "The document register — every form and agreement on file.",
+  },
+  {
+    href: "/m/documents/templates",
+    name: "Templates",
+    desc: "Reusable document templates, drafted and published.",
+  },
+  {
+    href: "/m/documents/folders",
+    name: "Folders",
+    desc: "The folder structure the library is organized under.",
+  },
+  {
+    href: "/m/documents/shares",
+    name: "Shared Links",
+    desc: "Shareable links to documents — with expiry and revocation.",
+  },
+];
+
+/** The remaining documents sub-modules, ported in over the coming turns. */
+const PLANNED: string[] = [];
+
+export default async function DocumentsHub() {
   await requireModule("documents");
-  const { config } = await loadCurrentTenant();
-  const [docRows, fieldRows] = await Promise.all([
-    listDocuments(config.id),
-    listCustomFields(config.id),
-  ]);
-
-  const documents: DocumentDTO[] = docRows.map((d) => ({
-    id: d.id,
-    name: d.name,
-    category: d.category,
-    notes: d.notes,
-  }));
-  const customFields: CustomFieldDTO[] = fieldRows
-    .filter((f) => f.entityKey === "document")
-    .map((f) => ({
-      fieldKey: f.fieldKey,
-      label: f.label,
-      fieldType: f.fieldType,
-      required: f.required,
-    }));
 
   return (
     <div className="mx-auto max-w-4xl px-8 py-10">
@@ -37,10 +38,44 @@ export default async function DocumentsPage() {
       </p>
       <h1 className="mt-1 text-2xl font-semibold">Documents</h1>
       <p className="mt-2 max-w-2xl text-gray-600">
-        The document register — every form, policy document, and agreement on
-        file.
+        The agency&rsquo;s document management — the library, reusable
+        templates, the folder structure, and shareable links.
       </p>
-      <DocumentsPanel documents={documents} customFields={customFields} />
+
+      <div className="mt-6 grid gap-3 sm:grid-cols-2">
+        {BUILT.map((s) => (
+          <Link
+            key={s.href}
+            href={s.href}
+            className="rounded-xl border border-gray-200 bg-white p-5 transition hover:border-indigo-300"
+          >
+            <h3 className="font-semibold">{s.name}</h3>
+            <p className="mt-1 text-sm text-gray-600">{s.desc}</p>
+          </Link>
+        ))}
+      </div>
+
+      {PLANNED.length > 0 ? (
+        <>
+          <h2 className="mt-8 text-xs font-semibold uppercase tracking-wide text-gray-500">
+            Coming next in the documents build-out
+          </h2>
+          <div className="mt-3 flex flex-wrap gap-2">
+            {PLANNED.map((p) => (
+              <span
+                key={p}
+                className="rounded-full border border-dashed border-gray-300 px-3 py-1 text-sm text-gray-400"
+              >
+                {p}
+              </span>
+            ))}
+          </div>
+        </>
+      ) : (
+        <p className="mt-8 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+          ✓ Documents is fully built out.
+        </p>
+      )}
     </div>
   );
 }

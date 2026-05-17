@@ -823,4 +823,30 @@ if (leadCount[0].n === 0) {
   console.log("• pipeline/marketing demo data already present — skipped");
 }
 
+// 26. Documents — templates, folders, shared links.
+const dtCount = await sql.query("SELECT count(*)::int AS n FROM document_templates WHERE tenant_id = $1", [demo]);
+if (dtCount[0].n === 0) {
+  await sql.query(
+    "INSERT INTO document_templates (tenant_id, name, category, description, body, status) VALUES ($1,'New client welcome letter','Letters','Sent when a client is onboarded','Welcome to the agency — we are glad to have you.','published'),($1,'Coverage proposal','Proposals','Standard commercial proposal','','draft')",
+    [demo],
+  );
+  await sql.query(
+    "INSERT INTO document_folders (tenant_id, name, description) VALUES ($1,'Policies','Policy documents and dec pages'),($1,'Agreements','Signed agreements and contracts'),($1,'Correspondence','Letters and emails on file')",
+    [demo],
+  );
+  const docs = await sql.query(
+    "SELECT id FROM documents WHERE tenant_id = $1 ORDER BY created_at LIMIT 1",
+    [demo],
+  );
+  if (docs.length >= 1) {
+    await sql.query(
+      "INSERT INTO document_shares (tenant_id, document_id, label, recipient, expires_date, status, notes) VALUES ($1,$2,'Client copy','sandra@coastalcannery.com','2026-06-30','active','')",
+      [demo, docs[0].id],
+    );
+  }
+  console.log("✓ seeded 2 templates, 3 folders, 1 share link");
+} else {
+  console.log("• documents demo data already present — skipped");
+}
+
 console.log("✓ demo tenant seeded: modules, custom fields, 3 carrier connections, VoIP");

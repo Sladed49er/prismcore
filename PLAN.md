@@ -414,10 +414,20 @@ is a **hub** (Accounting pattern); the opportunity worklist moved to
 channel, schedule, budget, planned→completed). Migrations through 0024; RLS on
 68 tenant tables.
 
+### Documents — deep build (1:1 with PrismAMS) — 2026-05-17 ✅
+
+**Documents is fully built — all 4 sub-modules live.** `/m/documents` is a
+**hub** (Accounting pattern); the register moved to `/m/documents/library`
+(custom-field engine still wired in). Sub-modules: Document Library,
+**Templates** (reusable templates, draft→published→archived), **Folders**
+(library category structure), **Shared Links** (shareable document links with
+expiry, active→expired→revoked). Migrations through 0025; RLS on 71 tenant
+tables.
+
 Modules now at full PrismAMS depth: Accounting (18), Policies & Servicing (9),
 Claims (7), Commissions (6), Renewals (4), Clients & CRM (4), Pipeline &
-Marketing (4). Remaining lean modules (Documents, Tasks, Certificates, Carriers,
-etc.) are next for the same hub treatment.
+Marketing (4), Documents (4). Remaining lean modules (Tasks, Certificates,
+Carriers, etc.) are next for the same hub treatment.
 
 ## Reference
 

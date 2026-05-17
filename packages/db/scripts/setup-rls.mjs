@@ -103,6 +103,9 @@ const TENANT_TABLES = [
   "leads",
   "lead_sources",
   "marketing_campaigns",
+  "document_templates",
+  "document_folders",
+  "document_shares",
 ];
 
 const owner = neon(ownerUrl);
