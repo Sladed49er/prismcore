@@ -4,6 +4,10 @@
     {
       "path": "/api/cron/ams-sync",
       "schedule": "* * * * *"
+    },
+    {
+      "path": "/api/cron/strategy",
+      "schedule": "0 * * * *"
     }
   ]
 }

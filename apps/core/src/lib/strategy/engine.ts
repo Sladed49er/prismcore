@@ -142,18 +142,27 @@ async function evaluateRule(
   };
 }
 
+/** A freshly-raised alert — enough for the cron to notify on it. */
+export interface RaisedAlert {
+  ruleId: string;
+  metricName: string;
+  severity: string;
+  message: string;
+}
+
 /**
  * Evaluate every enabled rule for a tenant. A rule that is firing and does not
- * already have an open alert raises a new one. Returns how many were raised.
+ * already have an open alert raises a new one. Returns the alerts raised this
+ * run, so the caller can notify on them.
  */
 export async function evaluateTenantRules(
   tenantId: string,
-): Promise<{ evaluated: number; raised: number }> {
+): Promise<{ evaluated: number; raised: RaisedAlert[] }> {
   const rules = (await listRules(tenantId)).filter((r) => r.enabled);
-  if (rules.length === 0) return { evaluated: 0, raised: 0 };
+  if (rules.length === 0) return { evaluated: 0, raised: [] };
 
   const alreadyOpen = await openAlertRuleIds(tenantId);
-  let raised = 0;
+  const raised: RaisedAlert[] = [];
 
   for (const rule of rules) {
     try {
@@ -169,7 +178,12 @@ export async function evaluateTenantRules(
           message: verdict.reason,
           value: current,
         });
-        raised++;
+        raised.push({
+          ruleId: rule.id,
+          metricName: metric.name,
+          severity: rule.severity,
+          message: verdict.reason,
+        });
       }
     } catch (error) {
       console.error(`[strategy] rule ${rule.id} evaluation failed:`, error);

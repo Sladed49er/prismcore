@@ -9,7 +9,10 @@
         "DATABASE_URL_APP",
         "CLERK_SECRET_KEY",
         "PRISMCORE_ENCRYPTION_KEY",
-        "CRON_SECRET"
+        "CRON_SECRET",
+        "ANTHROPIC_API_KEY",
+        "RESEND_API_KEY",
+        "STRATEGY_ALERT_FROM"
       ]
     },
     "dev": {
