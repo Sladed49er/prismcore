@@ -1,6 +1,7 @@
 import { and, eq, sql } from "drizzle-orm";
 import {
   adminDb,
+  withTenantContext,
   clearinghouseCarriers,
   tenantCarrierConnections,
   type ClearinghouseCarrier,
@@ -37,7 +38,10 @@ const SEED: CarrierSeed[] = [
   { slug: "mainstreet-bop", name: "MainStreet BOP", type: "carrier", description: "Business owners policies for retail, office, and small service firms.", lines: ["business owners policy", "general liability", "commercial property"], states: ["nationwide"], appetite: "Small commercial accounts under 25 employees.", apiStatus: "coming_soon" },
 ];
 
-/** Seed the carrier pool once. Idempotent — does nothing if it is already populated. */
+/**
+ * Seed the carrier pool once. `clearinghouse_carriers` is a deliberately GLOBAL
+ * table (shared across tenants), so it is not RLS-scoped and runs as the owner.
+ */
 export async function seedCarriers(): Promise<void> {
   const db = adminDb();
   const rows = await db
@@ -47,16 +51,19 @@ export async function seedCarriers(): Promise<void> {
   await db.insert(clearinghouseCarriers).values(SEED).onConflictDoNothing();
 }
 
+/** The global carrier pool — shared, not tenant-scoped. */
 export async function listCarriers(): Promise<ClearinghouseCarrier[]> {
   return adminDb().select().from(clearinghouseCarriers);
 }
 
-/** Carrier ids the tenant has connected. */
+/** Carrier ids the tenant has connected — RLS-scoped to that tenant. */
 export async function listConnections(tenantId: string): Promise<string[]> {
-  const rows = await adminDb()
-    .select({ carrierId: tenantCarrierConnections.carrierId })
-    .from(tenantCarrierConnections)
-    .where(eq(tenantCarrierConnections.tenantId, tenantId));
+  const rows = await withTenantContext(tenantId, async (tx) =>
+    tx
+      .select({ carrierId: tenantCarrierConnections.carrierId })
+      .from(tenantCarrierConnections)
+      .where(eq(tenantCarrierConnections.tenantId, tenantId)),
+  );
   return rows.map((r) => r.carrierId);
 }
 
@@ -64,22 +71,26 @@ export async function connectCarrier(
   tenantId: string,
   carrierId: string,
 ): Promise<void> {
-  await adminDb()
-    .insert(tenantCarrierConnections)
-    .values({ tenantId, carrierId })
-    .onConflictDoNothing();
+  await withTenantContext(tenantId, async (tx) => {
+    await tx
+      .insert(tenantCarrierConnections)
+      .values({ tenantId, carrierId })
+      .onConflictDoNothing();
+  });
 }
 
 export async function disconnectCarrier(
   tenantId: string,
   carrierId: string,
 ): Promise<void> {
-  await adminDb()
-    .delete(tenantCarrierConnections)
-    .where(
-      and(
-        eq(tenantCarrierConnections.tenantId, tenantId),
-        eq(tenantCarrierConnections.carrierId, carrierId),
-      ),
-    );
+  await withTenantContext(tenantId, async (tx) => {
+    await tx
+      .delete(tenantCarrierConnections)
+      .where(
+        and(
+          eq(tenantCarrierConnections.tenantId, tenantId),
+          eq(tenantCarrierConnections.carrierId, carrierId),
+        ),
+      );
+  });
 }

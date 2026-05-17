@@ -1,5 +1,10 @@
 import { and, desc, eq } from "drizzle-orm";
-import { adminDb, calls, tenantVoipConnections, type Call } from "@prismcore/db";
+import {
+  withTenantContext,
+  calls,
+  tenantVoipConnections,
+  type Call,
+} from "@prismcore/db";
 
 export interface VoipProvider {
   id: string;
@@ -33,11 +38,16 @@ const SAMPLE_CALLERS: SampleCaller[] = [
   { from: "+1 509-555-0150", contact: null, summary: "Caller asking if the agency can write commercial trucking for a small fleet.", disposition: "New lead" },
 ];
 
+/* Every function below runs through `withTenantContext` — the RLS-bound role
+ * with the tenant GUC set, so calls and connections are isolated by Postgres. */
+
 export async function listConnections(tenantId: string): Promise<string[]> {
-  const rows = await adminDb()
-    .select({ providerId: tenantVoipConnections.providerId })
-    .from(tenantVoipConnections)
-    .where(eq(tenantVoipConnections.tenantId, tenantId));
+  const rows = await withTenantContext(tenantId, async (tx) =>
+    tx
+      .select({ providerId: tenantVoipConnections.providerId })
+      .from(tenantVoipConnections)
+      .where(eq(tenantVoipConnections.tenantId, tenantId)),
+  );
   return rows.map((r) => r.providerId);
 }
 
@@ -45,33 +55,39 @@ export async function connectProvider(
   tenantId: string,
   providerId: string,
 ): Promise<void> {
-  await adminDb()
-    .insert(tenantVoipConnections)
-    .values({ tenantId, providerId })
-    .onConflictDoNothing();
+  await withTenantContext(tenantId, async (tx) => {
+    await tx
+      .insert(tenantVoipConnections)
+      .values({ tenantId, providerId })
+      .onConflictDoNothing();
+  });
 }
 
 export async function disconnectProvider(
   tenantId: string,
   providerId: string,
 ): Promise<void> {
-  await adminDb()
-    .delete(tenantVoipConnections)
-    .where(
-      and(
-        eq(tenantVoipConnections.tenantId, tenantId),
-        eq(tenantVoipConnections.providerId, providerId),
-      ),
-    );
+  await withTenantContext(tenantId, async (tx) => {
+    await tx
+      .delete(tenantVoipConnections)
+      .where(
+        and(
+          eq(tenantVoipConnections.tenantId, tenantId),
+          eq(tenantVoipConnections.providerId, providerId),
+        ),
+      );
+  });
 }
 
 export async function listCalls(tenantId: string, limit = 25): Promise<Call[]> {
-  return adminDb()
-    .select()
-    .from(calls)
-    .where(eq(calls.tenantId, tenantId))
-    .orderBy(desc(calls.occurredAt))
-    .limit(limit);
+  return withTenantContext(tenantId, async (tx) =>
+    tx
+      .select()
+      .from(calls)
+      .where(eq(calls.tenantId, tenantId))
+      .orderBy(desc(calls.occurredAt))
+      .limit(limit),
+  );
 }
 
 /** Record a call — used by the screen-pop webhook and by the demo simulator. */
@@ -85,9 +101,8 @@ export async function recordCall(input: {
   disposition?: string | null;
   provider?: string;
 }): Promise<void> {
-  await adminDb()
-    .insert(calls)
-    .values({
+  await withTenantContext(input.tenantId, async (tx) => {
+    await tx.insert(calls).values({
       tenantId: input.tenantId,
       direction: input.direction ?? "inbound",
       fromNumber: input.fromNumber,
@@ -97,6 +112,7 @@ export async function recordCall(input: {
       disposition: input.disposition ?? null,
       provider: input.provider ?? "manual",
     });
+  });
 }
 
 /** Simulate an inbound call so the screen-pop and AI summary can be demoed. */
