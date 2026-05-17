@@ -60,7 +60,7 @@ They adapt to the module-SDK contract and get poured in. Multi-tenancy (RLS,
 | 3–6  | Kernel: registry + runtime loader + new shell; composer onboarding skeleton | ✅ 2026-05-16 |
 | 7–10 | Pour in AMS modules onto the SDK; customization engine MVP (fields + forms) | ✅ 2026-05-16 — catalog, Neon/DB, guided onboarding, custom fields |
 | 11–14| API clearinghouse + PrismVoice (CallIntel rebuilt as a native module) | ✅ 2026-05-16 |
-| 15–17| Demo tenant — all 4 pillars working end-to-end; marketing capture | todo |
+| 15–17| Demo tenant — all 4 pillars working end-to-end; marketing capture | ✅ 2026-05-16 |
 | 18   | Dry run with Tony | todo |
 
 ## Open items / TBD
@@ -286,6 +286,21 @@ RLS as the hard boundary. No separate instances.
 
 Remaining hardening (smaller): per-tenant API-key auth on the public VoIP
 webhook; a Clerk production instance (needs a custom domain).
+
+### Days 15–17 — 2026-05-16 ✅ Demo tenant + marketing
+
+- `packages/db/scripts/seed-demo.mjs` (idempotent): Demo Agency populated across
+  every pillar — 10 modules, 2 custom fields, 3 connected carriers, a VoIP
+  provider, 5 calls, 3 tickets with comment threads. The June-3 demo workspace
+  looks alive, not empty.
+- `marketing/DEMO-SCRIPT.md` — the ~10-minute conference walkthrough, step by
+  step with talking points and Q&A.
+- `marketing/ONE-PAGER.md` — the product on one page.
+
+**The 18-day build plan is complete.** Day 18 is the dry run with Tony — a human
+rehearsal, not a build task. Prism Core: all four pillars live, multi-tenant with
+database-enforced isolation, guided onboarding, customization engine, two-level
+admin + ticketing, and PrismVoice — deployed and demo-ready.
 
 ## Reference
 
