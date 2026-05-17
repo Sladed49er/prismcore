@@ -2,8 +2,10 @@ import Link from "next/link";
 import { loadCurrentTenant, requireModule } from "@/lib/kernel";
 import { listClients } from "@/lib/clients";
 import { listCustomFields } from "@/lib/customization";
+import { resolveStatusOptions } from "@/lib/status-options";
 import {
   ClientsPanel,
+  STATUS_DEFAULTS,
   type ClientDTO,
   type CustomFieldDTO,
 } from "@/components/clients-panel";
@@ -13,9 +15,10 @@ export default async function ClientRegisterPage() {
   await requireModule("clients");
   const { config } = await loadCurrentTenant();
 
-  const [clientRows, fieldRows] = await Promise.all([
+  const [clientRows, fieldRows, statusOptions] = await Promise.all([
     listClients(config.id),
     listCustomFields(config.id),
+    resolveStatusOptions(config.id, "client.status", STATUS_DEFAULTS),
   ]);
 
   const clients: ClientDTO[] = clientRows.map((c) => {
@@ -64,7 +67,11 @@ export default async function ClientRegisterPage() {
         The client record at the center of the workspace. The form includes any
         custom fields you have defined in Customize.
       </p>
-      <ClientsPanel clients={clients} customFields={customFields} />
+      <ClientsPanel
+        clients={clients}
+        customFields={customFields}
+        statusOptions={statusOptions}
+      />
     </div>
   );
 }

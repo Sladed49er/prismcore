@@ -9,6 +9,8 @@ import {
 } from "@/app/(shell)/m/accounting/invoices/actions";
 import { exportRowsToCsv, type CsvColumn } from "@/lib/csv";
 import { ExportCsvButton } from "@/components/export-csv-button";
+import type { StatusOption } from "@/lib/status-options";
+import { badgeClass } from "@/lib/badge-colors";
 
 export interface InvoiceDTO {
   id: string;
@@ -29,12 +31,12 @@ export interface ClientOption {
 const STATUSES = ["draft", "sent", "paid", "void"] as const;
 type Status = (typeof STATUSES)[number];
 
-const STYLE: Record<string, string> = {
-  draft: "bg-gray-100 text-gray-500",
-  sent: "bg-blue-50 text-blue-700",
-  paid: "bg-green-50 text-green-700",
-  void: "bg-red-50 text-red-700",
-};
+export const STATUS_DEFAULTS: StatusOption[] = [
+  { value: "draft", label: "Draft", color: "gray" },
+  { value: "sent", label: "Sent", color: "blue" },
+  { value: "paid", label: "Paid", color: "green" },
+  { value: "void", label: "Void", color: "red" },
+];
 
 function money(cents: number): string {
   return "$" + (cents / 100).toLocaleString();
@@ -60,9 +62,11 @@ const CSV_COLUMNS: CsvColumn<InvoiceDTO>[] = [
 export function AccountingPanel({
   invoices,
   clients,
+  statusOptions,
 }: {
   invoices: InvoiceDTO[];
   clients: ClientOption[];
+  statusOptions: StatusOption[];
 }) {
   const [pending, startTransition] = useTransition();
   const [showForm, setShowForm] = useState(false);
@@ -235,9 +239,9 @@ export function AccountingPanel({
                 onChange={(e) => set("status", e.target.value)}
                 className={inputClass}
               >
-                {STATUSES.map((s) => (
-                  <option key={s} value={s}>
-                    {s}
+                {statusOptions.map((o) => (
+                  <option key={o.value} value={o.value}>
+                    {o.label}
                   </option>
                 ))}
               </select>
@@ -324,11 +328,14 @@ export function AccountingPanel({
                       }
                       disabled={pending}
                       aria-label="Invoice status"
-                      className={`rounded-full border-0 px-2 py-0.5 text-xs font-medium outline-none ${STYLE[i.status] ?? "bg-gray-100 text-gray-500"}`}
+                      className={`rounded-full border-0 px-2 py-0.5 text-xs font-medium outline-none ${badgeClass(
+                        statusOptions.find((o) => o.value === i.status)
+                          ?.color ?? "gray",
+                      )}`}
                     >
-                      {STATUSES.map((s) => (
-                        <option key={s} value={s}>
-                          {s}
+                      {statusOptions.map((o) => (
+                        <option key={o.value} value={o.value}>
+                          {o.label}
                         </option>
                       ))}
                     </select>

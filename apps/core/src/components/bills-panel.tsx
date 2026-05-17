@@ -9,6 +9,8 @@ import {
 } from "@/app/(shell)/m/accounting/bills/actions";
 import { exportRowsToCsv, type CsvColumn } from "@/lib/csv";
 import { ExportCsvButton } from "@/components/export-csv-button";
+import type { StatusOption } from "@/lib/status-options";
+import { badgeClass } from "@/lib/badge-colors";
 
 export interface BillDTO {
   id: string;
@@ -29,12 +31,12 @@ export interface VendorOption {
   name: string;
 }
 
-const STYLE: Record<string, string> = {
-  pending: "bg-amber-50 text-amber-700",
-  partial: "bg-blue-50 text-blue-700",
-  paid: "bg-green-50 text-green-700",
-  void: "bg-red-50 text-red-700",
-};
+export const STATUS_DEFAULTS: StatusOption[] = [
+  { value: "pending", label: "Pending", color: "amber" },
+  { value: "partial", label: "Partial", color: "blue" },
+  { value: "paid", label: "Paid", color: "green" },
+  { value: "void", label: "Void", color: "red" },
+];
 
 function money(cents: number): string {
   return "$" + (cents / 100).toLocaleString();
@@ -63,9 +65,11 @@ const CSV_COLUMNS: CsvColumn<BillDTO>[] = [
 export function BillsPanel({
   bills,
   vendors,
+  statusOptions,
 }: {
   bills: BillDTO[];
   vendors: VendorOption[];
+  statusOptions: StatusOption[];
 }) {
   const [pending, startTransition] = useTransition();
   const [showForm, setShowForm] = useState(false);
@@ -313,11 +317,18 @@ export function BillsPanel({
                     {money(b.balanceCents)}
                   </td>
                   <td className="px-4 py-3">
-                    <span
-                      className={`rounded-full px-2 py-0.5 text-xs font-medium ${STYLE[b.status] ?? "bg-gray-100 text-gray-500"}`}
-                    >
-                      {b.status}
-                    </span>
+                    {(() => {
+                      const option = statusOptions.find(
+                        (o) => o.value === b.status,
+                      );
+                      return (
+                        <span
+                          className={`rounded-full px-2 py-0.5 text-xs font-medium ${badgeClass(option?.color ?? "gray")}`}
+                        >
+                          {option?.label ?? b.status}
+                        </span>
+                      );
+                    })()}
                   </td>
                   <td className="px-4 py-3 text-right whitespace-nowrap">
                     {b.balanceCents > 0 && b.status !== "void" ? (

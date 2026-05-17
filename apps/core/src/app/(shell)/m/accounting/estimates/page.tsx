@@ -2,8 +2,10 @@ import Link from "next/link";
 import { loadCurrentTenant, requireModule } from "@/lib/kernel";
 import { listEstimates } from "@/lib/estimates";
 import { listClients, clientDisplayName } from "@/lib/clients";
+import { resolveStatusOptions } from "@/lib/status-options";
 import {
   EstimatesPanel,
+  STATUS_DEFAULTS,
   type EstimateDTO,
   type ClientOption,
 } from "@/components/estimates-panel";
@@ -11,9 +13,10 @@ import {
 export default async function EstimatesPage() {
   await requireModule("accounting");
   const { config } = await loadCurrentTenant();
-  const [estimateRows, clientRows] = await Promise.all([
+  const [estimateRows, clientRows, statusOptions] = await Promise.all([
     listEstimates(config.id),
     listClients(config.id),
+    resolveStatusOptions(config.id, "estimate.status", STATUS_DEFAULTS),
   ]);
 
   const estimates: EstimateDTO[] = estimateRows.map((e) => ({
@@ -43,7 +46,11 @@ export default async function EstimatesPage() {
       <p className="mt-2 max-w-2xl text-gray-600">
         Quotes and estimates issued to clients — drafted, sent, and converted.
       </p>
-      <EstimatesPanel estimates={estimates} clients={clients} />
+      <EstimatesPanel
+        estimates={estimates}
+        clients={clients}
+        statusOptions={statusOptions}
+      />
     </div>
   );
 }

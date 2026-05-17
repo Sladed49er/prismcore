@@ -1,8 +1,10 @@
 import Link from "next/link";
 import { loadCurrentTenant, requireModule } from "@/lib/kernel";
 import { listBills, listVendors } from "@/lib/ap";
+import { resolveStatusOptions } from "@/lib/status-options";
 import {
   BillsPanel,
+  STATUS_DEFAULTS,
   type BillDTO,
   type VendorOption,
 } from "@/components/bills-panel";
@@ -10,9 +12,10 @@ import {
 export default async function BillsPage() {
   await requireModule("accounting");
   const { config } = await loadCurrentTenant();
-  const [billRows, vendorRows] = await Promise.all([
+  const [billRows, vendorRows, statusOptions] = await Promise.all([
     listBills(config.id),
     listVendors(config.id),
+    resolveStatusOptions(config.id, "bill.status", STATUS_DEFAULTS),
   ]);
 
   const bills: BillDTO[] = billRows.map((b) => ({
@@ -45,7 +48,11 @@ export default async function BillsPage() {
       <p className="mt-2 max-w-2xl text-gray-600">
         Vendor bills and accounts payable — entered, paid down, and reconciled.
       </p>
-      <BillsPanel bills={bills} vendors={vendors} />
+      <BillsPanel
+        bills={bills}
+        vendors={vendors}
+        statusOptions={statusOptions}
+      />
     </div>
   );
 }

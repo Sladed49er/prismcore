@@ -8,6 +8,8 @@ import {
 } from "@/app/(shell)/m/clients/register/actions";
 import { exportRowsToCsv, type CsvColumn } from "@/lib/csv";
 import { ExportCsvButton } from "@/components/export-csv-button";
+import type { StatusOption } from "@/lib/status-options";
+import { badgeClass } from "@/lib/badge-colors";
 
 export interface ClientDTO {
   id: string;
@@ -32,11 +34,11 @@ export interface CustomFieldDTO {
   required: boolean;
 }
 
-const STATUS_STYLE: Record<string, string> = {
-  prospect: "bg-amber-50 text-amber-700",
-  active: "bg-green-50 text-green-700",
-  inactive: "bg-gray-100 text-gray-500",
-};
+export const STATUS_DEFAULTS: StatusOption[] = [
+  { value: "prospect", label: "Prospect", color: "amber" },
+  { value: "active", label: "Active", color: "green" },
+  { value: "inactive", label: "Inactive", color: "gray" },
+];
 
 const EMPTY = {
   firstName: "",
@@ -65,9 +67,11 @@ const CSV_COLUMNS: CsvColumn<ClientDTO>[] = [
 export function ClientsPanel({
   clients,
   customFields,
+  statusOptions,
 }: {
   clients: ClientDTO[];
   customFields: CustomFieldDTO[];
+  statusOptions: StatusOption[];
 }) {
   const [pending, startTransition] = useTransition();
   const [showForm, setShowForm] = useState(false);
@@ -280,9 +284,11 @@ export function ClientsPanel({
                 onChange={(e) => set("status", e.target.value)}
                 className={inputClass}
               >
-                <option value="prospect">prospect</option>
-                <option value="active">active</option>
-                <option value="inactive">inactive</option>
+                {statusOptions.map((o) => (
+                  <option key={o.value} value={o.value}>
+                    {o.label}
+                  </option>
+                ))}
               </select>
             </label>
           </div>
@@ -398,11 +404,18 @@ export function ClientsPanel({
                     {c.location ?? "—"}
                   </td>
                   <td className="px-4 py-3">
-                    <span
-                      className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_STYLE[c.status] ?? "bg-gray-100 text-gray-500"}`}
-                    >
-                      {c.status}
-                    </span>
+                    {(() => {
+                      const option = statusOptions.find(
+                        (o) => o.value === c.status,
+                      );
+                      return (
+                        <span
+                          className={`rounded-full px-2 py-0.5 text-xs font-medium ${badgeClass(option?.color ?? "gray")}`}
+                        >
+                          {option?.label ?? c.status}
+                        </span>
+                      );
+                    })()}
                   </td>
                   <td className="px-4 py-3 text-right whitespace-nowrap">
                     <button

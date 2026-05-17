@@ -2,8 +2,10 @@ import Link from "next/link";
 import { loadCurrentTenant, requireModule } from "@/lib/kernel";
 import { listInvoices } from "@/lib/accounting";
 import { listClients, clientDisplayName } from "@/lib/clients";
+import { resolveStatusOptions } from "@/lib/status-options";
 import {
   AccountingPanel,
+  STATUS_DEFAULTS,
   type InvoiceDTO,
   type ClientOption,
 } from "@/components/accounting-panel";
@@ -11,9 +13,10 @@ import {
 export default async function InvoicesPage() {
   await requireModule("accounting");
   const { config } = await loadCurrentTenant();
-  const [invoiceRows, clientRows] = await Promise.all([
+  const [invoiceRows, clientRows, statusOptions] = await Promise.all([
     listInvoices(config.id),
     listClients(config.id),
+    resolveStatusOptions(config.id, "invoice.status", STATUS_DEFAULTS),
   ]);
 
   const invoices: InvoiceDTO[] = invoiceRows.map((i) => ({
@@ -43,7 +46,11 @@ export default async function InvoicesPage() {
       <p className="mt-2 max-w-2xl text-gray-600">
         Client billing and accounts receivable — drafted, sent, and reconciled.
       </p>
-      <AccountingPanel invoices={invoices} clients={clients} />
+      <AccountingPanel
+        invoices={invoices}
+        clients={clients}
+        statusOptions={statusOptions}
+      />
     </div>
   );
 }

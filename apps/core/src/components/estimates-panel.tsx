@@ -9,6 +9,8 @@ import {
 } from "@/app/(shell)/m/accounting/estimates/actions";
 import { exportRowsToCsv, type CsvColumn } from "@/lib/csv";
 import { ExportCsvButton } from "@/components/export-csv-button";
+import type { StatusOption } from "@/lib/status-options";
+import { badgeClass } from "@/lib/badge-colors";
 
 export interface EstimateDTO {
   id: string;
@@ -36,14 +38,14 @@ const STATUSES = [
 ] as const;
 type Status = (typeof STATUSES)[number];
 
-const STYLE: Record<string, string> = {
-  draft: "bg-gray-100 text-gray-500",
-  sent: "bg-blue-50 text-blue-700",
-  accepted: "bg-green-50 text-green-700",
-  declined: "bg-red-50 text-red-700",
-  expired: "bg-gray-100 text-gray-500",
-  converted: "bg-indigo-50 text-indigo-700",
-};
+export const STATUS_DEFAULTS: StatusOption[] = [
+  { value: "draft", label: "Draft", color: "gray" },
+  { value: "sent", label: "Sent", color: "blue" },
+  { value: "accepted", label: "Accepted", color: "green" },
+  { value: "declined", label: "Declined", color: "red" },
+  { value: "expired", label: "Expired", color: "gray" },
+  { value: "converted", label: "Converted", color: "indigo" },
+];
 
 function money(cents: number): string {
   return "$" + (cents / 100).toLocaleString();
@@ -69,9 +71,11 @@ const CSV_COLUMNS: CsvColumn<EstimateDTO>[] = [
 export function EstimatesPanel({
   estimates,
   clients,
+  statusOptions,
 }: {
   estimates: EstimateDTO[];
   clients: ClientOption[];
+  statusOptions: StatusOption[];
 }) {
   const [pending, startTransition] = useTransition();
   const [showForm, setShowForm] = useState(false);
@@ -236,9 +240,9 @@ export function EstimatesPanel({
                 onChange={(e) => set("status", e.target.value)}
                 className={inputClass}
               >
-                {STATUSES.map((s) => (
-                  <option key={s} value={s}>
-                    {s}
+                {statusOptions.map((o) => (
+                  <option key={o.value} value={o.value}>
+                    {o.label}
                   </option>
                 ))}
               </select>
@@ -325,11 +329,14 @@ export function EstimatesPanel({
                       }
                       disabled={pending}
                       aria-label="Estimate status"
-                      className={`rounded-full border-0 px-2 py-0.5 text-xs font-medium outline-none ${STYLE[e.status] ?? "bg-gray-100 text-gray-500"}`}
+                      className={`rounded-full border-0 px-2 py-0.5 text-xs font-medium outline-none ${badgeClass(
+                        statusOptions.find((o) => o.value === e.status)
+                          ?.color ?? "gray",
+                      )}`}
                     >
-                      {STATUSES.map((s) => (
-                        <option key={s} value={s}>
-                          {s}
+                      {statusOptions.map((o) => (
+                        <option key={o.value} value={o.value}>
+                          {o.label}
                         </option>
                       ))}
                     </select>
