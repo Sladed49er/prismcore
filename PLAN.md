@@ -394,10 +394,20 @@ year). Migrations through 0021; RLS on 59 tenant tables.
 **Retention Tracking** (renewed/rewritten/lost with reason codes, computed
 retention rate). Migrations through 0022; RLS on 62 tenant tables.
 
+### Clients & CRM — deep build (1:1 with PrismAMS) — 2026-05-17 ✅
+
+**Clients & CRM is fully built — all 4 sub-modules live.** `/m/clients` is a
+**hub** (Accounting pattern); the client register moved to
+`/m/clients/register` (custom-field engine still wired in). Sub-modules:
+Client Register, **Contacts** (people at an account — primary/billing/claims/
+decision-maker), **Activities** (CRM interaction log — call/email/meeting/
+note/task, chronological feed), **Locations** (mailing/physical/billing/branch
+addresses). Migrations through 0023; RLS on 65 tenant tables.
+
 Modules now at full PrismAMS depth: Accounting (18), Policies & Servicing (9),
-Claims (7), Commissions (6), Renewals (4). The five core insurance pillars are
-done; remaining lean modules (Marketing, Documents, Tasks, Certificates, etc.)
-are next for the same hub treatment.
+Claims (7), Commissions (6), Renewals (4), Clients & CRM (4). The five core
+insurance pillars plus the CRM backbone are done; remaining lean modules
+(Marketing/Pipeline, Documents, Tasks, Certificates, etc.) are next.
 
 ## Reference
 

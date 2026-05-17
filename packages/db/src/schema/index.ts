@@ -51,3 +51,6 @@ export * from "./contingency";
 export * from "./remarketing";
 export * from "./renewal-offers";
 export * from "./retention";
+export * from "./client-contacts";
+export * from "./client-activities";
+export * from "./client-locations";

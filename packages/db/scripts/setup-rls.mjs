@@ -97,6 +97,9 @@ const TENANT_TABLES = [
   "remarketing_quotes",
   "renewal_offers",
   "retention_records",
+  "client_contacts",
+  "client_activities",
+  "client_locations",
 ];
 
 const owner = neon(ownerUrl);

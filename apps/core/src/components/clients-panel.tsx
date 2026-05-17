@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { addClient } from "@/app/(shell)/m/clients/actions";
+import { addClient } from "@/app/(shell)/m/clients/register/actions";
 
 export interface ClientDTO {
   id: string;

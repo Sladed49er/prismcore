@@ -776,4 +776,31 @@ if (rmCount[0].n === 0) {
   console.log("• renewals demo data already present — skipped");
 }
 
+// 24. Clients CRM — contacts, activities, locations.
+const ccCount = await sql.query("SELECT count(*)::int AS n FROM client_contacts WHERE tenant_id = $1", [demo]);
+if (ccCount[0].n === 0) {
+  const cls = await sql.query(
+    "SELECT id FROM clients WHERE tenant_id = $1 ORDER BY created_at LIMIT 1",
+    [demo],
+  );
+  if (cls.length >= 1) {
+    const c0 = cls[0].id;
+    await sql.query(
+      "INSERT INTO client_contacts (tenant_id, client_id, name, title, email, phone, role, notes) VALUES ($1,$2,'Sandra Lee','Operations Manager','sandra@coastalcannery.com','555-0310','primary',''),($1,$2,'Tom Reyes','Controller','tom@coastalcannery.com','555-0311','billing','Handles invoices')",
+      [demo, c0],
+    );
+    await sql.query(
+      "INSERT INTO client_activities (tenant_id, client_id, activity_type, subject, detail, activity_date, author) VALUES ($1,$2,'meeting','Annual coverage review','Walked through the program and discussed adding cyber.','2026-04-22','Matt'),($1,$2,'call','Follow-up on cyber quote','Left voicemail.','2026-05-06','Polina')",
+      [demo, c0],
+    );
+    await sql.query(
+      "INSERT INTO client_locations (tenant_id, client_id, label, location_type, address_line, city, state, postal_code) VALUES ($1,$2,'Headquarters','physical','120 Harbor Way','Santa Cruz','CA','95060'),($1,$2,'Billing office','billing','PO Box 4471','Santa Cruz','CA','95061')",
+      [demo, c0],
+    );
+  }
+  console.log("✓ seeded client contacts, activities, locations");
+} else {
+  console.log("• clients CRM demo data already present — skipped");
+}
+
 console.log("✓ demo tenant seeded: modules, custom fields, 3 carrier connections, VoIP");

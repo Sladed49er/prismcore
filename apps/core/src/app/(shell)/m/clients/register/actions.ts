@@ -36,5 +36,5 @@ export async function addClient(input: {
     status: input.status,
     customValues: input.customValues,
   });
-  revalidatePath("/m/clients");
+  revalidatePath("/m/clients/register");
 }

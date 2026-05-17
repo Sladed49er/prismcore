@@ -162,6 +162,13 @@
       "when": 1778999353678,
       "tag": "0022_jittery_cyclops",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1778999928968,
+      "tag": "0023_pale_bulldozer",
+      "breakpoints": true
     }
   ]
 }
