@@ -58,7 +58,7 @@ They adapt to the module-SDK contract and get poured in. Multi-tenancy (RLS,
 |------|-----------|--------|
 | 1–2  | Repo scaffold, module-SDK contract, `packages/db` (kernel schema) | ✅ 2026-05-16 |
 | 3–6  | Kernel: registry + runtime loader + new shell; composer onboarding skeleton | ✅ 2026-05-16 |
-| 7–10 | Pour in AMS modules onto the SDK; customization engine MVP (fields + forms) | 🔄 catalog poured in 2026-05-16; customization engine + DB next |
+| 7–10 | Pour in AMS modules onto the SDK; customization engine MVP (fields + forms) | 🔄 catalog + Neon/DB done 2026-05-16; guided onboarding + customization engine next |
 | 11–14| API clearinghouse MVP + carrier marketplace stub; `apps/voice` screen-pop demo | todo |
 | 15–17| Demo tenant — all 4 pillars working end-to-end; marketing capture | todo |
 | 18   | Dry run with Tony | todo |
@@ -156,6 +156,22 @@ https://prismcore-gray.vercel.app.
   declares via `customizableEntities`.
 - Pour in real module service/schema implementations (module by module, behind the
   contract — the catalog metadata is in place; the logic follows).
+
+### Days 7–10 (part 2) — 2026-05-16 ✅ Neon + DB persistence
+
+- Provisioned Neon project `prismcore-db`; applied the kernel migration
+  (`tenants`, `users`, `tenant_modules`); `DATABASE_URL` set on the Vercel project.
+- Tenant seam swapped off the cookie — `tenant-store.ts` does DB-backed
+  `createTenant` / `getTenantById` / demo-tenant seeding via `@prismcore/db`.
+  The workspace cookie now holds only a tenant id; the composer provisions real
+  `tenants` + `tenant_modules` rows.
+- `@prismcore/db`: `ws` fallback for the Neon socket driver on runtimes without
+  a global `WebSocket`.
+- Verified live: `/dashboard` on the deployment seeds and renders the demo
+  tenant from Neon.
+
+Open / deferred: RLS policies on the kernel tables and a `DATABASE_URL_APP`
+NOBYPASSRLS app role (hardening — no real tenant data in the DB yet).
 
 ## Reference
 
