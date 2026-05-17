@@ -36,6 +36,41 @@ export async function createVendor(input: {
   });
 }
 
+export async function updateVendor(input: {
+  tenantId: string;
+  id: string;
+  name: string;
+  type: VendorType;
+  email: string;
+  phone: string;
+  paymentTerms: string;
+  is1099: boolean;
+}): Promise<void> {
+  await withTenantContext(input.tenantId, async (tx) => {
+    await tx
+      .update(vendors)
+      .set({
+        name: input.name,
+        type: input.type,
+        email: input.email,
+        phone: input.phone,
+        paymentTerms: input.paymentTerms,
+        is1099: input.is1099,
+        updatedAt: new Date(),
+      })
+      .where(eq(vendors.id, input.id));
+  });
+}
+
+export async function deleteVendor(
+  tenantId: string,
+  id: string,
+): Promise<void> {
+  await withTenantContext(tenantId, async (tx) => {
+    await tx.delete(vendors).where(eq(vendors.id, id));
+  });
+}
+
 /* ── Bills ──────────────────────────────────────────────────────── */
 
 export interface BillRow extends Bill {

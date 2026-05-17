@@ -1,7 +1,11 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { addAccount } from "@/app/(shell)/m/accounting/chart-of-accounts/actions";
+import {
+  addAccount,
+  editAccount,
+  removeAccount,
+} from "@/app/(shell)/m/accounting/chart-of-accounts/actions";
 
 export interface AccountDTO {
   id: string;
@@ -9,6 +13,7 @@ export interface AccountDTO {
   name: string;
   type: string;
   subtype: string;
+  description: string;
   isActive: boolean;
 }
 
@@ -38,25 +43,75 @@ export function ChartOfAccountsPanel({
 }) {
   const [pending, startTransition] = useTransition();
   const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState({ ...EMPTY });
+  const [query, setQuery] = useState("");
 
   function set(key: keyof typeof EMPTY, value: string): void {
     setForm((f) => ({ ...f, [key]: value }));
   }
 
+  function startCreate(): void {
+    setForm({ ...EMPTY });
+    setEditingId(null);
+    setShowForm(true);
+  }
+
+  function startEdit(a: AccountDTO): void {
+    setForm({
+      accountNumber: a.accountNumber,
+      name: a.name,
+      type: a.type,
+      subtype: a.subtype,
+      description: a.description,
+    });
+    setEditingId(a.id);
+    setShowForm(true);
+  }
+
+  function close(): void {
+    setShowForm(false);
+    setEditingId(null);
+    setForm({ ...EMPTY });
+  }
+
   function submit(): void {
     startTransition(async () => {
-      await addAccount({
-        accountNumber: form.accountNumber,
-        name: form.name,
-        type: form.type as Type,
-        subtype: form.subtype,
-        description: form.description,
-      });
-      setForm({ ...EMPTY });
-      setShowForm(false);
+      if (editingId) {
+        await editAccount({
+          id: editingId,
+          ...form,
+          type: form.type as Type,
+        });
+      } else {
+        await addAccount({ ...form, type: form.type as Type });
+      }
+      close();
     });
   }
+
+  function remove(a: AccountDTO): void {
+    if (
+      !confirm(
+        `Delete account ${a.accountNumber} — ${a.name}? ` +
+          `Accounts with posted journal lines cannot be deleted.`,
+      )
+    )
+      return;
+    startTransition(async () => {
+      await removeAccount(a.id);
+    });
+  }
+
+  const q = query.trim().toLowerCase();
+  const visible = q
+    ? accounts.filter((a) =>
+        [a.accountNumber, a.name, a.type, a.subtype]
+          .join(" ")
+          .toLowerCase()
+          .includes(q),
+      )
+    : accounts;
 
   const inputClass =
     "mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-indigo-500";
@@ -65,14 +120,17 @@ export function ChartOfAccountsPanel({
 
   return (
     <div className="mt-6">
-      <div className="flex items-center justify-between">
-        <p className="text-sm text-gray-500">
-          {accounts.length} account{accounts.length === 1 ? "" : "s"}
-        </p>
+      <div className="flex items-center justify-between gap-3">
+        <input
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Search accounts…"
+          className="w-56 rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-indigo-500"
+        />
         {!showForm ? (
           <button
             type="button"
-            onClick={() => setShowForm(true)}
+            onClick={startCreate}
             className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-700"
           >
             + New account
@@ -82,6 +140,9 @@ export function ChartOfAccountsPanel({
 
       {showForm ? (
         <div className="mt-4 rounded-xl border border-gray-200 bg-white p-5">
+          <p className="mb-3 text-sm font-semibold text-gray-700">
+            {editingId ? "Edit account" : "New account"}
+          </p>
           <div className="grid gap-3 sm:grid-cols-2">
             <label className={labelClass}>
               Account number
@@ -141,11 +202,15 @@ export function ChartOfAccountsPanel({
               }
               className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-700 disabled:opacity-40"
             >
-              {pending ? "Saving…" : "Save account"}
+              {pending
+                ? "Saving…"
+                : editingId
+                  ? "Update account"
+                  : "Save account"}
             </button>
             <button
               type="button"
-              onClick={() => setShowForm(false)}
+              onClick={close}
               className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-600"
             >
               Cancel
@@ -155,9 +220,11 @@ export function ChartOfAccountsPanel({
       ) : null}
 
       <div className="mt-5 overflow-hidden rounded-xl border border-gray-200 bg-white">
-        {accounts.length === 0 ? (
+        {visible.length === 0 ? (
           <p className="px-5 py-8 text-center text-sm text-gray-500">
-            No accounts yet — add your chart of accounts above.
+            {accounts.length === 0
+              ? "No accounts yet — add your chart of accounts above."
+              : "No accounts match your search."}
           </p>
         ) : (
           <table className="w-full text-sm">
@@ -167,10 +234,11 @@ export function ChartOfAccountsPanel({
                 <th className="px-4 py-3 font-semibold">Account</th>
                 <th className="px-4 py-3 font-semibold">Type</th>
                 <th className="px-4 py-3 font-semibold">Subtype</th>
+                <th className="px-4 py-3" />
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {accounts.map((a) => (
+              {visible.map((a) => (
                 <tr key={a.id} className={a.isActive ? "" : "opacity-50"}>
                   <td className="px-4 py-3 font-mono text-gray-600">
                     {a.accountNumber}
@@ -185,6 +253,23 @@ export function ChartOfAccountsPanel({
                   </td>
                   <td className="px-4 py-3 text-gray-500">
                     {a.subtype || "—"}
+                  </td>
+                  <td className="px-4 py-3 text-right whitespace-nowrap">
+                    <button
+                      type="button"
+                      onClick={() => startEdit(a)}
+                      className="text-xs font-semibold text-indigo-600 transition hover:text-indigo-700"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      type="button"
+                      disabled={pending}
+                      onClick={() => remove(a)}
+                      className="ml-3 text-xs font-semibold text-rose-600 transition hover:text-rose-700 disabled:opacity-40"
+                    >
+                      Delete
+                    </button>
                   </td>
                 </tr>
               ))}

@@ -17,6 +17,7 @@ export default async function ChartOfAccountsPage() {
     name: a.name,
     type: a.type,
     subtype: a.subtype,
+    description: a.description,
     isActive: a.isActive,
   }));
 

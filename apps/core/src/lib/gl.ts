@@ -41,6 +41,39 @@ export async function createAccount(input: {
   });
 }
 
+export async function updateAccount(input: {
+  tenantId: string;
+  id: string;
+  accountNumber: string;
+  name: string;
+  type: GlAccountType;
+  subtype: string;
+  description: string;
+}): Promise<void> {
+  await withTenantContext(input.tenantId, async (tx) => {
+    await tx
+      .update(chartOfAccounts)
+      .set({
+        accountNumber: input.accountNumber,
+        name: input.name,
+        type: input.type,
+        subtype: input.subtype,
+        description: input.description,
+        updatedAt: new Date(),
+      })
+      .where(eq(chartOfAccounts.id, input.id));
+  });
+}
+
+export async function deleteAccount(
+  tenantId: string,
+  id: string,
+): Promise<void> {
+  await withTenantContext(tenantId, async (tx) => {
+    await tx.delete(chartOfAccounts).where(eq(chartOfAccounts.id, id));
+  });
+}
+
 /* ── Journal entries ────────────────────────────────────────────── */
 
 export interface JournalEntryRow extends JournalEntry {

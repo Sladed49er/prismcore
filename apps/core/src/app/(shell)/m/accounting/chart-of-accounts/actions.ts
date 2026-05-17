@@ -2,7 +2,12 @@
 
 import { revalidatePath } from "next/cache";
 import { getCurrentTenant } from "@/lib/current-tenant";
-import { createAccount, type GlAccountType } from "@/lib/gl";
+import {
+  createAccount,
+  updateAccount,
+  deleteAccount,
+  type GlAccountType,
+} from "@/lib/gl";
 
 export async function addAccount(input: {
   accountNumber: string;
@@ -21,5 +26,34 @@ export async function addAccount(input: {
     subtype: input.subtype.trim(),
     description: input.description.trim(),
   });
+  revalidatePath("/m/accounting/chart-of-accounts");
+}
+
+export async function editAccount(input: {
+  id: string;
+  accountNumber: string;
+  name: string;
+  type: GlAccountType;
+  subtype: string;
+  description: string;
+}): Promise<void> {
+  if (!input.id || !input.accountNumber.trim() || !input.name.trim()) return;
+  const tenant = await getCurrentTenant();
+  await updateAccount({
+    tenantId: tenant.id,
+    id: input.id,
+    accountNumber: input.accountNumber.trim(),
+    name: input.name.trim(),
+    type: input.type,
+    subtype: input.subtype.trim(),
+    description: input.description.trim(),
+  });
+  revalidatePath("/m/accounting/chart-of-accounts");
+}
+
+export async function removeAccount(id: string): Promise<void> {
+  if (!id) return;
+  const tenant = await getCurrentTenant();
+  await deleteAccount(tenant.id, id);
   revalidatePath("/m/accounting/chart-of-accounts");
 }
