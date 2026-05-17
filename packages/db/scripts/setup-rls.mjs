@@ -75,6 +75,10 @@ const TENANT_TABLES = [
   "accounting_periods",
   "surplus_lines_tax",
   "quarterly_tax_payments",
+  "policy_coverages",
+  "policy_endorsements",
+  "policy_cancellations",
+  "premium_installments",
 ];
 
 const owner = neon(ownerUrl);

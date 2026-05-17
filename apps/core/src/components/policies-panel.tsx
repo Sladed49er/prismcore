@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { addPolicy } from "@/app/(shell)/m/policies/actions";
+import { addPolicy } from "@/app/(shell)/m/policies/register/actions";
 
 export interface PolicyDTO {
   id: string;

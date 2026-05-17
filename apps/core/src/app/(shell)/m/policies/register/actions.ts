@@ -32,5 +32,5 @@ export async function addPolicy(input: {
     premiumCents,
     customValues: input.customValues,
   });
-  revalidatePath("/m/policies");
+  revalidatePath("/m/policies/register");
 }

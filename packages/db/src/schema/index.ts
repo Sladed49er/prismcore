@@ -29,3 +29,7 @@ export * from "./checks";
 export * from "./periods";
 export * from "./surplus-lines";
 export * from "./quarterly-taxes";
+export * from "./coverages";
+export * from "./endorsements";
+export * from "./cancellations";
+export * from "./installments";

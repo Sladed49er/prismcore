@@ -578,4 +578,37 @@ if (qtCount[0].n === 0) {
   console.log("• quarterly taxes already present — skipped");
 }
 
+// 17. Policy servicing — coverages, endorsements, cancellations, installments.
+const covCount = await sql.query("SELECT count(*)::int AS n FROM policy_coverages WHERE tenant_id = $1", [demo]);
+if (covCount[0].n === 0) {
+  const pols = await sql.query(
+    "SELECT id FROM policies WHERE tenant_id = $1 ORDER BY created_at LIMIT 2",
+    [demo],
+  );
+  if (pols.length >= 1) {
+    const p0 = pols[0].id;
+    await sql.query(
+      "INSERT INTO policy_coverages (tenant_id, policy_id, coverage_type, limit_text, deductible_cents, premium_cents, notes) VALUES ($1,$2,'General Liability','$1M / $2M',100000,480000,'Per-occurrence and aggregate'),($1,$2,'Property','$750,000 blanket',250000,310000,'Replacement cost valuation')",
+      [demo, p0],
+    );
+    await sql.query(
+      "INSERT INTO policy_endorsements (tenant_id, policy_id, endorsement_number, effective_date, description, premium_change_cents, status) VALUES ($1,$2,'END-001','2026-03-15','Added scheduled equipment',45000,'issued')",
+      [demo, p0],
+    );
+    await sql.query(
+      "INSERT INTO premium_installments (tenant_id, policy_id, installment_number, due_date, amount_cents, paid_cents, status) VALUES ($1,$2,1,'2026-01-15',79000,79000,'paid'),($1,$2,2,'2026-04-15',79000,0,'scheduled'),($1,$2,3,'2026-07-15',79000,0,'scheduled')",
+      [demo, p0],
+    );
+    if (pols.length >= 2) {
+      await sql.query(
+        "INSERT INTO policy_cancellations (tenant_id, policy_id, request_date, effective_date, reason, cancellation_type, return_premium_cents, status) VALUES ($1,$2,'2026-04-02','2026-04-30','Insured rewrote with another carrier','pro_rata',120000,'processed')",
+        [demo, pols[1].id],
+      );
+    }
+  }
+  console.log("✓ seeded policy coverages, endorsement, cancellation, installments");
+} else {
+  console.log("• policy servicing demo data already present — skipped");
+}
+
 console.log("✓ demo tenant seeded: modules, custom fields, 3 carrier connections, VoIP");
