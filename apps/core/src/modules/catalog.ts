@@ -36,6 +36,7 @@ const CATALOG: CatalogRow[] = [
   { id: "esign", name: "eSign & PDF", description: "Electronic signatures and PDF tooling.", category: "core", icon: "pen", price: 800 },
   { id: "reports", name: "Reports", description: "Custom report builder across every module.", category: "core", icon: "bar-chart", price: 700 },
   { id: "ai_reports", name: "AI Reports", description: "Natural-language report builder.", category: "core", icon: "sparkles", dependsOn: ["reports"], price: 2500, unit: "per_tenant" },
+  { id: "strategy", name: "Strategy Monitor", description: "Live KPI dashboard — metrics, targets, and alerting rules.", category: "core", icon: "gauge", dependsOn: ["reports"], price: 1500, unit: "per_tenant" },
   { id: "marketing", name: "Marketing", description: "Campaigns, templates, and nurture workflows.", category: "core", icon: "megaphone", dependsOn: ["clients"], price: 1200 },
   { id: "vault", name: "Password Vault", description: "Zero-knowledge credential management.", category: "core", icon: "lock", price: 400 },
   { id: "contracts", name: "Contracts", description: "Vendor contract tracking and renewals.", category: "core", icon: "file-check", price: 600 },
