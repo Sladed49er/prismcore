@@ -97,6 +97,10 @@ Monorepo scaffolded and verified (typecheck + production build both green).
 Verification: `npm run typecheck` — 4/4 packages clean. `npm run build` — `apps/core`
 compiles, `/` prerenders static.
 
+**Repo & deploy** — renamed `prism-core` → `prismcore`. GitHub: `Sladed49er/prismcore`
+(public). Live on Vercel: https://prismcore-gray.vercel.app — monorepo, project root
+directory `apps/core`, deployment protection disabled (public).
+
 ## Reference
 
 - Source survey: PrismAMS = `~/Tresorit/ClaudeProjects/prismams/` (Next.js 16, 35
