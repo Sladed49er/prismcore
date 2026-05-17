@@ -1,5 +1,18 @@
 import type { AnyPgColumn, PgTable } from "drizzle-orm/pg-core";
-import { clients, policies, invoices, claims, calls } from "@prismcore/db";
+import {
+  clients,
+  policies,
+  invoices,
+  claims,
+  calls,
+  producers,
+  commissions,
+  renewals,
+  opportunities,
+  tasks,
+  vendors,
+  bills,
+} from "@prismcore/db";
 
 /**
  * The report model — the semantic layer the report builder queries.
@@ -10,6 +23,8 @@ import { clients, policies, invoices, claims, calls } from "@prismcore/db";
  * relationships; the engine resolves the join path. This declared model is
  * the safety boundary: the AI and the builder can only ever reference fields
  * and joins that exist here — never arbitrary SQL.
+ *
+ * Adding an entity is just another block here — no engine changes.
  */
 
 export type FieldType = "text" | "number" | "money" | "date" | "boolean";
@@ -76,13 +91,7 @@ export const REPORT_ENTITIES: Record<string, ReportEntity> = {
       { key: "createdAt", label: "Created", type: "date", column: policies.createdAt },
     ],
     relationships: [
-      {
-        key: "client",
-        label: "Client",
-        target: "clients",
-        localColumn: policies.clientId,
-        foreignColumn: clients.id,
-      },
+      { key: "client", label: "Client", target: "clients", localColumn: policies.clientId, foreignColumn: clients.id },
     ],
   },
   invoices: {
@@ -99,13 +108,7 @@ export const REPORT_ENTITIES: Record<string, ReportEntity> = {
       { key: "createdAt", label: "Created", type: "date", column: invoices.createdAt },
     ],
     relationships: [
-      {
-        key: "client",
-        label: "Client",
-        target: "clients",
-        localColumn: invoices.clientId,
-        foreignColumn: clients.id,
-      },
+      { key: "client", label: "Client", target: "clients", localColumn: invoices.clientId, foreignColumn: clients.id },
     ],
   },
   claims: {
@@ -122,13 +125,106 @@ export const REPORT_ENTITIES: Record<string, ReportEntity> = {
       { key: "createdAt", label: "Created", type: "date", column: claims.createdAt },
     ],
     relationships: [
-      {
-        key: "policy",
-        label: "Policy",
-        target: "policies",
-        localColumn: claims.policyId,
-        foreignColumn: policies.id,
-      },
+      { key: "policy", label: "Policy", target: "policies", localColumn: claims.policyId, foreignColumn: policies.id },
+    ],
+  },
+  commissions: {
+    key: "commissions",
+    label: "Commissions",
+    table: commissions,
+    tenantColumn: commissions.tenantId,
+    fields: [
+      { key: "amountCents", label: "Amount", type: "money", column: commissions.amountCents },
+      { key: "ratePercent", label: "Rate %", type: "text", column: commissions.ratePercent },
+      { key: "status", label: "Status", type: "text", column: commissions.status },
+      { key: "receivedDate", label: "Received date", type: "date", column: commissions.receivedDate },
+      { key: "createdAt", label: "Created", type: "date", column: commissions.createdAt },
+    ],
+    relationships: [
+      { key: "policy", label: "Policy", target: "policies", localColumn: commissions.policyId, foreignColumn: policies.id },
+    ],
+  },
+  renewals: {
+    key: "renewals",
+    label: "Renewals",
+    table: renewals,
+    tenantColumn: renewals.tenantId,
+    fields: [
+      { key: "stage", label: "Stage", type: "text", column: renewals.stage },
+      { key: "dueDate", label: "Due date", type: "date", column: renewals.dueDate },
+      { key: "notes", label: "Notes", type: "text", column: renewals.notes },
+      { key: "createdAt", label: "Created", type: "date", column: renewals.createdAt },
+    ],
+    relationships: [
+      { key: "policy", label: "Policy", target: "policies", localColumn: renewals.policyId, foreignColumn: policies.id },
+    ],
+  },
+  opportunities: {
+    key: "opportunities",
+    label: "Opportunities",
+    table: opportunities,
+    tenantColumn: opportunities.tenantId,
+    fields: [
+      { key: "name", label: "Name", type: "text", column: opportunities.name },
+      { key: "stage", label: "Stage", type: "text", column: opportunities.stage },
+      { key: "valueCents", label: "Value", type: "money", column: opportunities.valueCents },
+      { key: "notes", label: "Notes", type: "text", column: opportunities.notes },
+      { key: "expectedCloseDate", label: "Expected close", type: "date", column: opportunities.expectedCloseDate },
+      { key: "createdAt", label: "Created", type: "date", column: opportunities.createdAt },
+    ],
+    relationships: [
+      { key: "client", label: "Client", target: "clients", localColumn: opportunities.clientId, foreignColumn: clients.id },
+    ],
+  },
+  tasks: {
+    key: "tasks",
+    label: "Tasks",
+    table: tasks,
+    tenantColumn: tasks.tenantId,
+    fields: [
+      { key: "title", label: "Title", type: "text", column: tasks.title },
+      { key: "description", label: "Description", type: "text", column: tasks.description },
+      { key: "status", label: "Status", type: "text", column: tasks.status },
+      { key: "priority", label: "Priority", type: "text", column: tasks.priority },
+      { key: "dueDate", label: "Due date", type: "date", column: tasks.dueDate },
+      { key: "assignee", label: "Assignee", type: "text", column: tasks.assignee },
+      { key: "createdAt", label: "Created", type: "date", column: tasks.createdAt },
+    ],
+    relationships: [],
+  },
+  vendors: {
+    key: "vendors",
+    label: "Vendors",
+    table: vendors,
+    tenantColumn: vendors.tenantId,
+    fields: [
+      { key: "name", label: "Name", type: "text", column: vendors.name },
+      { key: "type", label: "Type", type: "text", column: vendors.type },
+      { key: "email", label: "Email", type: "text", column: vendors.email },
+      { key: "phone", label: "Phone", type: "text", column: vendors.phone },
+      { key: "paymentTerms", label: "Payment terms", type: "text", column: vendors.paymentTerms },
+      { key: "is1099", label: "1099", type: "boolean", column: vendors.is1099 },
+      { key: "createdAt", label: "Created", type: "date", column: vendors.createdAt },
+    ],
+    relationships: [],
+  },
+  bills: {
+    key: "bills",
+    label: "Bills",
+    table: bills,
+    tenantColumn: bills.tenantId,
+    fields: [
+      { key: "billNumber", label: "Bill number", type: "text", column: bills.billNumber },
+      { key: "billDate", label: "Bill date", type: "date", column: bills.billDate },
+      { key: "dueDate", label: "Due date", type: "date", column: bills.dueDate },
+      { key: "amountCents", label: "Amount", type: "money", column: bills.amountCents },
+      { key: "amountPaidCents", label: "Amount paid", type: "money", column: bills.amountPaidCents },
+      { key: "status", label: "Status", type: "text", column: bills.status },
+      { key: "memo", label: "Memo", type: "text", column: bills.memo },
+      { key: "createdAt", label: "Created", type: "date", column: bills.createdAt },
+    ],
+    relationships: [
+      { key: "vendor", label: "Vendor", target: "vendors", localColumn: bills.vendorId, foreignColumn: vendors.id },
     ],
   },
   calls: {

@@ -110,7 +110,9 @@ export async function runReport(
   spec: ReportSpec,
 ): Promise<ReportResult> {
   const base = getEntity(spec.base);
-  const grouped = spec.groupBy.length > 0;
+  // "Aggregated" output whenever there are aggregates — with no groupBy that
+  // is a single summary row (a scalar metric); with groupBy, one row per group.
+  const grouped = spec.groupBy.length > 0 || spec.aggregates.length > 0;
 
   // ── Which entities does the report touch? Collect the joins to reach them.
   const refs: FieldRef[] = [
@@ -200,7 +202,7 @@ export async function runReport(
     }
     q = q.where(and(...conditions));
 
-    if (grouped) {
+    if (spec.groupBy.length > 0) {
       q = q.groupBy(...spec.groupBy.map((r) => getField(r.entity, r.field).column));
     }
 
