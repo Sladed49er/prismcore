@@ -6,10 +6,17 @@
  *   - `appDb()`   connects as a NOBYPASSRLS role. All tenant-scoped runtime access,
  *                 always through `withTenantContext()` so RLS policies apply.
  */
-import { Pool } from "@neondatabase/serverless";
+import { Pool, neonConfig } from "@neondatabase/serverless";
 import { drizzle, type NeonDatabase } from "drizzle-orm/neon-serverless";
 import { sql } from "drizzle-orm";
+import ws from "ws";
 import * as schema from "./schema";
+
+// Neon's pooled/session driver needs a WebSocket. Node 22+ has a global one;
+// older runtimes (and some Vercel functions) do not — fall back to `ws`.
+if (typeof globalThis.WebSocket === "undefined") {
+  neonConfig.webSocketConstructor = ws;
+}
 
 type Schema = typeof schema;
 export type Database = NeonDatabase<Schema>;
