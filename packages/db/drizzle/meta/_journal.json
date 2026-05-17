@@ -43,6 +43,13 @@
       "when": 1778990921273,
       "tag": "0005_cooing_junta",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1778991362073,
+      "tag": "0006_dizzy_jean_grey",
+      "breakpoints": true
     }
   ]
 }

@@ -112,4 +112,40 @@ if (existing[0].n === 0) {
   console.log("• tickets already present — skipped calls/tickets");
 }
 
+// 6. Clients + policies — only when the demo has no clients yet.
+const clientCount = await sql.query("SELECT count(*)::int AS n FROM clients WHERE tenant_id = $1", [demo]);
+if (clientCount[0].n === 0) {
+  const CLIENTS = [
+    ["person", "Maria", "Delgado", null, "maria.delgado@example.com", "+1 503-555-0142", "Portland", "OR", "active"],
+    ["business", null, null, "Becker Construction LLC", "ap@beckerconstruction.example", "+1 206-555-0188", "Seattle", "WA", "active"],
+    ["person", "Janet", "Wu", null, "janet.wu@example.com", "+1 360-555-0119", "Vancouver", "WA", "active"],
+    ["business", null, null, "Cascade Cannabis Co.", "ops@cascadecannabis.example", "+1 503-555-0177", "Bend", "OR", "prospect"],
+    ["person", "Greg", "Mathers", null, "greg.mathers@example.com", "+1 509-555-0150", "Spokane", "WA", "prospect"],
+  ];
+  const clientIds = [];
+  for (const [type, fn, ln, bn, email, phone, city, state, status] of CLIENTS) {
+    const r = await sql.query(
+      "INSERT INTO clients (tenant_id, type, first_name, last_name, business_name, email, phone, city, state, status) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING id",
+      [demo, type, fn, ln, bn, email, phone, city, state, status],
+    );
+    clientIds.push(r[0].id);
+  }
+  const POLICIES = [
+    [0, "CAU-104882", "Commercial Auto", "HaulGuard Underwriters", "active", "2026-01-15", "2027-01-15", 487500],
+    [1, "GL-229104", "General Liability", "Cascade Mutual Insurance", "active", "2026-03-01", "2027-03-01", 312000],
+    [1, "BR-229105", "Builders Risk", "Cascade Mutual Insurance", "active", "2026-03-01", "2027-03-01", 158000],
+    [2, "HO-771203", "Homeowners", "Cascade Mutual Insurance", "active", "2025-11-20", "2026-11-20", 214000],
+    [3, "GL-300447", "General Liability", "Greenleaf Specialty", "quoted", "2026-06-01", "2027-06-01", 680000],
+  ];
+  for (const [ci, num, lob, carrier, status, eff, exp, premium] of POLICIES) {
+    await sql.query(
+      "INSERT INTO policies (tenant_id, client_id, policy_number, line_of_business, carrier, status, effective_date, expiration_date, premium_cents) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)",
+      [demo, clientIds[ci], num, lob, carrier, status, eff, exp, premium],
+    );
+  }
+  console.log("✓ seeded 5 clients, 5 policies");
+} else {
+  console.log("• clients already present — skipped clients/policies");
+}
+
 console.log("✓ demo tenant seeded: modules, custom fields, 3 carrier connections, VoIP");

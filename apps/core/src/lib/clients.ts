@@ -5,6 +5,19 @@ export type { Client };
 export type ClientType = "person" | "business";
 export type ClientStatus = "prospect" | "active" | "inactive";
 
+/** Human-readable label for a client record. Shared by Clients, Policies, etc. */
+export function clientDisplayName(c: {
+  type: string;
+  firstName: string | null;
+  lastName: string | null;
+  businessName: string | null;
+  email: string | null;
+}): string {
+  if (c.type === "business") return c.businessName ?? "Unnamed business";
+  const name = [c.firstName, c.lastName].filter(Boolean).join(" ");
+  return name || c.email || "Unnamed contact";
+}
+
 /** A tenant's clients — RLS-isolated via withTenantContext. */
 export async function listClients(tenantId: string): Promise<Client[]> {
   return withTenantContext(tenantId, async (tx) =>
