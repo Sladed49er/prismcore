@@ -59,7 +59,7 @@ They adapt to the module-SDK contract and get poured in. Multi-tenancy (RLS,
 | 1–2  | Repo scaffold, module-SDK contract, `packages/db` (kernel schema) | ✅ 2026-05-16 |
 | 3–6  | Kernel: registry + runtime loader + new shell; composer onboarding skeleton | ✅ 2026-05-16 |
 | 7–10 | Pour in AMS modules onto the SDK; customization engine MVP (fields + forms) | ✅ 2026-05-16 — catalog, Neon/DB, guided onboarding, custom fields |
-| 11–14| API clearinghouse MVP + carrier marketplace stub; `apps/voice` screen-pop demo | 🔄 clearinghouse done 2026-05-16; apps/voice next |
+| 11–14| API clearinghouse + PrismVoice (CallIntel rebuilt as a native module) | ✅ 2026-05-16 |
 | 15–17| Demo tenant — all 4 pillars working end-to-end; marketing capture | todo |
 | 18   | Dry run with Tony | todo |
 
@@ -219,6 +219,33 @@ module service/schema logic module by module behind the contract.
 Pillar 3 (API clearinghouse / marketplace) is now live. Remaining in 11–14:
 `apps/voice` — the new-branded CallIntel app with the screen-pop demo, built
 alongside the live `voip-middleware-portal` so Mitchell Reed is never at risk.
+
+### Days 11–14 (part 2) — 2026-05-16 ✅ PrismVoice
+
+CallIntel **rebuilt** (not ported) as a native Prism Core module, rebranded
+**PrismVoice**. Decision: a separate `apps/voice` app would re-create the kernel,
+auth, tenancy, and customization that prism-core already has — so CallIntel is
+the `telephony` module instead, inheriting all of it. "The call center, inside
+Prism."
+
+- New schema: `tenant_voip_connections` + `calls` (tenant-scoped call log);
+  migration 0003.
+- `/m/telephony` is a real page (PrismVoice): connect a VoIP provider (Zoom,
+  RingCentral, Dialpad, GoTo, Vonage), and a call log where each call is
+  screen-popped to the caller with an AI summary + disposition. "Simulate
+  inbound call" demonstrates the screen pop.
+- `/api/voip/webhook` — wire-compatible screen-pop endpoint. Cutover for a legacy
+  CallIntel customer (e.g. Mitchell Reed) = repoint their VoIP webhook here; the
+  legacy `voip-middleware-portal` keeps running untouched until the switch flips.
+- Updated capabilities vs the legacy portal: one login, native tenancy, calls
+  customizable via the customization engine, cross-tenant visibility in /admin.
+
+**All four June-3 demo pillars are now live**: composer, self-service
+customization, API clearinghouse, and CallIntel/PrismVoice inside Prism.
+
+Follow-ons: AI phone-receptionist (needs an off-platform voice worker — LiveKit);
+real number-to-client screen-pop matching once the Clients module has real data;
+per-tenant API-key auth on the webhook.
 
 ## Reference
 
