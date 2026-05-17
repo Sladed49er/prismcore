@@ -1,4 +1,5 @@
 import { loadCurrentTenant, requireModule } from "@/lib/kernel";
+import { loadTerms, moduleLabel } from "@/lib/terminology";
 import {
   seedCarriers,
   listCarriers,
@@ -19,6 +20,7 @@ export default async function ClearinghousePage() {
   await seedCarriers();
 
   const { config } = await loadCurrentTenant();
+  const terms = await loadTerms(config.id);
   const [carriers, connectedIds] = await Promise.all([
     listCarriers(),
     listConnections(config.id),
@@ -40,7 +42,9 @@ export default async function ClearinghousePage() {
       <p className="text-xs font-semibold uppercase tracking-wide text-indigo-500">
         Integration
       </p>
-      <h1 className="mt-1 text-2xl font-semibold">API Clearinghouse</h1>
+      <h1 className="mt-1 text-2xl font-semibold">
+        {moduleLabel(terms, "api_clearinghouse", "API Clearinghouse")}
+      </h1>
       <p className="mt-2 max-w-2xl text-gray-600">
         One connection, every market. Browse carriers and MGAs in the shared
         pool — no SDK licensing fees, no per-call charges. Connect what you need;

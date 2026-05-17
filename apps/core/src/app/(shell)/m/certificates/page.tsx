@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { requireModule } from "@/lib/kernel";
+import { loadCurrentTenant, requireModule } from "@/lib/kernel";
+import { loadTerms, moduleLabel } from "@/lib/terminology";
 
 /** Sub-modules that are built and live. */
 const BUILT = [
@@ -30,13 +31,17 @@ const PLANNED: string[] = [];
 
 export default async function CertificatesHub() {
   await requireModule("certificates");
+  const { config } = await loadCurrentTenant();
+  const terms = await loadTerms(config.id);
 
   return (
     <div className="mx-auto max-w-4xl px-8 py-10">
       <p className="text-xs font-semibold uppercase tracking-wide text-indigo-500">
         Insurance
       </p>
-      <h1 className="mt-1 text-2xl font-semibold">Certificates</h1>
+      <h1 className="mt-1 text-2xl font-semibold">
+        {moduleLabel(terms, "certificates", "Certificates")}
+      </h1>
       <p className="mt-2 max-w-2xl text-gray-600">
         Certificate-of-insurance management — the register, the holders on
         file, reusable templates, and inbound requests.

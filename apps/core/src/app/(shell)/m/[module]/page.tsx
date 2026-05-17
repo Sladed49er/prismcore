@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
-import { requireModule } from "@/lib/kernel";
+import { loadCurrentTenant, requireModule } from "@/lib/kernel";
+import { loadTerms, moduleLabel } from "@/lib/terminology";
 import { getRegistry } from "@/lib/registry";
 
 /**
@@ -18,12 +19,17 @@ export default async function ModulePage({
   const def = getRegistry().get(module);
   if (!def) notFound();
 
+  const { config } = await loadCurrentTenant();
+  const terms = await loadTerms(config.id);
+
   return (
     <div className="mx-auto max-w-4xl px-8 py-10">
       <p className="text-xs font-semibold uppercase tracking-wide text-indigo-500">
         {def.category}
       </p>
-      <h1 className="mt-1 text-2xl font-semibold">{def.name}</h1>
+      <h1 className="mt-1 text-2xl font-semibold">
+        {moduleLabel(terms, def.id, def.name)}
+      </h1>
       <p className="mt-2 text-gray-600">{def.description}</p>
       <div className="mt-6 rounded-xl border border-dashed border-gray-300 bg-white p-6 text-sm text-gray-500">
         Module shell. This module is registered with the kernel and enabled for the

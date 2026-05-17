@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { requireModule } from "@/lib/kernel";
+import { loadCurrentTenant, requireModule } from "@/lib/kernel";
+import { loadTerms, moduleLabel } from "@/lib/terminology";
 
 /** Sub-modules that are built and live. */
 const BUILT = [
@@ -30,13 +31,17 @@ const PLANNED: string[] = [];
 
 export default async function CarriersHub() {
   await requireModule("carriers");
+  const { config } = await loadCurrentTenant();
+  const terms = await loadTerms(config.id);
 
   return (
     <div className="mx-auto max-w-4xl px-8 py-10">
       <p className="text-xs font-semibold uppercase tracking-wide text-indigo-500">
         Insurance
       </p>
-      <h1 className="mt-1 text-2xl font-semibold">Carriers</h1>
+      <h1 className="mt-1 text-2xl font-semibold">
+        {moduleLabel(terms, "carriers", "Carriers")}
+      </h1>
       <p className="mt-2 max-w-2xl text-gray-600">
         The agency&rsquo;s carrier relationships — the directory, appointments,
         the people at each market, and their underwriting guidelines.

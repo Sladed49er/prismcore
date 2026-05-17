@@ -1,10 +1,12 @@
 import { loadCurrentTenant, requireModule } from "@/lib/kernel";
+import { loadTerms, moduleLabel } from "@/lib/terminology";
 import { listIntake } from "@/lib/intake";
 import { IntakePanel, type IntakeDTO } from "@/components/intake-panel";
 
 export default async function IntakeFormsPage() {
   await requireModule("intake_forms");
   const { config } = await loadCurrentTenant();
+  const terms = await loadTerms(config.id);
   const rows = await listIntake(config.id);
 
   const submissions: IntakeDTO[] = rows.map((s) => ({
@@ -21,7 +23,9 @@ export default async function IntakeFormsPage() {
       <p className="text-xs font-semibold uppercase tracking-wide text-indigo-500">
         Insurance
       </p>
-      <h1 className="mt-1 text-2xl font-semibold">Intake Forms</h1>
+      <h1 className="mt-1 text-2xl font-semibold">
+        {moduleLabel(terms, "intake_forms", "Intake Forms")}
+      </h1>
       <p className="mt-2 max-w-2xl text-gray-600">
         Prospects captured through public intake forms — worked from new lead to
         converted.

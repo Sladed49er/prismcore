@@ -1,4 +1,5 @@
 import { loadCurrentTenant, requireModule } from "@/lib/kernel";
+import { loadTerms, moduleLabel } from "@/lib/terminology";
 import { listSignatureRequests } from "@/lib/esign";
 import {
   EsignPanel,
@@ -8,6 +9,7 @@ import {
 export default async function EsignPage() {
   await requireModule("esign");
   const { config } = await loadCurrentTenant();
+  const terms = await loadTerms(config.id);
   const rows = await listSignatureRequests(config.id);
 
   const requests: SignatureRequestDTO[] = rows.map((r) => ({
@@ -24,7 +26,9 @@ export default async function EsignPage() {
       <p className="text-xs font-semibold uppercase tracking-wide text-indigo-500">
         Core
       </p>
-      <h1 className="mt-1 text-2xl font-semibold">eSign &amp; PDF</h1>
+      <h1 className="mt-1 text-2xl font-semibold">
+        {moduleLabel(terms, "esign", "eSign & PDF")}
+      </h1>
       <p className="mt-2 max-w-2xl text-gray-600">
         Electronic signature requests — sent, signed, and tracked.
       </p>

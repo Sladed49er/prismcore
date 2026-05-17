@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { requireModule } from "@/lib/kernel";
+import { loadCurrentTenant, requireModule } from "@/lib/kernel";
+import { loadTerms, moduleLabel } from "@/lib/terminology";
 
 /** Sub-modules that are built and live. */
 const BUILT = [
@@ -30,13 +31,17 @@ const PLANNED: string[] = [];
 
 export default async function ClientsHub() {
   await requireModule("clients");
+  const { config } = await loadCurrentTenant();
+  const terms = await loadTerms(config.id);
 
   return (
     <div className="mx-auto max-w-4xl px-8 py-10">
       <p className="text-xs font-semibold uppercase tracking-wide text-indigo-500">
         Core
       </p>
-      <h1 className="mt-1 text-2xl font-semibold">Clients &amp; CRM</h1>
+      <h1 className="mt-1 text-2xl font-semibold">
+        {moduleLabel(terms, "clients", "Clients & CRM")}
+      </h1>
       <p className="mt-2 max-w-2xl text-gray-600">
         The client record at the center of the platform — the register and the
         full CRM around it: contacts, interaction history, and locations.

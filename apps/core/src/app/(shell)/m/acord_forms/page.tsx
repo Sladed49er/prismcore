@@ -1,4 +1,5 @@
 import { loadCurrentTenant, requireModule } from "@/lib/kernel";
+import { loadTerms, moduleLabel } from "@/lib/terminology";
 import { listAcordForms } from "@/lib/acord";
 import { listClients, clientDisplayName } from "@/lib/clients";
 import {
@@ -10,6 +11,7 @@ import {
 export default async function AcordFormsPage() {
   await requireModule("acord_forms");
   const { config } = await loadCurrentTenant();
+  const terms = await loadTerms(config.id);
   const [formRows, clientRows] = await Promise.all([
     listAcordForms(config.id),
     listClients(config.id),
@@ -32,7 +34,9 @@ export default async function AcordFormsPage() {
       <p className="text-xs font-semibold uppercase tracking-wide text-indigo-500">
         Insurance
       </p>
-      <h1 className="mt-1 text-2xl font-semibold">ACORD Forms</h1>
+      <h1 className="mt-1 text-2xl font-semibold">
+        {moduleLabel(terms, "acord_forms", "ACORD Forms")}
+      </h1>
       <p className="mt-2 max-w-2xl text-gray-600">
         ACORD applications and supplemental forms prepared for clients.
       </p>
