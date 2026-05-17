@@ -32,12 +32,20 @@ export default async function AdminPage() {
             Signed in as {viewer.email} — platform administrator, full access.
           </p>
         </div>
-        <Link
-          href="/dashboard"
-          className="shrink-0 text-sm text-gray-400 transition hover:text-gray-600"
-        >
-          ← Workspace
-        </Link>
+        <div className="flex shrink-0 items-center gap-4 text-sm">
+          <Link
+            href="/admin/tickets"
+            className="font-medium text-indigo-600 transition hover:text-indigo-700"
+          >
+            Ticket queue →
+          </Link>
+          <Link
+            href="/dashboard"
+            className="text-gray-400 transition hover:text-gray-600"
+          >
+            ← Workspace
+          </Link>
+        </div>
       </div>
 
       <div className="mt-6 overflow-hidden rounded-xl border border-gray-200 bg-white">
