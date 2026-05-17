@@ -12,7 +12,10 @@
         "CRON_SECRET",
         "ANTHROPIC_API_KEY",
         "RESEND_API_KEY",
-        "STRATEGY_ALERT_FROM"
+        "STRATEGY_ALERT_FROM",
+        "STRIPE_SECRET_KEY",
+        "NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY",
+        "STRIPE_WEBHOOK_SECRET"
       ]
     },
     "dev": {
