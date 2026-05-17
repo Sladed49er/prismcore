@@ -263,6 +263,30 @@ customer panel, fully siloed.
 Siloing note: isolation is enforced today by tenant-scoped queries. DB-level RLS
 on these tables remains the documented hardening follow-on.
 
+### RLS hardening — 2026-05-16 ✅ Database-enforced isolation
+
+Supersedes the earlier "RLS deferred" notes. Tenant isolation is now enforced by
+Postgres, not just by app-layer query scoping.
+
+- `prismcore_app` — a LOGIN role with NOBYPASSRLS. RLS + a `tenant_isolation`
+  policy (USING + WITH CHECK on `app.current_tenant_id`) on all 8 tenant-scoped
+  tables. Idempotent setup: `packages/db/scripts/setup-rls.mjs`.
+- Tenant-facing lib functions (customization, clearinghouse connections, voip,
+  tickets) run through `withTenantContext` — the RLS-bound role inside a tx with
+  the tenant GUC set. Cross-tenant platform-admin ops stay on the owner role,
+  gated by `requireAdmin`.
+- `DATABASE_URL_APP` (the app-role connection) set locally and on Vercel.
+- Verified twice: the setup script (app role, no context → 0 rows; demo context
+  → rows) and a live end-to-end test (POST to the webhook → `withTenantContext`
+  → RLS `WITH CHECK` accepted the insert; the row landed for the demo tenant).
+
+This is the enforcement behind "a client can only change their own tenant" — the
+answer to the isolation question: one shared codebase, customization-as-data,
+RLS as the hard boundary. No separate instances.
+
+Remaining hardening (smaller): per-tenant API-key auth on the public VoIP
+webhook; a Clerk production instance (needs a custom domain).
+
 ## Reference
 
 - Source survey: PrismAMS = `~/Tresorit/ClaudeProjects/prismams/` (Next.js 16, 35
