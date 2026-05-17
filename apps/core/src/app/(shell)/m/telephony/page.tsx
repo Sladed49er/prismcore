@@ -41,6 +41,7 @@ export default async function PrismVoicePage() {
     aiSummary: c.aiSummary,
     disposition: c.disposition,
     occurredAt: c.occurredAt.toISOString(),
+    amsSyncStatus: c.amsSyncStatus,
   }));
 
   // The screen-pop credentials never leave the server — only the readable

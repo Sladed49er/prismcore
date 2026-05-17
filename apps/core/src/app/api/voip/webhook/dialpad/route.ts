@@ -14,6 +14,7 @@ import {
   getAmsConnection,
   buildAms360CustomerUrl,
 } from "@/lib/ams";
+import { markCallPendingAmsSync } from "@/lib/ams-sync";
 import {
   type DialpadCallEvent,
   mapDialpadCallStatus,
@@ -314,8 +315,15 @@ async function handleCallEnded(
     await patchProviderCall(tenantId, callId, { recordingUrl });
   }
 
-  // Log the call into the tenant's AMS, when auto-sync is on.
-  await syncCallToAms(tenantId, callId);
+  // Queue the AMS write-back. The note is NOT written inline: a once-a-minute
+  // worker drains the queue, so a slow or down AMS delays the note instead of
+  // dropping it, and the delay lets the Dialpad AI recap arrive in time to be
+  // included. `markCallPendingAmsSync` only flags the row — the worker decides
+  // at run time whether the call is actually noteable.
+  const amsConn = await getAmsConnection(tenantId);
+  if (amsConn?.autoSyncCalls) {
+    await markCallPendingAmsSync(tenantId, callId);
+  }
 }
 
 async function handleCallMissed(
@@ -376,45 +384,6 @@ async function handleRecap(
   await patchProviderCall(tenantId, String(event.call_id), {
     aiSummary: summary,
   });
-}
-
-/** Write a call activity note onto the matched AMS contact, best-effort. */
-async function syncCallToAms(
-  tenantId: string,
-  providerCallId: string,
-): Promise<void> {
-  try {
-    const conn = await getAmsConnection(tenantId);
-    if (!conn || !conn.autoSyncCalls) return;
-    const call = await getProviderCall(tenantId, providerCallId);
-    if (!call || !call.matchedContactId) return;
-
-    const ams = await getAmsAdapter(tenantId);
-    if (!ams) return;
-
-    const mins = Math.round(call.durationSeconds / 60);
-    const verb = call.direction === "inbound" ? "Inbound" : "Outbound";
-    const body = [
-      `${verb} call — ${call.fromNumber}`,
-      call.agentName ? `Handled by: ${call.agentName}` : null,
-      `Duration: ${mins} min`,
-      call.disposition ? `Disposition: ${call.disposition}` : null,
-      call.aiSummary ? `\nSummary: ${call.aiSummary}` : null,
-    ]
-      .filter(Boolean)
-      .join("\n");
-
-    await ams.createActivityNote(call.matchedContactId, {
-      contactId: call.matchedContactId,
-      type: "call",
-      subject: `${verb} call logged by PrismVoice`,
-      body,
-      activityDate: call.occurredAt,
-      agentName: call.agentName ?? undefined,
-    });
-  } catch (error) {
-    console.error("[Dialpad webhook] AMS call-note sync failed:", error);
-  }
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────

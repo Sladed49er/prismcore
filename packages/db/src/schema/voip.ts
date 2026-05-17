@@ -110,6 +110,21 @@ export const calls = pgTable(
     recordingUrl: text("recording_url"),
     transcript: text("transcript"),
     endedAt: timestamp("ended_at", { withTimezone: true }),
+    /* ── AMS write-back ──────────────────────────────────────────────────
+     * The call is logged into the tenant's AMS as an activity note by a
+     * durable background worker, not inline in the webhook — so an AMS
+     * outage delays the note, never drops it. These columns ARE the queue.
+     *   not_synced — nothing to do (manual/demo call, or AMS off)
+     *   pending    — due to sync at/after `amsSyncAfter`
+     *   synced     — note written, `amsNoteId` holds the AMS note id
+     *   skipped    — unmatched / missed call, nothing to write
+     *   failed     — gave up after `amsSyncAttempts` tries                */
+    amsSyncStatus: text("ams_sync_status").notNull().default("not_synced"),
+    amsSyncAfter: timestamp("ams_sync_after", { withTimezone: true }),
+    amsSyncedAt: timestamp("ams_synced_at", { withTimezone: true }),
+    amsSyncAttempts: integer("ams_sync_attempts").notNull().default(0),
+    amsSyncError: text("ams_sync_error"),
+    amsNoteId: text("ams_note_id"),
     occurredAt: timestamp("occurred_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -120,6 +135,10 @@ export const calls = pgTable(
     uniqueIndex("calls_provider_call_uq")
       .on(t.tenantId, t.providerCallId)
       .where(sql`${t.providerCallId} is not null`),
+    // The AMS-sync worker polls this — only the rows still due to sync.
+    index("calls_ams_sync_idx")
+      .on(t.amsSyncStatus, t.amsSyncAfter)
+      .where(sql`${t.amsSyncStatus} = 'pending'`),
   ],
 );
 

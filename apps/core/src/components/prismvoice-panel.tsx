@@ -36,7 +36,16 @@ export interface CallDTO {
   aiSummary: string | null;
   disposition: string | null;
   occurredAt: string;
+  /** AMS write-back state — not_synced | pending | synced | skipped | failed. */
+  amsSyncStatus: string;
 }
+
+/** AMS write-back badge for a call, or undefined when there's nothing to show. */
+const AMS_SYNC_BADGE: Record<string, { label: string; className: string }> = {
+  pending: { label: "AMS sync pending", className: "bg-amber-50 text-amber-700" },
+  synced: { label: "Synced to AMS", className: "bg-green-50 text-green-700" },
+  failed: { label: "AMS sync failed", className: "bg-rose-50 text-rose-700" },
+};
 
 const EMPTY_CREDS: VoipCredentials = {
   accountId: "",
@@ -320,11 +329,20 @@ export function PrismVoicePanel({
                     {c.aiSummary}
                   </p>
                 ) : null}
-                {c.disposition ? (
-                  <span className="mt-2 inline-block rounded-md bg-indigo-50 px-2 py-0.5 text-xs font-medium text-indigo-700">
-                    {c.disposition}
-                  </span>
-                ) : null}
+                <div className="mt-2 flex flex-wrap items-center gap-2">
+                  {c.disposition ? (
+                    <span className="inline-block rounded-md bg-indigo-50 px-2 py-0.5 text-xs font-medium text-indigo-700">
+                      {c.disposition}
+                    </span>
+                  ) : null}
+                  {AMS_SYNC_BADGE[c.amsSyncStatus] ? (
+                    <span
+                      className={`inline-block rounded-md px-2 py-0.5 text-xs font-medium ${AMS_SYNC_BADGE[c.amsSyncStatus]!.className}`}
+                    >
+                      {AMS_SYNC_BADGE[c.amsSyncStatus]!.label}
+                    </span>
+                  ) : null}
+                </div>
               </div>
             ))
           )}
