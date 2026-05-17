@@ -204,6 +204,13 @@
       "when": 1779002489306,
       "tag": "0028_last_echo",
       "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "7",
+      "when": 1779003024262,
+      "tag": "0029_rich_captain_marvel",
+      "breakpoints": true
     }
   ]
 }

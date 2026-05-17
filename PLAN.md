@@ -456,8 +456,22 @@ tables.
 Accounting (18), Policies & Servicing (9), Claims (7), Commissions (6),
 Renewals (4), Clients & CRM (4), Pipeline & Marketing (4), Documents (4),
 Tasks (4), Certificates (4), Carriers (4) — 68 sub-modules, 80 RLS tables,
-migrations through 0028. Next: platform-admin console + customer
-support-ticketing console.
+migrations through 0028.
+
+### Platform-admin console — deep build — 2026-05-17 ✅
+
+`/admin` is now a **console hub** (guarded by `requireAdmin`; matt@ and
+polina@prismams.com are the platform admins). Sections: **Tenants**
+(`/admin/tenants` — cross-tenant directory), **Ticket Queue** (`/admin/tickets`
+— existing cross-tenant support desk), **Module Management** (`/admin/modules`
+— enable/disable any module for any tenant, changes scoped to that tenant
+only), **Announcements** (`/admin/announcements` — broadcast maintenance/
+security advisories to all tenants). New platform-global table
+`platform_announcements` (no tenant_id, no RLS — `adminDb()` + `requireAdmin`
+only). Migrations through 0029. Admin libs use `adminDb()` (owner role), never
+`withTenantContext`.
+
+Next: customer-facing per-tenant admin/support console (`/support` deepening).
 
 ## Reference
 

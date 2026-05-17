@@ -63,7 +63,7 @@ export default async function AdminTicketsPage() {
           href="/admin"
           className="shrink-0 text-sm text-gray-400 transition hover:text-gray-600"
         >
-          ← Tenants
+          ← Console
         </Link>
       </div>
       <AdminTicketQueue tickets={tickets} comments={comments} />
