@@ -60,7 +60,8 @@ export async function sendAlertEmails(
   if (!apiKey) return { sent: false, reason: "RESEND_API_KEY not set" };
 
   const from =
-    process.env.STRATEGY_ALERT_FROM || "Prism Core <noreply@prismams.com>";
+    process.env.STRATEGY_ALERT_FROM || "Prism Core <support@prismams.com>";
+  const replyTo = process.env.STRATEGY_ALERT_REPLY_TO || "matt@prismams.com";
 
   // The cron is a platform worker — adminDb to read the tenant's users.
   const rows = await adminDb()
@@ -80,6 +81,7 @@ export async function sendAlertEmails(
       body: JSON.stringify({
         from,
         to,
+        reply_to: replyTo,
         subject: `${alerts.length} strategy alert${
           alerts.length === 1 ? "" : "s"
         } — ${tenantName}`,
