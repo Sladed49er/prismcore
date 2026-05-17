@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { loadCurrentTenant, requireModule } from "@/lib/kernel";
 import { listClients } from "@/lib/clients";
-import { listCustomFields } from "@/lib/customization";
+import { listCustomFields, listSavedViews } from "@/lib/customization";
 import { resolveStatusOptions } from "@/lib/status-options";
 import {
   ClientsPanel,
@@ -15,11 +15,19 @@ export default async function ClientRegisterPage() {
   await requireModule("clients");
   const { config } = await loadCurrentTenant();
 
-  const [clientRows, fieldRows, statusOptions] = await Promise.all([
+  const [clientRows, fieldRows, statusOptions, viewRows] = await Promise.all([
     listClients(config.id),
     listCustomFields(config.id),
     resolveStatusOptions(config.id, "client.status", STATUS_DEFAULTS),
+    listSavedViews(config.id, "clients"),
   ]);
+
+  const savedViews = viewRows.map((v) => ({
+    id: v.id,
+    name: v.name,
+    isDefault: v.isDefault,
+    config: v.config,
+  }));
 
   const clients: ClientDTO[] = clientRows.map((c) => {
     const personName = [c.firstName, c.lastName].filter(Boolean).join(" ");
@@ -71,6 +79,7 @@ export default async function ClientRegisterPage() {
         clients={clients}
         customFields={customFields}
         statusOptions={statusOptions}
+        savedViews={savedViews}
       />
     </div>
   );

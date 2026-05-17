@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { type ReactNode, useMemo, useState, useTransition } from "react";
 import {
   addClient,
   editClient,
@@ -10,6 +10,11 @@ import { exportRowsToCsv, type CsvColumn } from "@/lib/csv";
 import { ExportCsvButton } from "@/components/export-csv-button";
 import type { StatusOption } from "@/lib/status-options";
 import { badgeClass } from "@/lib/badge-colors";
+import {
+  SavedViewBar,
+  type SavedViewItem,
+  type SavedViewConfig,
+} from "@/components/saved-view-bar";
 
 export interface ClientDTO {
   id: string;
@@ -40,6 +45,16 @@ export const STATUS_DEFAULTS: StatusOption[] = [
   { value: "inactive", label: "Inactive", color: "gray" },
 ];
 
+/** A renderable, sortable column on the client register. */
+interface ClientColumn {
+  key: string;
+  label: string;
+  sortValue: (c: ClientDTO) => string;
+  cell: (c: ClientDTO) => ReactNode;
+}
+
+const ALL_COLUMN_KEYS = ["name", "type", "contact", "location", "status"];
+
 const EMPTY = {
   firstName: "",
   lastName: "",
@@ -68,10 +83,12 @@ export function ClientsPanel({
   clients,
   customFields,
   statusOptions,
+  savedViews,
 }: {
   clients: ClientDTO[];
   customFields: CustomFieldDTO[];
   statusOptions: StatusOption[];
+  savedViews: SavedViewItem[];
 }) {
   const [pending, startTransition] = useTransition();
   const [showForm, setShowForm] = useState(false);
@@ -79,7 +96,90 @@ export function ClientsPanel({
   const [type, setType] = useState<"person" | "business">("person");
   const [form, setForm] = useState({ ...EMPTY });
   const [custom, setCustom] = useState<Record<string, string>>({});
-  const [query, setQuery] = useState("");
+
+  // ── List-view state, seeded from the tenant's default saved view ────────
+  const defaultView = savedViews.find((v) => v.isDefault);
+  const [query, setQuery] = useState(defaultView?.config.filters?.query ?? "");
+  const [visibleColumns, setVisibleColumns] = useState<string[]>(
+    defaultView?.config.columns?.length
+      ? defaultView.config.columns
+      : ALL_COLUMN_KEYS,
+  );
+  const [sortBy, setSortBy] = useState<string | null>(
+    defaultView?.config.sortBy ?? null,
+  );
+  const [sortDir, setSortDir] = useState<"asc" | "desc">(
+    defaultView?.config.sortDir ?? "asc",
+  );
+
+  function applyView(config: SavedViewConfig): void {
+    setVisibleColumns(
+      config.columns?.length ? config.columns : ALL_COLUMN_KEYS,
+    );
+    setSortBy(config.sortBy ?? null);
+    setSortDir(config.sortDir ?? "asc");
+    setQuery(config.filters?.query ?? "");
+  }
+
+  function toggleSort(key: string): void {
+    if (sortBy === key) {
+      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    } else {
+      setSortBy(key);
+      setSortDir("asc");
+    }
+  }
+
+  const columns: ClientColumn[] = useMemo(
+    () => [
+      {
+        key: "name",
+        label: "Name",
+        sortValue: (c) => c.displayName.toLowerCase(),
+        cell: (c) => <span className="font-medium">{c.displayName}</span>,
+      },
+      {
+        key: "type",
+        label: "Type",
+        sortValue: (c) => c.type,
+        cell: (c) => <span className="capitalize text-gray-500">{c.type}</span>,
+      },
+      {
+        key: "contact",
+        label: "Contact",
+        sortValue: (c) => (c.email ?? c.phone ?? "").toLowerCase(),
+        cell: (c) => (
+          <span className="text-gray-500">{c.email ?? c.phone ?? "—"}</span>
+        ),
+      },
+      {
+        key: "location",
+        label: "Location",
+        sortValue: (c) => (c.location ?? "").toLowerCase(),
+        cell: (c) => (
+          <span className="text-gray-500">{c.location ?? "—"}</span>
+        ),
+      },
+      {
+        key: "status",
+        label: "Status",
+        sortValue: (c) => c.status,
+        cell: (c) => {
+          const option = statusOptions.find((o) => o.value === c.status);
+          return (
+            <span
+              className={`rounded-full px-2 py-0.5 text-xs font-medium ${badgeClass(
+                option?.color ?? "gray",
+              )}`}
+            >
+              {option?.label ?? c.status}
+            </span>
+          );
+        },
+      },
+    ],
+    [statusOptions],
+  );
 
   function set(key: keyof typeof EMPTY, value: string): void {
     setForm((f) => ({ ...f, [key]: value }));
@@ -155,7 +255,7 @@ export function ClientsPanel({
   }
 
   const q = query.trim().toLowerCase();
-  const visible = q
+  const filtered = q
     ? clients.filter((c) =>
         [c.displayName, c.email ?? "", c.phone ?? "", c.location ?? ""]
           .join(" ")
@@ -164,33 +264,54 @@ export function ClientsPanel({
       )
     : clients;
 
+  const sortColumn = columns.find((c) => c.key === sortBy);
+  const visible = sortColumn
+    ? [...filtered].sort((a, b) => {
+        const av = sortColumn.sortValue(a);
+        const bv = sortColumn.sortValue(b);
+        const cmp = av < bv ? -1 : av > bv ? 1 : 0;
+        return sortDir === "asc" ? cmp : -cmp;
+      })
+    : filtered;
+
+  const shownColumns = columns.filter((c) => visibleColumns.includes(c.key));
+
   const inputClass =
     "mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-indigo-500";
 
   return (
     <div className="mt-6">
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search clients…"
-            className="w-56 rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-indigo-500"
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex-1">
+          <SavedViewBar
+            listKey="clients"
+            columns={columns.map((c) => ({ key: c.key, label: c.label }))}
+            visibleColumns={visibleColumns}
+            onVisibleColumnsChange={setVisibleColumns}
+            query={query}
+            onQueryChange={setQuery}
+            sortBy={sortBy}
+            sortDir={sortDir}
+            savedViews={savedViews}
+            onApplyView={applyView}
+            searchPlaceholder="Search clients…"
           />
+        </div>
+        <div className="flex shrink-0 gap-2">
           <ExportCsvButton
             disabled={visible.length === 0}
             onExport={() => exportRowsToCsv("clients", CSV_COLUMNS, visible)}
           />
+          {!showForm ? (
+            <button
+              type="button"
+              onClick={startCreate}
+              className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-700"
+            >
+              + New client
+            </button>
+          ) : null}
         </div>
-        {!showForm ? (
-          <button
-            type="button"
-            onClick={startCreate}
-            className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-700"
-          >
-            + New client
-          </button>
-        ) : null}
       </div>
 
       {showForm ? (
@@ -381,42 +502,31 @@ export function ClientsPanel({
           <table className="w-full text-sm">
             <thead className="border-b border-gray-200 bg-gray-50 text-left text-xs uppercase tracking-wide text-gray-500">
               <tr>
-                <th className="px-4 py-3 font-semibold">Name</th>
-                <th className="px-4 py-3 font-semibold">Contact</th>
-                <th className="px-4 py-3 font-semibold">Location</th>
-                <th className="px-4 py-3 font-semibold">Status</th>
+                {shownColumns.map((col) => (
+                  <th
+                    key={col.key}
+                    onClick={() => toggleSort(col.key)}
+                    className="cursor-pointer select-none px-4 py-3 font-semibold hover:text-gray-700"
+                  >
+                    {col.label}
+                    {sortBy === col.key
+                      ? sortDir === "asc"
+                        ? " ▲"
+                        : " ▼"
+                      : ""}
+                  </th>
+                ))}
                 <th className="px-4 py-3" />
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
               {visible.map((c) => (
                 <tr key={c.id}>
-                  <td className="px-4 py-3">
-                    <span className="font-medium">{c.displayName}</span>
-                    <span className="ml-2 text-xs text-gray-400">
-                      {c.type}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-gray-500">
-                    {c.email ?? c.phone ?? "—"}
-                  </td>
-                  <td className="px-4 py-3 text-gray-500">
-                    {c.location ?? "—"}
-                  </td>
-                  <td className="px-4 py-3">
-                    {(() => {
-                      const option = statusOptions.find(
-                        (o) => o.value === c.status,
-                      );
-                      return (
-                        <span
-                          className={`rounded-full px-2 py-0.5 text-xs font-medium ${badgeClass(option?.color ?? "gray")}`}
-                        >
-                          {option?.label ?? c.status}
-                        </span>
-                      );
-                    })()}
-                  </td>
+                  {shownColumns.map((col) => (
+                    <td key={col.key} className="px-4 py-3">
+                      {col.cell(c)}
+                    </td>
+                  ))}
                   <td className="px-4 py-3 text-right whitespace-nowrap">
                     <button
                       type="button"

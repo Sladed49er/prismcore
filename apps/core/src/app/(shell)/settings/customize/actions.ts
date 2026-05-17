@@ -14,11 +14,13 @@ import {
   addOptionItem,
   updateOptionItem,
   removeOptionItem,
+  createSavedView,
   deleteSavedView,
   setDefaultView,
   setBranding,
   logCustomization,
 } from "@/lib/customization";
+import type { TenantSavedView } from "@prismcore/db";
 
 type FieldType = "text" | "number" | "date" | "select" | "checkbox";
 
@@ -203,6 +205,29 @@ export async function deleteOptionItem(itemId: string): Promise<void> {
 }
 
 /* ── Saved views ────────────────────────────────────────────────────────── */
+
+/** Save the current state of a list as a named view. Called from list pages. */
+export async function saveListView(input: {
+  listKey: string;
+  name: string;
+  config: TenantSavedView["config"];
+  isDefault?: boolean;
+}): Promise<void> {
+  const name = input.name.trim();
+  if (!name) return;
+  const tenant = await getCurrentTenant();
+  await createSavedView(tenant.id, {
+    listKey: input.listKey,
+    name,
+    config: input.config,
+    isDefault: input.isDefault,
+  });
+  await record(
+    tenant.id,
+    "view.create",
+    `Saved the "${name}" view for ${input.listKey}`,
+  );
+}
 
 export async function removeSavedView(viewId: string): Promise<void> {
   const tenant = await getCurrentTenant();

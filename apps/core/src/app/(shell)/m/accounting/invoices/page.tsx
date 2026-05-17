@@ -2,6 +2,7 @@ import Link from "next/link";
 import { loadCurrentTenant, requireModule } from "@/lib/kernel";
 import { listInvoices } from "@/lib/accounting";
 import { listClients, clientDisplayName } from "@/lib/clients";
+import { listSavedViews } from "@/lib/customization";
 import { resolveStatusOptions } from "@/lib/status-options";
 import {
   AccountingPanel,
@@ -13,11 +14,19 @@ import {
 export default async function InvoicesPage() {
   await requireModule("accounting");
   const { config } = await loadCurrentTenant();
-  const [invoiceRows, clientRows, statusOptions] = await Promise.all([
+  const [invoiceRows, clientRows, statusOptions, viewRows] = await Promise.all([
     listInvoices(config.id),
     listClients(config.id),
     resolveStatusOptions(config.id, "invoice.status", STATUS_DEFAULTS),
+    listSavedViews(config.id, "invoices"),
   ]);
+
+  const savedViews = viewRows.map((v) => ({
+    id: v.id,
+    name: v.name,
+    isDefault: v.isDefault,
+    config: v.config,
+  }));
 
   const invoices: InvoiceDTO[] = invoiceRows.map((i) => ({
     id: i.id,
@@ -50,6 +59,7 @@ export default async function InvoicesPage() {
         invoices={invoices}
         clients={clients}
         statusOptions={statusOptions}
+        savedViews={savedViews}
       />
     </div>
   );
