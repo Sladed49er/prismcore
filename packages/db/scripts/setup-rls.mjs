@@ -57,6 +57,9 @@ const TENANT_TABLES = [
   "acord_forms",
   "intake_submissions",
   "signature_requests",
+  "chart_of_accounts",
+  "journal_entries",
+  "journal_entry_lines",
 ];
 
 const owner = neon(ownerUrl);

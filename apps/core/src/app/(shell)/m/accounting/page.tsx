@@ -1,33 +1,44 @@
-import { loadCurrentTenant, requireModule } from "@/lib/kernel";
-import { listInvoices } from "@/lib/accounting";
-import { listClients, clientDisplayName } from "@/lib/clients";
-import {
-  AccountingPanel,
-  type InvoiceDTO,
-  type ClientOption,
-} from "@/components/accounting-panel";
+import Link from "next/link";
+import { requireModule } from "@/lib/kernel";
 
-export default async function AccountingPage() {
+/** Sub-modules that are built and live. */
+const BUILT = [
+  {
+    href: "/m/accounting/chart-of-accounts",
+    name: "Chart of Accounts",
+    desc: "The GL account master — assets, liabilities, equity, revenue, expense.",
+  },
+  {
+    href: "/m/accounting/journal-entries",
+    name: "Journal Entries",
+    desc: "Double-entry GL postings; debits balance credits.",
+  },
+  {
+    href: "/m/accounting/invoices",
+    name: "Invoices",
+    desc: "Client billing and accounts receivable.",
+  },
+];
+
+/** The remaining accounting sub-modules, ported in over the coming turns. */
+const PLANNED = [
+  "Vendors & Bills (AP)",
+  "Trust Accounting",
+  "Payroll",
+  "Bank Reconciliation",
+  "Checks & Positive Pay",
+  "Budgets",
+  "Fixed Assets",
+  "Estimates",
+  "Fiscal Periods",
+  "Surplus Lines Tax",
+  "Quarterly Taxes",
+  "1099 / W-2 Reporting",
+  "Financial Reports",
+];
+
+export default async function AccountingHub() {
   await requireModule("accounting");
-  const { config } = await loadCurrentTenant();
-  const [invoiceRows, clientRows] = await Promise.all([
-    listInvoices(config.id),
-    listClients(config.id),
-  ]);
-
-  const invoices: InvoiceDTO[] = invoiceRows.map((i) => ({
-    id: i.id,
-    invoiceNumber: i.invoiceNumber,
-    clientName: i.clientName,
-    description: i.description,
-    amountCents: i.amountCents,
-    status: i.status,
-    dueDate: i.dueDate,
-  }));
-  const clients: ClientOption[] = clientRows.map((c) => ({
-    id: c.id,
-    name: clientDisplayName(c),
-  }));
 
   return (
     <div className="mx-auto max-w-4xl px-8 py-10">
@@ -36,9 +47,36 @@ export default async function AccountingPage() {
       </p>
       <h1 className="mt-1 text-2xl font-semibold">Accounting</h1>
       <p className="mt-2 max-w-2xl text-gray-600">
-        Agency invoicing — billed, sent, and reconciled.
+        The agency&rsquo;s financial back office — general ledger, receivables,
+        payables, trust accounting, and payroll.
       </p>
-      <AccountingPanel invoices={invoices} clients={clients} />
+
+      <div className="mt-6 grid gap-3 sm:grid-cols-2">
+        {BUILT.map((s) => (
+          <Link
+            key={s.href}
+            href={s.href}
+            className="rounded-xl border border-gray-200 bg-white p-5 transition hover:border-indigo-300"
+          >
+            <h3 className="font-semibold">{s.name}</h3>
+            <p className="mt-1 text-sm text-gray-600">{s.desc}</p>
+          </Link>
+        ))}
+      </div>
+
+      <h2 className="mt-8 text-xs font-semibold uppercase tracking-wide text-gray-500">
+        Coming next in the accounting build-out
+      </h2>
+      <div className="mt-3 flex flex-wrap gap-2">
+        {PLANNED.map((p) => (
+          <span
+            key={p}
+            className="rounded-full border border-dashed border-gray-300 px-3 py-1 text-sm text-gray-400"
+          >
+            {p}
+          </span>
+        ))}
+      </div>
     </div>
   );
 }

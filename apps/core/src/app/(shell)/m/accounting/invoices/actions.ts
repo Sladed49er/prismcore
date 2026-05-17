@@ -29,7 +29,7 @@ export async function addInvoice(input: {
     status: input.status,
     dueDate: input.dueDate || null,
   });
-  revalidatePath("/m/accounting");
+  revalidatePath("/m/accounting/invoices");
 }
 
 export async function advanceInvoice(
@@ -38,5 +38,5 @@ export async function advanceInvoice(
 ): Promise<void> {
   const tenant = await getCurrentTenant();
   await setInvoiceStatus(tenant.id, invoiceId, status);
-  revalidatePath("/m/accounting");
+  revalidatePath("/m/accounting/invoices");
 }

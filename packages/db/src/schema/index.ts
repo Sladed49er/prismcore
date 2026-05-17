@@ -17,3 +17,4 @@ export * from "./opportunities";
 export * from "./acord";
 export * from "./intake";
 export * from "./esign";
+export * from "./gl";

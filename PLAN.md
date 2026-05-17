@@ -333,6 +333,25 @@ to re-run without rotating the role password (adding a module = add its table +
 re-run). `/m/clients` is a real list+create page; the customization engine is
 wired in — a tenant's custom fields render onto the client form.
 
+### Accounting — deep build (1:1 with PrismAMS), part 1 — 2026-05-16 🔄
+
+Course-correction: the lean modules were too shallow. PrismAMS is 176 tables /
+155 pages; Accounting alone is 32 tables / 25 pages. Modules are now being built
+to true PrismAMS depth, improved and flowed. Accounting first.
+
+`/m/accounting` is now a **hub** with sub-modules. Built so far (3 of ~19):
+- **Chart of Accounts** — the GL account master (asset/liability/equity/
+  revenue/expense). Migration 0011, RLS-isolated.
+- **Journal Entries** — real double-entry posting: a multi-line editor that
+  will not post unless debits balance credits.
+- **Invoices** — the AR register (moved under the hub).
+
+Demo seeded: a 14-account chart of accounts + 3 balanced journal entries.
+
+Remaining accounting sub-modules (the hub lists them): Vendors & Bills (AP),
+Trust Accounting, Payroll, Bank Reconciliation, Checks, Budgets, Fixed Assets,
+Estimates, Periods, Surplus Lines Tax, Quarterly Taxes, 1099/W-2, Reports.
+
 ## Reference
 
 - Source survey: PrismAMS = `~/Tresorit/ClaudeProjects/prismams/` (Next.js 16, 35

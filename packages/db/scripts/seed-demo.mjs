@@ -312,4 +312,60 @@ if (invoiceSeedCount[0].n === 0) {
   console.log("• accounting/pipeline/etc. demo data already present — skipped");
 }
 
+// 11. General ledger — chart of accounts + balanced journal entries.
+const coaCount = await sql.query("SELECT count(*)::int AS n FROM chart_of_accounts WHERE tenant_id = $1", [demo]);
+if (coaCount[0].n === 0) {
+  const ACCOUNTS = [
+    ["1000", "Operating Cash", "asset", "Current Asset"],
+    ["1100", "Accounts Receivable", "asset", "Current Asset"],
+    ["1200", "Premium Trust Account", "asset", "Trust"],
+    ["1500", "Furniture & Equipment", "asset", "Fixed Asset"],
+    ["2000", "Accounts Payable", "liability", "Current Liability"],
+    ["2100", "Premiums Payable to Carriers", "liability", "Current Liability"],
+    ["3000", "Owner's Equity", "equity", "Equity"],
+    ["3900", "Retained Earnings", "equity", "Equity"],
+    ["4000", "Commission Income", "revenue", "Operating Revenue"],
+    ["4100", "Agency Fee Income", "revenue", "Operating Revenue"],
+    ["5000", "Payroll Expense", "expense", "Operating Expense"],
+    ["6000", "Rent Expense", "expense", "Operating Expense"],
+    ["6100", "Office & Software Expense", "expense", "Operating Expense"],
+    ["6200", "Errors & Omissions Insurance", "expense", "Operating Expense"],
+  ];
+  const acctId = {};
+  for (const [num, name, type, subtype] of ACCOUNTS) {
+    const r = await sql.query(
+      "INSERT INTO chart_of_accounts (tenant_id, account_number, name, type, subtype) VALUES ($1,$2,$3,$4,$5) RETURNING id",
+      [demo, num, name, type, subtype],
+    );
+    acctId[num] = r[0].id;
+  }
+  async function je(number, dt, memo, lines) {
+    const e = await sql.query(
+      "INSERT INTO journal_entries (tenant_id, entry_number, entry_date, memo, source, status) VALUES ($1,$2,$3,$4,'manual','posted') RETURNING id",
+      [demo, number, dt, memo],
+    );
+    for (const [num, debit, credit, lm] of lines) {
+      await sql.query(
+        "INSERT INTO journal_entry_lines (tenant_id, journal_entry_id, account_id, debit_cents, credit_cents, line_memo) VALUES ($1,$2,$3,$4,$5,$6)",
+        [demo, e[0].id, acctId[num], debit, credit, lm],
+      );
+    }
+  }
+  await je("JE-1001", "2026-02-05", "Carrier commission statement — February", [
+    ["1000", 7312500, 0, "Deposit to operating account"],
+    ["4000", 0, 7312500, "Commission income earned"],
+  ]);
+  await je("JE-1002", "2026-03-01", "March office rent", [
+    ["6000", 380000, 0, "Office rent"],
+    ["1000", 0, 380000, "Paid from operating account"],
+  ]);
+  await je("JE-1003", "2026-03-15", "Premium received into trust", [
+    ["1200", 1240000, 0, "Premium received from insured"],
+    ["2100", 0, 1240000, "Premium owed to carrier"],
+  ]);
+  console.log("✓ seeded 14 GL accounts, 3 journal entries");
+} else {
+  console.log("• chart of accounts already present — skipped");
+}
+
 console.log("✓ demo tenant seeded: modules, custom fields, 3 carrier connections, VoIP");

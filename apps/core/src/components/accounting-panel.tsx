@@ -1,7 +1,10 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { addInvoice, advanceInvoice } from "@/app/(shell)/m/accounting/actions";
+import {
+  addInvoice,
+  advanceInvoice,
+} from "@/app/(shell)/m/accounting/invoices/actions";
 
 export interface InvoiceDTO {
   id: string;
