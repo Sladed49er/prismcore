@@ -7,6 +7,8 @@ import {
   editBill,
   removeBill,
 } from "@/app/(shell)/m/accounting/bills/actions";
+import { exportRowsToCsv, type CsvColumn } from "@/lib/csv";
+import { ExportCsvButton } from "@/components/export-csv-button";
 
 export interface BillDTO {
   id: string;
@@ -45,6 +47,18 @@ const EMPTY = {
   amountDollars: "",
   memo: "",
 };
+
+const CSV_COLUMNS: CsvColumn<BillDTO>[] = [
+  { header: "Bill #", cell: (b) => b.billNumber },
+  { header: "Vendor", cell: (b) => b.vendorName },
+  { header: "Bill date", cell: (b) => b.billDate },
+  { header: "Due date", cell: (b) => b.dueDate },
+  { header: "Amount", cell: (b) => (b.amountCents / 100).toFixed(2) },
+  { header: "Paid", cell: (b) => (b.amountPaidCents / 100).toFixed(2) },
+  { header: "Balance", cell: (b) => (b.balanceCents / 100).toFixed(2) },
+  { header: "Memo", cell: (b) => b.memo },
+  { header: "Status", cell: (b) => b.status },
+];
 
 export function BillsPanel({
   bills,
@@ -145,12 +159,18 @@ export function BillsPanel({
   return (
     <div className="mt-6">
       <div className="flex items-center justify-between gap-3">
-        <input
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search bills…"
-          className="w-56 rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-indigo-500"
-        />
+        <div className="flex items-center gap-2">
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search bills…"
+            className="w-56 rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-indigo-500"
+          />
+          <ExportCsvButton
+            disabled={visible.length === 0}
+            onExport={() => exportRowsToCsv("bills", CSV_COLUMNS, visible)}
+          />
+        </div>
         <div className="flex items-center gap-3">
           <span className="text-sm text-gray-500">
             {money(owed)} payable

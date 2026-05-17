@@ -6,6 +6,8 @@ import {
   editClientLocation,
   removeClientLocation,
 } from "@/app/(shell)/m/clients/locations/actions";
+import { exportRowsToCsv, type CsvColumn } from "@/lib/csv";
+import { ExportCsvButton } from "@/components/export-csv-button";
 
 export interface ClientOption {
   id: string;
@@ -40,6 +42,16 @@ const EMPTY = {
   state: "",
   postalCode: "",
 };
+
+const CSV_COLUMNS: CsvColumn<ClientLocationDTO>[] = [
+  { header: "Client", cell: (l) => l.clientName },
+  { header: "Label", cell: (l) => l.label },
+  { header: "Type", cell: (l) => TYPE_LABEL[l.locationType] },
+  { header: "Address", cell: (l) => l.addressLine },
+  { header: "City", cell: (l) => l.city },
+  { header: "State", cell: (l) => l.state },
+  { header: "Postal code", cell: (l) => l.postalCode },
+];
 
 export function ClientLocationsPanel({
   locations,
@@ -129,12 +141,20 @@ export function ClientLocationsPanel({
   return (
     <div className="mt-6">
       <div className="flex items-center justify-between gap-3">
-        <input
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search locations…"
-          className="w-56 rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-indigo-500"
-        />
+        <div className="flex items-center gap-2">
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search locations…"
+            className="w-56 rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-indigo-500"
+          />
+          <ExportCsvButton
+            disabled={visible.length === 0}
+            onExport={() =>
+              exportRowsToCsv("client-locations", CSV_COLUMNS, visible)
+            }
+          />
+        </div>
         {!showForm && clients.length > 0 ? (
           <button
             type="button"

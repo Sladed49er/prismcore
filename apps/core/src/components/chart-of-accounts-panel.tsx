@@ -6,6 +6,8 @@ import {
   editAccount,
   removeAccount,
 } from "@/app/(shell)/m/accounting/chart-of-accounts/actions";
+import { exportRowsToCsv, type CsvColumn } from "@/lib/csv";
+import { ExportCsvButton } from "@/components/export-csv-button";
 
 export interface AccountDTO {
   id: string;
@@ -35,6 +37,15 @@ const EMPTY = {
   subtype: "",
   description: "",
 };
+
+const CSV_COLUMNS: CsvColumn<AccountDTO>[] = [
+  { header: "Number", cell: (a) => a.accountNumber },
+  { header: "Account", cell: (a) => a.name },
+  { header: "Type", cell: (a) => a.type },
+  { header: "Subtype", cell: (a) => a.subtype },
+  { header: "Description", cell: (a) => a.description },
+  { header: "Active", cell: (a) => (a.isActive ? "Yes" : "No") },
+];
 
 export function ChartOfAccountsPanel({
   accounts,
@@ -121,12 +132,20 @@ export function ChartOfAccountsPanel({
   return (
     <div className="mt-6">
       <div className="flex items-center justify-between gap-3">
-        <input
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search accounts…"
-          className="w-56 rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-indigo-500"
-        />
+        <div className="flex items-center gap-2">
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search accounts…"
+            className="w-56 rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-indigo-500"
+          />
+          <ExportCsvButton
+            disabled={visible.length === 0}
+            onExport={() =>
+              exportRowsToCsv("chart-of-accounts", CSV_COLUMNS, visible)
+            }
+          />
+        </div>
         {!showForm ? (
           <button
             type="button"

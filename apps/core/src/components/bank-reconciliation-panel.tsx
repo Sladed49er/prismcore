@@ -6,6 +6,8 @@ import {
   editReconciliation,
   removeReconciliation,
 } from "@/app/(shell)/m/accounting/bank-reconciliation/actions";
+import { exportRowsToCsv, type CsvColumn } from "@/lib/csv";
+import { ExportCsvButton } from "@/components/export-csv-button";
 
 export interface ReconciliationDTO {
   id: string;
@@ -30,6 +32,22 @@ const EMPTY = {
   status: "in_progress",
   notes: "",
 };
+
+const CSV_COLUMNS: CsvColumn<ReconciliationDTO>[] = [
+  { header: "Account", cell: (r) => r.accountName },
+  { header: "Statement date", cell: (r) => r.statementDate },
+  {
+    header: "Statement balance",
+    cell: (r) => (r.statementBalanceCents / 100).toFixed(2),
+  },
+  {
+    header: "Reconciled balance",
+    cell: (r) => (r.reconciledBalanceCents / 100).toFixed(2),
+  },
+  { header: "Difference", cell: (r) => (r.differenceCents / 100).toFixed(2) },
+  { header: "Status", cell: (r) => r.status.replace("_", " ") },
+  { header: "Notes", cell: (r) => r.notes },
+];
 
 export function BankReconciliationPanel({
   reconciliations,
@@ -112,12 +130,20 @@ export function BankReconciliationPanel({
   return (
     <div className="mt-6">
       <div className="flex items-center justify-between gap-3">
-        <input
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search reconciliations…"
-          className="w-56 rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-indigo-500"
-        />
+        <div className="flex items-center gap-2">
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search reconciliations…"
+            className="w-56 rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-indigo-500"
+          />
+          <ExportCsvButton
+            disabled={visible.length === 0}
+            onExport={() =>
+              exportRowsToCsv("bank-reconciliations", CSV_COLUMNS, visible)
+            }
+          />
+        </div>
         {!showForm ? (
           <button
             type="button"

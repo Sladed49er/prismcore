@@ -6,6 +6,8 @@ import {
   editEmployee,
   removeEmployee,
 } from "@/app/(shell)/m/accounting/employees/actions";
+import { exportRowsToCsv, type CsvColumn } from "@/lib/csv";
+import { ExportCsvButton } from "@/components/export-csv-button";
 
 export interface EmployeeDTO {
   id: string;
@@ -29,6 +31,15 @@ const EMPTY = {
 function money(cents: number): string {
   return "$" + (cents / 100).toLocaleString();
 }
+
+const CSV_COLUMNS: CsvColumn<EmployeeDTO>[] = [
+  { header: "Name", cell: (e) => e.name },
+  { header: "Title", cell: (e) => e.title },
+  { header: "Email", cell: (e) => e.email },
+  { header: "Type", cell: (e) => (e.employmentType === "w2" ? "W-2" : "1099") },
+  { header: "Pay / period", cell: (e) => (e.periodPayCents / 100).toFixed(2) },
+  { header: "Active", cell: (e) => (e.isActive ? "Yes" : "No") },
+];
 
 export function EmployeesPanel({ employees }: { employees: EmployeeDTO[] }) {
   const [pending, startTransition] = useTransition();
@@ -117,12 +128,18 @@ export function EmployeesPanel({ employees }: { employees: EmployeeDTO[] }) {
   return (
     <div className="mt-6">
       <div className="flex items-center justify-between gap-3">
-        <input
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search employees…"
-          className="w-56 rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-indigo-500"
-        />
+        <div className="flex items-center gap-2">
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search employees…"
+            className="w-56 rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-indigo-500"
+          />
+          <ExportCsvButton
+            disabled={visible.length === 0}
+            onExport={() => exportRowsToCsv("employees", CSV_COLUMNS, visible)}
+          />
+        </div>
         {!showForm ? (
           <button
             type="button"

@@ -6,6 +6,8 @@ import {
   editClientActivity,
   removeClientActivity,
 } from "@/app/(shell)/m/clients/activities/actions";
+import { exportRowsToCsv, type CsvColumn } from "@/lib/csv";
+import { ExportCsvButton } from "@/components/export-csv-button";
 
 export interface ClientOption {
   id: string;
@@ -39,6 +41,15 @@ const EMPTY = {
   activityDate: "",
   author: "",
 };
+
+const CSV_COLUMNS: CsvColumn<ClientActivityDTO>[] = [
+  { header: "Client", cell: (a) => a.clientName },
+  { header: "Type", cell: (a) => TYPE_LABEL[a.activityType] },
+  { header: "Date", cell: (a) => a.activityDate },
+  { header: "Subject", cell: (a) => a.subject },
+  { header: "Detail", cell: (a) => a.detail },
+  { header: "Author", cell: (a) => a.author },
+];
 
 export function ClientActivitiesPanel({
   activities,
@@ -127,12 +138,20 @@ export function ClientActivitiesPanel({
   return (
     <div className="mt-6">
       <div className="flex items-center justify-between gap-3">
-        <input
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search activity…"
-          className="w-56 rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-indigo-500"
-        />
+        <div className="flex items-center gap-2">
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search activity…"
+            className="w-56 rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-indigo-500"
+          />
+          <ExportCsvButton
+            disabled={visible.length === 0}
+            onExport={() =>
+              exportRowsToCsv("client-activity", CSV_COLUMNS, visible)
+            }
+          />
+        </div>
         {!showForm && clients.length > 0 ? (
           <button
             type="button"

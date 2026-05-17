@@ -7,6 +7,8 @@ import {
   editPeriod,
   removePeriod,
 } from "@/app/(shell)/m/accounting/fiscal-periods/actions";
+import { exportRowsToCsv, type CsvColumn } from "@/lib/csv";
+import { ExportCsvButton } from "@/components/export-csv-button";
 
 export interface PeriodDTO {
   id: string;
@@ -17,6 +19,13 @@ export interface PeriodDTO {
 }
 
 const EMPTY = { name: "", startDate: "", endDate: "" };
+
+const CSV_COLUMNS: CsvColumn<PeriodDTO>[] = [
+  { header: "Period", cell: (p) => p.name },
+  { header: "Start", cell: (p) => p.startDate },
+  { header: "End", cell: (p) => p.endDate },
+  { header: "Status", cell: (p) => p.status },
+];
 
 export function FiscalPeriodsPanel({ periods }: { periods: PeriodDTO[] }) {
   const [pending, startTransition] = useTransition();
@@ -92,12 +101,20 @@ export function FiscalPeriodsPanel({ periods }: { periods: PeriodDTO[] }) {
   return (
     <div className="mt-6">
       <div className="flex items-center justify-between gap-3">
-        <input
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search periods…"
-          className="w-56 rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-indigo-500"
-        />
+        <div className="flex items-center gap-2">
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search periods…"
+            className="w-56 rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-indigo-500"
+          />
+          <ExportCsvButton
+            disabled={visible.length === 0}
+            onExport={() =>
+              exportRowsToCsv("fiscal-periods", CSV_COLUMNS, visible)
+            }
+          />
+        </div>
         <div className="flex items-center gap-3">
           <span className="text-sm text-gray-500">{openCount} open</span>
           {!showForm ? (

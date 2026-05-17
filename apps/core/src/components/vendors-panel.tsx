@@ -6,6 +6,8 @@ import {
   editVendor,
   removeVendor,
 } from "@/app/(shell)/m/accounting/vendors/actions";
+import { exportRowsToCsv, type CsvColumn } from "@/lib/csv";
+import { ExportCsvButton } from "@/components/export-csv-button";
 
 export interface VendorDTO {
   id: string;
@@ -28,6 +30,15 @@ const EMPTY = {
   paymentTerms: "Net 30",
   is1099: false,
 };
+
+const CSV_COLUMNS: CsvColumn<VendorDTO>[] = [
+  { header: "Vendor", cell: (v) => v.name },
+  { header: "Type", cell: (v) => v.type },
+  { header: "Email", cell: (v) => v.email },
+  { header: "Phone", cell: (v) => v.phone },
+  { header: "Payment terms", cell: (v) => v.paymentTerms },
+  { header: "1099", cell: (v) => (v.is1099 ? "Yes" : "No") },
+];
 
 export function VendorsPanel({ vendors }: { vendors: VendorDTO[] }) {
   const [pending, startTransition] = useTransition();
@@ -111,12 +122,18 @@ export function VendorsPanel({ vendors }: { vendors: VendorDTO[] }) {
   return (
     <div className="mt-6">
       <div className="flex items-center justify-between gap-3">
-        <input
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search vendors…"
-          className="w-56 rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-indigo-500"
-        />
+        <div className="flex items-center gap-2">
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search vendors…"
+            className="w-56 rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-indigo-500"
+          />
+          <ExportCsvButton
+            disabled={visible.length === 0}
+            onExport={() => exportRowsToCsv("vendors", CSV_COLUMNS, visible)}
+          />
+        </div>
         {!showForm ? (
           <button
             type="button"

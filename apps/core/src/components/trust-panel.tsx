@@ -6,6 +6,8 @@ import {
   editTrustEntry,
   removeTrustEntry,
 } from "@/app/(shell)/m/accounting/trust/actions";
+import { exportRowsToCsv, type CsvColumn } from "@/lib/csv";
+import { ExportCsvButton } from "@/components/export-csv-button";
 
 export interface TrustEntryDTO {
   id: string;
@@ -45,6 +47,19 @@ const EMPTY = {
   state: "",
   entryDate: "",
 };
+
+const CSV_COLUMNS: CsvColumn<TrustEntryDTO>[] = [
+  { header: "Date", cell: (e) => e.entryDate },
+  { header: "Entry", cell: (e) => TYPE_LABEL[e.entryType] ?? e.entryType },
+  { header: "Description", cell: (e) => e.description },
+  { header: "Party", cell: (e) => e.party },
+  { header: "State", cell: (e) => e.state },
+  { header: "Amount", cell: (e) => (e.amountCents / 100).toFixed(2) },
+  {
+    header: "Balance",
+    cell: (e) => (e.runningBalanceCents / 100).toFixed(2),
+  },
+];
 
 export function TrustPanel({ entries }: { entries: TrustEntryDTO[] }) {
   const [pending, startTransition] = useTransition();
@@ -149,6 +164,12 @@ export function TrustPanel({ entries }: { entries: TrustEntryDTO[] }) {
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search ledger…"
             className="w-56 rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-indigo-500"
+          />
+          <ExportCsvButton
+            disabled={visible.length === 0}
+            onExport={() =>
+              exportRowsToCsv("trust-ledger", CSV_COLUMNS, visible)
+            }
           />
           {!showForm ? (
             <button

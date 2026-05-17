@@ -7,6 +7,8 @@ import {
   editCheck,
   removeCheck,
 } from "@/app/(shell)/m/accounting/checks/actions";
+import { exportRowsToCsv, type CsvColumn } from "@/lib/csv";
+import { ExportCsvButton } from "@/components/export-csv-button";
 
 export interface CheckDTO {
   id: string;
@@ -35,6 +37,15 @@ const STATUS_COLOR: Record<CheckDTO["status"], string> = {
   cleared: "text-emerald-600",
   voided: "text-gray-400 line-through",
 };
+
+const CSV_COLUMNS: CsvColumn<CheckDTO>[] = [
+  { header: "Check #", cell: (c) => c.checkNumber },
+  { header: "Payee", cell: (c) => c.payee },
+  { header: "Date", cell: (c) => c.checkDate },
+  { header: "Amount", cell: (c) => (c.amountCents / 100).toFixed(2) },
+  { header: "Memo", cell: (c) => c.memo },
+  { header: "Status", cell: (c) => c.status },
+];
 
 export function ChecksPanel({ checks }: { checks: CheckDTO[] }) {
   const [pending, startTransition] = useTransition();
@@ -114,12 +125,18 @@ export function ChecksPanel({ checks }: { checks: CheckDTO[] }) {
   return (
     <div className="mt-6">
       <div className="flex items-center justify-between gap-3">
-        <input
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search checks…"
-          className="w-56 rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-indigo-500"
-        />
+        <div className="flex items-center gap-2">
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search checks…"
+            className="w-56 rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-indigo-500"
+          />
+          <ExportCsvButton
+            disabled={visible.length === 0}
+            onExport={() => exportRowsToCsv("checks", CSV_COLUMNS, visible)}
+          />
+        </div>
         <div className="flex items-center gap-3">
           <span className="text-sm text-gray-500">
             {money(outstanding)} outstanding

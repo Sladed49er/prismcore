@@ -7,6 +7,8 @@ import {
   editQuarterlyTax,
   removeQuarterlyTax,
 } from "@/app/(shell)/m/accounting/quarterly-taxes/actions";
+import { exportRowsToCsv, type CsvColumn } from "@/lib/csv";
+import { ExportCsvButton } from "@/components/export-csv-button";
 
 export interface QuarterlyTaxDTO {
   id: string;
@@ -30,6 +32,16 @@ const EMPTY = {
   estimatedDollars: "",
   dueDate: "",
 };
+
+const CSV_COLUMNS: CsvColumn<QuarterlyTaxDTO>[] = [
+  { header: "Tax type", cell: (r) => r.taxType },
+  { header: "Year", cell: (r) => r.year },
+  { header: "Quarter", cell: (r) => r.quarter },
+  { header: "Due date", cell: (r) => r.dueDate },
+  { header: "Estimated", cell: (r) => (r.estimatedCents / 100).toFixed(2) },
+  { header: "Paid", cell: (r) => (r.paidCents / 100).toFixed(2) },
+  { header: "Status", cell: (r) => r.status },
+];
 
 export function QuarterlyTaxesPanel({ rows }: { rows: QuarterlyTaxDTO[] }) {
   const [pending, startTransition] = useTransition();
@@ -112,12 +124,20 @@ export function QuarterlyTaxesPanel({ rows }: { rows: QuarterlyTaxDTO[] }) {
   return (
     <div className="mt-6">
       <div className="flex items-center justify-between gap-3">
-        <input
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search payments…"
-          className="w-56 rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-indigo-500"
-        />
+        <div className="flex items-center gap-2">
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search payments…"
+            className="w-56 rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-indigo-500"
+          />
+          <ExportCsvButton
+            disabled={visible.length === 0}
+            onExport={() =>
+              exportRowsToCsv("quarterly-taxes", CSV_COLUMNS, visible)
+            }
+          />
+        </div>
         <div className="flex items-center gap-3">
           <span className="text-sm text-gray-500">
             {money(scheduled)} scheduled

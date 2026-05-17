@@ -7,6 +7,8 @@ import {
   editSurplusLines,
   removeSurplusLines,
 } from "@/app/(shell)/m/accounting/surplus-lines/actions";
+import { exportRowsToCsv, type CsvColumn } from "@/lib/csv";
+import { ExportCsvButton } from "@/components/export-csv-button";
 
 export interface SurplusLinesDTO {
   id: string;
@@ -41,6 +43,22 @@ const STATUS_COLOR: Record<SurplusLinesDTO["status"], string> = {
   filed: "bg-blue-50 text-blue-700",
   paid: "bg-emerald-50 text-emerald-700",
 };
+
+const CSV_COLUMNS: CsvColumn<SurplusLinesDTO>[] = [
+  { header: "Policy", cell: (r) => r.policyReference },
+  { header: "State", cell: (r) => r.state },
+  { header: "Premium", cell: (r) => (r.premiumCents / 100).toFixed(2) },
+  { header: "Tax rate (%)", cell: (r) => r.taxRatePercent },
+  { header: "Tax", cell: (r) => (r.taxCents / 100).toFixed(2) },
+  {
+    header: "Stamping fee",
+    cell: (r) => (r.stampingFeeCents / 100).toFixed(2),
+  },
+  { header: "Filing fee", cell: (r) => (r.filingFeeCents / 100).toFixed(2) },
+  { header: "Total due", cell: (r) => (r.totalDueCents / 100).toFixed(2) },
+  { header: "Due date", cell: (r) => r.dueDate },
+  { header: "Status", cell: (r) => r.status },
+];
 
 export function SurplusLinesPanel({ rows }: { rows: SurplusLinesDTO[] }) {
   const [pending, startTransition] = useTransition();
@@ -121,12 +139,20 @@ export function SurplusLinesPanel({ rows }: { rows: SurplusLinesDTO[] }) {
   return (
     <div className="mt-6">
       <div className="flex items-center justify-between gap-3">
-        <input
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search filings…"
-          className="w-56 rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-indigo-500"
-        />
+        <div className="flex items-center gap-2">
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search filings…"
+            className="w-56 rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-indigo-500"
+          />
+          <ExportCsvButton
+            disabled={visible.length === 0}
+            onExport={() =>
+              exportRowsToCsv("surplus-lines", CSV_COLUMNS, visible)
+            }
+          />
+        </div>
         <div className="flex items-center gap-3">
           <span className="text-sm text-gray-500">
             {money(outstanding)} unpaid

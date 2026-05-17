@@ -5,6 +5,8 @@ import {
   postJournalEntry,
   removeJournalEntry,
 } from "@/app/(shell)/m/accounting/journal-entries/actions";
+import { exportRowsToCsv, type CsvColumn } from "@/lib/csv";
+import { ExportCsvButton } from "@/components/export-csv-button";
 
 export interface JournalEntryDTO {
   id: string;
@@ -45,6 +47,15 @@ function money(cents: number): string {
 function toCents(s: string): number {
   return Math.round((Number.parseFloat(s) || 0) * 100);
 }
+
+const CSV_COLUMNS: CsvColumn<JournalEntryDTO>[] = [
+  { header: "Entry #", cell: (e) => e.entryNumber },
+  { header: "Date", cell: (e) => e.entryDate },
+  { header: "Memo", cell: (e) => e.memo },
+  { header: "Lines", cell: (e) => e.lineCount },
+  { header: "Amount", cell: (e) => (e.totalCents / 100).toFixed(2) },
+  { header: "Status", cell: (e) => e.status },
+];
 
 export function JournalEntriesPanel({
   entries,
@@ -135,12 +146,20 @@ export function JournalEntriesPanel({
   return (
     <div className="mt-6">
       <div className="flex items-center justify-between gap-3">
-        <input
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search entries…"
-          className="w-56 rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-indigo-500"
-        />
+        <div className="flex items-center gap-2">
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search entries…"
+            className="w-56 rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-indigo-500"
+          />
+          <ExportCsvButton
+            disabled={visible.length === 0}
+            onExport={() =>
+              exportRowsToCsv("journal-entries", CSV_COLUMNS, visible)
+            }
+          />
+        </div>
         {!showForm && accounts.length > 0 ? (
           <button
             type="button"

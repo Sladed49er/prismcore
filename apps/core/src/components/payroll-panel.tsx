@@ -7,6 +7,8 @@ import {
   editPayRun,
   removePayRun,
 } from "@/app/(shell)/m/accounting/payroll/actions";
+import { exportRowsToCsv, type CsvColumn } from "@/lib/csv";
+import { ExportCsvButton } from "@/components/export-csv-button";
 
 export interface PayRunDTO {
   id: string;
@@ -30,6 +32,15 @@ export interface PayRunEntryDTO {
 function money(cents: number): string {
   return "$" + (cents / 100).toLocaleString();
 }
+
+const CSV_COLUMNS: CsvColumn<PayRunDTO>[] = [
+  { header: "Pay period", cell: (r) => r.label },
+  { header: "Pay date", cell: (r) => r.payDate },
+  { header: "Status", cell: (r) => r.status },
+  { header: "Employees", cell: (r) => r.entryCount },
+  { header: "Total gross", cell: (r) => (r.totalGrossCents / 100).toFixed(2) },
+  { header: "Total net", cell: (r) => (r.totalNetCents / 100).toFixed(2) },
+];
 
 export function PayrollPanel({
   runs,
@@ -112,12 +123,18 @@ export function PayrollPanel({
   return (
     <div className="mt-6">
       <div className="flex items-center justify-between gap-3">
-        <input
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search pay runs…"
-          className="w-56 rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-indigo-500"
-        />
+        <div className="flex items-center gap-2">
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search pay runs…"
+            className="w-56 rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-indigo-500"
+          />
+          <ExportCsvButton
+            disabled={visible.length === 0}
+            onExport={() => exportRowsToCsv("pay-runs", CSV_COLUMNS, visible)}
+          />
+        </div>
         {!showForm ? (
           <button
             type="button"

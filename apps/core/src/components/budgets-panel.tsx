@@ -8,6 +8,8 @@ import {
   removeBudget,
   removeBudgetLine,
 } from "@/app/(shell)/m/accounting/budgets/actions";
+import { exportRowsToCsv, type CsvColumn } from "@/lib/csv";
+import { ExportCsvButton } from "@/components/export-csv-button";
 
 export interface BudgetDTO {
   id: string;
@@ -36,6 +38,14 @@ type Status = (typeof STATUSES)[number];
 function money(cents: number): string {
   return "$" + (cents / 100).toLocaleString();
 }
+
+const CSV_COLUMNS: CsvColumn<BudgetDTO>[] = [
+  { header: "Budget", cell: (b) => b.name },
+  { header: "Fiscal year", cell: (b) => b.fiscalYear },
+  { header: "Status", cell: (b) => b.status },
+  { header: "Lines", cell: (b) => b.lineCount },
+  { header: "Total", cell: (b) => (b.totalCents / 100).toFixed(2) },
+];
 
 export function BudgetsPanel({
   budgets,
@@ -131,9 +141,15 @@ export function BudgetsPanel({
   return (
     <div className="mt-6">
       <div className="flex items-center justify-between">
-        <p className="text-sm text-gray-500">
-          {budgets.length} budget{budgets.length === 1 ? "" : "s"}
-        </p>
+        <div className="flex items-center gap-3">
+          <p className="text-sm text-gray-500">
+            {budgets.length} budget{budgets.length === 1 ? "" : "s"}
+          </p>
+          <ExportCsvButton
+            disabled={budgets.length === 0}
+            onExport={() => exportRowsToCsv("budgets", CSV_COLUMNS, budgets)}
+          />
+        </div>
         {!showForm ? (
           <button
             type="button"

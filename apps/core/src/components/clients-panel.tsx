@@ -6,6 +6,8 @@ import {
   editClient,
   removeClient,
 } from "@/app/(shell)/m/clients/register/actions";
+import { exportRowsToCsv, type CsvColumn } from "@/lib/csv";
+import { ExportCsvButton } from "@/components/export-csv-button";
 
 export interface ClientDTO {
   id: string;
@@ -46,6 +48,19 @@ const EMPTY = {
   state: "",
   status: "prospect",
 };
+
+const CSV_COLUMNS: CsvColumn<ClientDTO>[] = [
+  { header: "Name", cell: (c) => c.displayName },
+  { header: "Type", cell: (c) => c.type },
+  { header: "First name", cell: (c) => c.firstName },
+  { header: "Last name", cell: (c) => c.lastName },
+  { header: "Business name", cell: (c) => c.businessName },
+  { header: "Email", cell: (c) => c.email },
+  { header: "Phone", cell: (c) => c.phone },
+  { header: "City", cell: (c) => c.city },
+  { header: "State", cell: (c) => c.state },
+  { header: "Status", cell: (c) => c.status },
+];
 
 export function ClientsPanel({
   clients,
@@ -151,12 +166,18 @@ export function ClientsPanel({
   return (
     <div className="mt-6">
       <div className="flex items-center justify-between gap-3">
-        <input
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search clients…"
-          className="w-56 rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-indigo-500"
-        />
+        <div className="flex items-center gap-2">
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search clients…"
+            className="w-56 rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-indigo-500"
+          />
+          <ExportCsvButton
+            disabled={visible.length === 0}
+            onExport={() => exportRowsToCsv("clients", CSV_COLUMNS, visible)}
+          />
+        </div>
         {!showForm ? (
           <button
             type="button"

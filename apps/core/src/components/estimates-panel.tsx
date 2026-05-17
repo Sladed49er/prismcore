@@ -7,6 +7,8 @@ import {
   editEstimate,
   removeEstimate,
 } from "@/app/(shell)/m/accounting/estimates/actions";
+import { exportRowsToCsv, type CsvColumn } from "@/lib/csv";
+import { ExportCsvButton } from "@/components/export-csv-button";
 
 export interface EstimateDTO {
   id: string;
@@ -54,6 +56,15 @@ const EMPTY = {
   status: "draft",
   validUntil: "",
 };
+
+const CSV_COLUMNS: CsvColumn<EstimateDTO>[] = [
+  { header: "Estimate #", cell: (e) => e.estimateNumber },
+  { header: "Client", cell: (e) => e.clientName },
+  { header: "Description", cell: (e) => e.description },
+  { header: "Amount", cell: (e) => (e.amountCents / 100).toFixed(2) },
+  { header: "Valid until", cell: (e) => e.validUntil },
+  { header: "Status", cell: (e) => e.status },
+];
 
 export function EstimatesPanel({
   estimates,
@@ -151,12 +162,18 @@ export function EstimatesPanel({
   return (
     <div className="mt-6">
       <div className="flex items-center justify-between gap-3">
-        <input
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search estimates…"
-          className="w-56 rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-indigo-500"
-        />
+        <div className="flex items-center gap-2">
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search estimates…"
+            className="w-56 rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-indigo-500"
+          />
+          <ExportCsvButton
+            disabled={visible.length === 0}
+            onExport={() => exportRowsToCsv("estimates", CSV_COLUMNS, visible)}
+          />
+        </div>
         {!showForm && clients.length > 0 ? (
           <button
             type="button"
