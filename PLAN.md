@@ -302,6 +302,34 @@ rehearsal, not a build task. Prism Core: all four pillars live, multi-tenant wit
 database-enforced isolation, guided onboarding, customization engine, two-level
 admin + ticketing, and PrismVoice — deployed and demo-ready.
 
+## Module build-out — pouring in the real modules
+
+The 18-day platform plan is done; this is the next phase: turning the 36-module
+catalog from shells into real, functional modules. Each module = schema + RLS +
+lib (withTenantContext) + a real page, built and verified before the next. The
+pattern is set by `clients`. **3 of 36 real; 33 to go.**
+
+Core: [x] clients · [ ] documents · [ ] tasks · [ ] esign · [ ] reports ·
+[ ] ai_reports · [ ] marketing · [ ] vault · [ ] contracts · [ ] leads ·
+[ ] migration
+Accounting: [ ] accounting
+Insurance: [ ] policies · [ ] pipeline · [ ] renewals · [ ] carriers ·
+[ ] claims · [ ] certificates · [ ] acord_forms · [ ] intake_forms ·
+[ ] commissions · [ ] trust_accounting · [ ] client_portal · [ ] cross_sell ·
+[ ] specialty_markets · [ ] bookscan
+Communications: [x] telephony (PrismVoice)
+Wealth: [ ] households · [ ] tax_practice
+Association: [ ] memberships · [ ] chapters · [ ] events ·
+[ ] communication_lists · [ ] member_portal · [ ] member_benefits
+Integration: [x] api_clearinghouse
+
+### Clients — 2026-05-16 ✅ (first real module)
+
+`clients` schema (tenant-scoped, RLS) + migration 0005; `setup-rls.mjs` reworked
+to re-run without rotating the role password (adding a module = add its table +
+re-run). `/m/clients` is a real list+create page; the customization engine is
+wired in — a tenant's custom fields render onto the client form.
+
 ## Reference
 
 - Source survey: PrismAMS = `~/Tresorit/ClaudeProjects/prismams/` (Next.js 16, 35
