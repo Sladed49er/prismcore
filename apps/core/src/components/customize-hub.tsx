@@ -11,6 +11,7 @@ import { OptionSetsPanel } from "@/components/option-sets-panel";
 import { SavedViewsPanel } from "@/components/saved-views-panel";
 import { BrandingPanel } from "@/components/branding-panel";
 import { AssistantPanel } from "@/components/assistant-panel";
+import { HistoryPanel } from "@/components/history-panel";
 
 export type { EntityRef, CustomFieldDTO };
 
@@ -54,13 +55,23 @@ export interface BrandingDTO {
   logoUrl: string;
 }
 
+export interface LogEntryDTO {
+  id: string;
+  actorType: "user" | "ai";
+  actorName: string;
+  action: string;
+  summary: string;
+  createdAt: string;
+}
+
 type TabKey =
   | "assistant"
   | "fields"
   | "terminology"
   | "statuses"
   | "views"
-  | "branding";
+  | "branding"
+  | "history";
 
 const TABS: { key: TabKey; label: string; blurb: string }[] = [
   {
@@ -93,6 +104,12 @@ const TABS: { key: TabKey; label: string; blurb: string }[] = [
     label: "Branding",
     blurb: "Name, accent colour, and logo for this workspace.",
   },
+  {
+    key: "history",
+    label: "History",
+    blurb:
+      "Every customization change ever made — the historical record of this workspace.",
+  },
 ];
 
 /**
@@ -107,6 +124,7 @@ export function CustomizeHub({
   optionSets,
   views,
   branding,
+  log,
 }: {
   entities: EntityRef[];
   fields: CustomFieldDTO[];
@@ -114,6 +132,7 @@ export function CustomizeHub({
   optionSets: OptionSetDTO[];
   views: SavedViewDTO[];
   branding: BrandingDTO;
+  log: LogEntryDTO[];
 }) {
   const [tab, setTab] = useState<TabKey>("assistant");
   const active = TABS.find((t) => t.key === tab)!;
@@ -156,6 +175,7 @@ export function CustomizeHub({
       {tab === "statuses" ? <OptionSetsPanel optionSets={optionSets} /> : null}
       {tab === "views" ? <SavedViewsPanel views={views} /> : null}
       {tab === "branding" ? <BrandingPanel branding={branding} /> : null}
+      {tab === "history" ? <HistoryPanel log={log} /> : null}
     </div>
   );
 }

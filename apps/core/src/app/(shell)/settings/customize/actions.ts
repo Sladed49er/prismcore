@@ -6,6 +6,7 @@ import { currentActorName } from "@/lib/actor";
 import {
   addCustomField,
   removeCustomField,
+  restoreCustomField,
   setTerm,
   clearTerm,
   createOptionSet,
@@ -63,10 +64,46 @@ export async function addField(input: {
   revalidatePath(CUSTOMIZE_PATH);
 }
 
+/** Archive a field — the definition is kept as a historical record. */
 export async function removeField(fieldId: string): Promise<void> {
   const tenant = await getCurrentTenant();
-  await removeCustomField(tenant.id, fieldId);
-  await record(tenant.id, "field.remove", "Removed a custom field");
+  const archived = await removeCustomField(tenant.id, fieldId);
+  await record(
+    tenant.id,
+    "field.archive",
+    archived
+      ? `Archived the "${archived.label}" field on ${archived.entityKey}`
+      : "Archived a custom field",
+    // Keep the full prior definition so the change is reversible and the
+    // field stays identifiable even if the row is ever purged.
+    archived
+      ? {
+          field: {
+            id: archived.id,
+            moduleId: archived.moduleId,
+            entityKey: archived.entityKey,
+            fieldKey: archived.fieldKey,
+            label: archived.label,
+            fieldType: archived.fieldType,
+            required: archived.required,
+            options: archived.options,
+          },
+        }
+      : undefined,
+  );
+  revalidatePath(CUSTOMIZE_PATH);
+}
+
+/** Restore an archived field to active use. */
+export async function restoreField(fieldId: string): Promise<void> {
+  const tenant = await getCurrentTenant();
+  await restoreCustomField(tenant.id, fieldId);
+  await record(
+    tenant.id,
+    "field.restore",
+    "Restored an archived custom field",
+    { fieldId },
+  );
   revalidatePath(CUSTOMIZE_PATH);
 }
 

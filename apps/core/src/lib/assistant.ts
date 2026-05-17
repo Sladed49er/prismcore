@@ -100,7 +100,8 @@ const TOOLS: Anthropic.Tool[] = [
   },
   {
     name: "remove_custom_field",
-    description: "Delete a custom field by its id.",
+    description:
+      "Archive a custom field by its id. The field stops appearing on records but its definition is kept as a historical record; it can be restored later.",
     input_schema: {
       type: "object",
       properties: { fieldId: { type: "string" } },
@@ -264,8 +265,13 @@ async function executeTool(
       };
     }
     case "remove_custom_field": {
-      await removeCustomField(tenantId, String(input.fieldId));
-      return { result: { ok: true }, change: "Removed a custom field" };
+      const archived = await removeCustomField(tenantId, String(input.fieldId));
+      return {
+        result: { ok: true },
+        change: archived
+          ? `Archived the "${archived.label}" field`
+          : "Archived a custom field",
+      };
     }
     case "rename": {
       await setTerm(tenantId, String(input.termKey), String(input.label));

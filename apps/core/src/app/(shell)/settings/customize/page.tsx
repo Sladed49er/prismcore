@@ -1,10 +1,11 @@
 import { loadCurrentTenant } from "@/lib/kernel";
 import {
-  listCustomFields,
+  listAllCustomFields,
   listTerminology,
   listOptionSets,
   listSavedViews,
   getBranding,
+  listCustomizationLog,
 } from "@/lib/customization";
 import {
   CustomizeHub,
@@ -14,6 +15,7 @@ import {
   type OptionSetDTO,
   type SavedViewDTO,
   type BrandingDTO,
+  type LogEntryDTO,
 } from "@/components/customize-hub";
 
 /**
@@ -35,13 +37,14 @@ export default async function CustomizePage() {
     })),
   );
 
-  const [fieldRows, termRows, optionSetRows, viewRows, branding] =
+  const [fieldRows, termRows, optionSetRows, viewRows, branding, logRows] =
     await Promise.all([
-      listCustomFields(config.id),
+      listAllCustomFields(config.id),
       listTerminology(config.id),
       listOptionSets(config.id),
       listSavedViews(config.id),
       getBranding(config.id),
+      listCustomizationLog(config.id),
     ]);
 
   const fields: CustomFieldDTO[] = fieldRows.map((r) => ({
@@ -50,6 +53,7 @@ export default async function CustomizePage() {
     label: r.label,
     fieldType: r.fieldType,
     required: r.required,
+    archived: r.archivedAt !== null,
   }));
 
   // What can be renamed: every enabled module, and every customizable entity.
@@ -99,6 +103,15 @@ export default async function CustomizePage() {
     logoUrl: branding?.logoUrl ?? "",
   };
 
+  const log: LogEntryDTO[] = logRows.map((r) => ({
+    id: r.id,
+    actorType: r.actorType,
+    actorName: r.actorName,
+    action: r.action,
+    summary: r.summary,
+    createdAt: r.createdAt.toISOString(),
+  }));
+
   return (
     <div className="mx-auto max-w-4xl px-8 py-10">
       <h1 className="text-2xl font-semibold">Customize</h1>
@@ -113,6 +126,7 @@ export default async function CustomizePage() {
         optionSets={optionSets}
         views={views}
         branding={brandingDto}
+        log={log}
       />
     </div>
   );

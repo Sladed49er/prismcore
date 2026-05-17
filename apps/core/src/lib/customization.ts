@@ -1,4 +1,4 @@
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, isNull, sql } from "drizzle-orm";
 import {
   withTenantContext,
   tenantCustomFields,
@@ -33,7 +33,30 @@ type FieldType = "text" | "number" | "date" | "select" | "checkbox";
 
 /* ── Custom fields ──────────────────────────────────────────────────────── */
 
+/** Active custom fields — the ones currently in use on records. */
 export async function listCustomFields(
+  tenantId: string,
+): Promise<TenantCustomField[]> {
+  return withTenantContext(tenantId, async (tx) =>
+    tx
+      .select()
+      .from(tenantCustomFields)
+      .where(
+        and(
+          eq(tenantCustomFields.tenantId, tenantId),
+          isNull(tenantCustomFields.archivedAt),
+        ),
+      ),
+  );
+}
+
+/**
+ * Every custom field the tenant has ever defined — active and archived. This
+ * is the historical record: an archived field keeps its full definition so
+ * data carrying its values can still be identified during an export, a
+ * migration, or an acquisition.
+ */
+export async function listAllCustomFields(
   tenantId: string,
 ): Promise<TenantCustomField[]> {
   return withTenantContext(tenantId, async (tx) =>
@@ -54,7 +77,11 @@ function slugify(label: string, fallback = "field"): string {
   );
 }
 
-/** Define a custom field on an entity. Returns the field's id. */
+/**
+ * Define a custom field on an entity. Returns the field's id. Re-adding a
+ * field whose key was previously archived revives that same field (so its
+ * historical values reconnect) rather than creating a duplicate.
+ */
 export async function addCustomField(input: {
   tenantId: string;
   moduleId: string;
@@ -78,19 +105,62 @@ export async function addCustomField(input: {
         required: input.required,
         options: input.options ?? [],
       })
-      .onConflictDoNothing()
+      .onConflictDoUpdate({
+        target: [
+          tenantCustomFields.tenantId,
+          tenantCustomFields.entityKey,
+          tenantCustomFields.fieldKey,
+        ],
+        // Only revive an ARCHIVED field; an active duplicate is left alone.
+        setWhere: sql`${tenantCustomFields.archivedAt} is not null`,
+        set: {
+          archivedAt: null,
+          label: input.label,
+          fieldType: input.fieldType,
+          required: input.required,
+          options: input.options ?? [],
+        },
+      })
       .returning({ id: tenantCustomFields.id });
     return row?.id ?? "";
   });
 }
 
+/**
+ * Archive a custom field — it stops appearing on records, but its definition
+ * is kept so data that carries its values stays identifiable. Returns the
+ * archived field's full definition (or null if it was not found / already
+ * archived) so the caller can record it in the audit log.
+ */
 export async function removeCustomField(
+  tenantId: string,
+  fieldId: string,
+): Promise<TenantCustomField | null> {
+  return withTenantContext(tenantId, async (tx) => {
+    const [row] = await tx
+      .update(tenantCustomFields)
+      .set({ archivedAt: new Date() })
+      .where(
+        and(
+          eq(tenantCustomFields.tenantId, tenantId),
+          eq(tenantCustomFields.id, fieldId),
+          isNull(tenantCustomFields.archivedAt),
+        ),
+      )
+      .returning();
+    return row ?? null;
+  });
+}
+
+/** Restore an archived custom field to active use. */
+export async function restoreCustomField(
   tenantId: string,
   fieldId: string,
 ): Promise<void> {
   await withTenantContext(tenantId, async (tx) => {
     await tx
-      .delete(tenantCustomFields)
+      .update(tenantCustomFields)
+      .set({ archivedAt: null })
       .where(
         and(
           eq(tenantCustomFields.tenantId, tenantId),

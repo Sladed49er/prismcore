@@ -59,6 +59,13 @@ export const tenantCustomFields = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
+    /**
+     * Custom fields are archived, never destroyed: a removed field keeps its
+     * full definition (key, label, type) so historical record data can still
+     * be identified and matched up later — in an export, a migration, or an
+     * acquisition. Null = active; a timestamp = archived on that date.
+     */
+    archivedAt: timestamp("archived_at", { withTimezone: true }),
   },
   (t) => [
     index("tenant_custom_fields_tenant_idx").on(t.tenantId),

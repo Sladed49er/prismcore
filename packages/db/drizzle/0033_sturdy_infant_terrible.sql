@@ -1,0 +1,1 @@
+ALTER TABLE "tenant_custom_fields" ADD COLUMN "archived_at" timestamp with time zone;

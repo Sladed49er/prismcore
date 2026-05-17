@@ -1,7 +1,11 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { addField, removeField } from "@/app/(shell)/settings/customize/actions";
+import {
+  addField,
+  removeField,
+  restoreField,
+} from "@/app/(shell)/settings/customize/actions";
 
 export interface EntityRef {
   moduleId: string;
@@ -16,6 +20,8 @@ export interface CustomFieldDTO {
   label: string;
   fieldType: string;
   required: boolean;
+  /** Archived fields are kept as a historical record, not shown on records. */
+  archived: boolean;
 }
 
 const FIELD_TYPES = ["text", "number", "date", "select", "checkbox"] as const;
@@ -42,7 +48,12 @@ export function CustomizePanel({
 
   const entity =
     entities.find((e) => e.entityKey === selectedKey) ?? entities[0];
-  const entityFields = fields.filter((f) => f.entityKey === selectedKey);
+  const entityFields = fields.filter(
+    (f) => f.entityKey === selectedKey && !f.archived,
+  );
+  const archivedFields = fields.filter(
+    (f) => f.entityKey === selectedKey && f.archived,
+  );
 
   function add(): void {
     if (!label.trim() || !entity) return;
@@ -64,6 +75,12 @@ export function CustomizePanel({
   function remove(id: string): void {
     startTransition(async () => {
       await removeField(id);
+    });
+  }
+
+  function restore(id: string): void {
+    startTransition(async () => {
+      await restoreField(id);
     });
   }
 
@@ -117,13 +134,46 @@ export function CustomizePanel({
                   disabled={pending}
                   className="text-sm text-gray-400 transition hover:text-red-600 disabled:opacity-40"
                 >
-                  Remove
+                  Archive
                 </button>
               </li>
             ))}
           </ul>
         )}
       </div>
+
+      {archivedFields.length > 0 ? (
+        <div className="mt-4 rounded-xl border border-dashed border-gray-300 bg-gray-50">
+          <p className="px-5 pt-3 text-xs font-semibold uppercase tracking-wide text-gray-500">
+            Archived fields — kept as a historical record
+          </p>
+          <ul className="divide-y divide-gray-200">
+            {archivedFields.map((f) => (
+              <li
+                key={f.id}
+                className="flex items-center justify-between gap-3 px-5 py-3"
+              >
+                <span>
+                  <span className="font-medium text-gray-500 line-through">
+                    {f.label}
+                  </span>
+                  <span className="ml-2 text-xs uppercase tracking-wide text-gray-400">
+                    {f.fieldType}
+                  </span>
+                </span>
+                <button
+                  type="button"
+                  onClick={() => restore(f.id)}
+                  disabled={pending}
+                  className="text-sm font-medium text-indigo-600 transition hover:text-indigo-700 disabled:opacity-40"
+                >
+                  Restore
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
 
       <div className="mt-4 flex flex-wrap items-end gap-3 rounded-xl border border-gray-200 bg-white p-4">
         <div className="min-w-48 flex-1">
