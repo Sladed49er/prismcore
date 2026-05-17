@@ -54,3 +54,6 @@ export * from "./retention";
 export * from "./client-contacts";
 export * from "./client-activities";
 export * from "./client-locations";
+export * from "./leads";
+export * from "./lead-sources";
+export * from "./campaigns";

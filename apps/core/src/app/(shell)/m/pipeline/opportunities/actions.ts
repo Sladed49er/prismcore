@@ -29,7 +29,7 @@ export async function addOpportunity(input: {
     notes: input.notes.trim(),
     expectedCloseDate: input.expectedCloseDate || null,
   });
-  revalidatePath("/m/pipeline");
+  revalidatePath("/m/pipeline/opportunities");
 }
 
 export async function advanceStage(
@@ -38,5 +38,5 @@ export async function advanceStage(
 ): Promise<void> {
   const tenant = await getCurrentTenant();
   await setOpportunityStage(tenant.id, opportunityId, stage);
-  revalidatePath("/m/pipeline");
+  revalidatePath("/m/pipeline/opportunities");
 }

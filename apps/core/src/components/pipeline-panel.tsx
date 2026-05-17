@@ -1,7 +1,10 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { addOpportunity, advanceStage } from "@/app/(shell)/m/pipeline/actions";
+import {
+  addOpportunity,
+  advanceStage,
+} from "@/app/(shell)/m/pipeline/opportunities/actions";
 
 export interface OpportunityDTO {
   id: string;

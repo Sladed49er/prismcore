@@ -169,6 +169,13 @@
       "when": 1778999928968,
       "tag": "0023_pale_bulldozer",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1779000395940,
+      "tag": "0024_unusual_viper",
+      "breakpoints": true
     }
   ]
 }

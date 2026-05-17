@@ -404,10 +404,20 @@ decision-maker), **Activities** (CRM interaction log — call/email/meeting/
 note/task, chronological feed), **Locations** (mailing/physical/billing/branch
 addresses). Migrations through 0023; RLS on 65 tenant tables.
 
+### Pipeline & Marketing — deep build (1:1 with PrismAMS) — 2026-05-17 ✅
+
+**Pipeline & Marketing is fully built — all 4 sub-modules live.** `/m/pipeline`
+is a **hub** (Accounting pattern); the opportunity worklist moved to
+`/m/pipeline/opportunities`. Sub-modules: Opportunity Pipeline (by stage),
+**Leads** (inbound prospects, new→qualified→converted), **Lead Sources**
+(attribution channels, active/inactive), **Campaigns** (outbound marketing —
+channel, schedule, budget, planned→completed). Migrations through 0024; RLS on
+68 tenant tables.
+
 Modules now at full PrismAMS depth: Accounting (18), Policies & Servicing (9),
-Claims (7), Commissions (6), Renewals (4), Clients & CRM (4). The five core
-insurance pillars plus the CRM backbone are done; remaining lean modules
-(Marketing/Pipeline, Documents, Tasks, Certificates, etc.) are next.
+Claims (7), Commissions (6), Renewals (4), Clients & CRM (4), Pipeline &
+Marketing (4). Remaining lean modules (Documents, Tasks, Certificates, Carriers,
+etc.) are next for the same hub treatment.
 
 ## Reference
 

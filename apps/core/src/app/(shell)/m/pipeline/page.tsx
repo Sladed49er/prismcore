@@ -1,44 +1,81 @@
-import { loadCurrentTenant, requireModule } from "@/lib/kernel";
-import { listOpportunities } from "@/lib/pipeline";
-import { listClients, clientDisplayName } from "@/lib/clients";
-import {
-  PipelinePanel,
-  type OpportunityDTO,
-  type ClientOption,
-} from "@/components/pipeline-panel";
+import Link from "next/link";
+import { requireModule } from "@/lib/kernel";
 
-export default async function PipelinePage() {
+/** Sub-modules that are built and live. */
+const BUILT = [
+  {
+    href: "/m/pipeline/opportunities",
+    name: "Opportunity Pipeline",
+    desc: "New-business and cross-sell opportunities, by stage.",
+  },
+  {
+    href: "/m/pipeline/leads",
+    name: "Leads",
+    desc: "Inbound prospects worked from first contact to qualified.",
+  },
+  {
+    href: "/m/pipeline/sources",
+    name: "Lead Sources",
+    desc: "The marketing channels every lead is attributed to.",
+  },
+  {
+    href: "/m/pipeline/campaigns",
+    name: "Campaigns",
+    desc: "Outbound marketing campaigns — channel, schedule, budget.",
+  },
+];
+
+/** The remaining pipeline sub-modules, ported in over the coming turns. */
+const PLANNED: string[] = [];
+
+export default async function PipelineHub() {
   await requireModule("pipeline");
-  const { config } = await loadCurrentTenant();
-  const [opportunityRows, clientRows] = await Promise.all([
-    listOpportunities(config.id),
-    listClients(config.id),
-  ]);
-
-  const opportunities: OpportunityDTO[] = opportunityRows.map((o) => ({
-    id: o.id,
-    name: o.name,
-    clientName: o.clientName,
-    valueCents: o.valueCents,
-    stage: o.stage,
-    expectedCloseDate: o.expectedCloseDate,
-  }));
-  const clients: ClientOption[] = clientRows.map((c) => ({
-    id: c.id,
-    name: clientDisplayName(c),
-  }));
 
   return (
     <div className="mx-auto max-w-4xl px-8 py-10">
       <p className="text-xs font-semibold uppercase tracking-wide text-indigo-500">
-        Insurance
+        Growth
       </p>
-      <h1 className="mt-1 text-2xl font-semibold">Pipeline</h1>
+      <h1 className="mt-1 text-2xl font-semibold">Pipeline &amp; Marketing</h1>
       <p className="mt-2 max-w-2xl text-gray-600">
-        New-business and cross-sell opportunities, tracked from first touch to
-        won or lost.
+        The new-business engine — leads in, attributed to their sources and
+        campaigns, worked up into the opportunity pipeline.
       </p>
-      <PipelinePanel opportunities={opportunities} clients={clients} />
+
+      <div className="mt-6 grid gap-3 sm:grid-cols-2">
+        {BUILT.map((s) => (
+          <Link
+            key={s.href}
+            href={s.href}
+            className="rounded-xl border border-gray-200 bg-white p-5 transition hover:border-indigo-300"
+          >
+            <h3 className="font-semibold">{s.name}</h3>
+            <p className="mt-1 text-sm text-gray-600">{s.desc}</p>
+          </Link>
+        ))}
+      </div>
+
+      {PLANNED.length > 0 ? (
+        <>
+          <h2 className="mt-8 text-xs font-semibold uppercase tracking-wide text-gray-500">
+            Coming next in the pipeline build-out
+          </h2>
+          <div className="mt-3 flex flex-wrap gap-2">
+            {PLANNED.map((p) => (
+              <span
+                key={p}
+                className="rounded-full border border-dashed border-gray-300 px-3 py-1 text-sm text-gray-400"
+              >
+                {p}
+              </span>
+            ))}
+          </div>
+        </>
+      ) : (
+        <p className="mt-8 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+          ✓ Pipeline &amp; Marketing is fully built out.
+        </p>
+      )}
     </div>
   );
 }

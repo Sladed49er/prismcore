@@ -803,4 +803,24 @@ if (ccCount[0].n === 0) {
   console.log("• clients CRM demo data already present — skipped");
 }
 
+// 25. Pipeline & marketing — lead sources, leads, campaigns.
+const leadCount = await sql.query("SELECT count(*)::int AS n FROM leads WHERE tenant_id = $1", [demo]);
+if (leadCount[0].n === 0) {
+  await sql.query(
+    "INSERT INTO lead_sources (tenant_id, name, source_type, description, is_active) VALUES ($1,'Client referral','referral','Word-of-mouth from existing clients',true),($1,'Website contact form','web','Inbound from prismams.com',true),($1,'Chamber of Commerce','partner','Local chamber partnership',true)",
+    [demo],
+  );
+  await sql.query(
+    "INSERT INTO leads (tenant_id, name, company, email, phone, source, line_of_business, estimated_value_cents, status, notes) VALUES ($1,'Greg Mason','Mason Freight','greg@masonfreight.com','555-0420','Client referral','Commercial Auto',850000,'qualified','Fleet of 12 trucks'),($1,'Dana Kerr','Kerr Bakery','dana@kerrbakery.com','555-0421','Website contact form','BOP',240000,'working','')",
+    [demo],
+  );
+  await sql.query(
+    "INSERT INTO marketing_campaigns (tenant_id, name, channel, start_date, end_date, budget_cents, status, notes) VALUES ($1,'Spring small-business push','Email','2026-03-01','2026-05-31',300000,'active','Targeting local retail'),($1,'Q3 referral drive','Direct mail','2026-07-01','2026-09-30',500000,'planned','')",
+    [demo],
+  );
+  console.log("✓ seeded 3 lead sources, 2 leads, 2 campaigns");
+} else {
+  console.log("• pipeline/marketing demo data already present — skipped");
+}
+
 console.log("✓ demo tenant seeded: modules, custom fields, 3 carrier connections, VoIP");
