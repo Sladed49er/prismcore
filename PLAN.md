@@ -362,9 +362,20 @@ Audits** (estimated vs. audited premium, computed adjustment), **Service
 Activities** (the servicing log), **ID Cards & Documents** (policy paperwork).
 Migrations through 0017; RLS on 48 tenant tables.
 
-Modules now at full PrismAMS depth: Accounting (18), Policies & Servicing (9).
-Next: deepen the remaining lean MVP modules the same way — Claims, Commissions,
-and Renewals are the next pillars.
+### Claims — deep build (1:1 with PrismAMS) — 2026-05-17 🔄
+
+`/m/claims` is now a **hub** (Accounting pattern); the claims register moved to
+`/m/claims/register`. Built so far (5 of 7 sub-modules): **Claims Register**,
+**Claim Diary** (chronological notes — diary/contact/coverage/investigation),
+**Reserves** (reserve-change ledger by indemnity/expense/legal/medical type),
+**Claim Payments** (loss & expense payments, pending/issued/cleared/voided),
+**Recovery & Subrogation** (subrogation/salvage/deductible recovery).
+Migrations through 0018; RLS on 52 tenant tables.
+
+Remaining claims sub-modules (the hub lists them): Claim Parties, Litigation.
+
+Modules now at full PrismAMS depth: Accounting (18), Policies & Servicing (9),
+Claims (5 of 7). Next pillars after Claims: Commissions and Renewals.
 
 ## Reference
 

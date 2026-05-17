@@ -25,7 +25,7 @@ export async function addClaim(input: {
       (Number.parseFloat(input.reserveDollars) || 0) * 100,
     ),
   });
-  revalidatePath("/m/claims");
+  revalidatePath("/m/claims/register");
 }
 
 export async function advanceClaim(
@@ -34,5 +34,5 @@ export async function advanceClaim(
 ): Promise<void> {
   const tenant = await getCurrentTenant();
   await setClaimStatus(tenant.id, claimId, status);
-  revalidatePath("/m/claims");
+  revalidatePath("/m/claims/register");
 }

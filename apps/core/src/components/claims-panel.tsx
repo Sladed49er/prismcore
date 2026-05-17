@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { addClaim, advanceClaim } from "@/app/(shell)/m/claims/actions";
+import { addClaim, advanceClaim } from "@/app/(shell)/m/claims/register/actions";
 
 export interface ClaimDTO {
   id: string;

@@ -37,3 +37,7 @@ export * from "./schedules";
 export * from "./audits";
 export * from "./service-activities";
 export * from "./policy-documents";
+export * from "./claim-notes";
+export * from "./claim-reserves";
+export * from "./claim-payments";
+export * from "./claim-recoveries";

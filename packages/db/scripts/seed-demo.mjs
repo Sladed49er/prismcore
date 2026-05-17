@@ -642,4 +642,35 @@ if (schedCount[0].n === 0) {
   console.log("• policy servicing extras already present — skipped");
 }
 
+// 19. Claims lifecycle — diary, reserves, payments, recoveries.
+const cnoteCount = await sql.query("SELECT count(*)::int AS n FROM claim_notes WHERE tenant_id = $1", [demo]);
+if (cnoteCount[0].n === 0) {
+  const cls = await sql.query(
+    "SELECT id FROM claims WHERE tenant_id = $1 ORDER BY created_at LIMIT 1",
+    [demo],
+  );
+  if (cls.length >= 1) {
+    const c0 = cls[0].id;
+    await sql.query(
+      "INSERT INTO claim_notes (tenant_id, claim_id, note_date, author, category, body) VALUES ($1,$2,'2026-04-10','Polina','investigation','Adjuster assigned; recorded statement scheduled.'),($1,$2,'2026-04-14','Matt','coverage','Coverage confirmed under property section, no exclusions apply.')",
+      [demo, c0],
+    );
+    await sql.query(
+      "INSERT INTO claim_reserve_entries (tenant_id, claim_id, entry_date, reserve_type, change_cents, reason) VALUES ($1,$2,'2026-04-10','indemnity',5000000,'Initial reserve'),($1,$2,'2026-04-20','expense',750000,'Independent adjuster fees'),($1,$2,'2026-05-01','indemnity',-1000000,'Reserve reduced after inspection')",
+      [demo, c0],
+    );
+    await sql.query(
+      "INSERT INTO claim_payments (tenant_id, claim_id, payment_date, payee, payment_type, amount_cents, check_number, status) VALUES ($1,$2,'2026-05-05','Coastal Restoration LLC','indemnity',2800000,'2051','cleared'),($1,$2,'2026-05-06','Allied Adjusters','expense',680000,'2052','issued')",
+      [demo, c0],
+    );
+    await sql.query(
+      "INSERT INTO claim_recoveries (tenant_id, claim_id, recovery_type, description, expected_cents, recovered_cents, status) VALUES ($1,$2,'subrogation','Third-party contractor liability',1500000,0,'pursuing')",
+      [demo, c0],
+    );
+  }
+  console.log("✓ seeded claim notes, reserves, payments, recovery");
+} else {
+  console.log("• claims lifecycle demo data already present — skipped");
+}
+
 console.log("✓ demo tenant seeded: modules, custom fields, 3 carrier connections, VoIP");
