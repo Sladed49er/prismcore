@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import {
   addCommission,
   advanceCommission,
-} from "@/app/(shell)/m/commissions/actions";
+} from "@/app/(shell)/m/commissions/register/actions";
 
 export interface CommissionDTO {
   id: string;

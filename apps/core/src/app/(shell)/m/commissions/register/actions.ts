@@ -27,7 +27,7 @@ export async function addCommission(input: {
     status: input.status,
     receivedDate: input.receivedDate || null,
   });
-  revalidatePath("/m/commissions");
+  revalidatePath("/m/commissions/register");
 }
 
 export async function advanceCommission(
@@ -36,5 +36,5 @@ export async function advanceCommission(
 ): Promise<void> {
   const tenant = await getCurrentTenant();
   await setCommissionStatus(tenant.id, commissionId, status);
-  revalidatePath("/m/commissions");
+  revalidatePath("/m/commissions/register");
 }

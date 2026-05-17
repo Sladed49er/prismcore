@@ -696,4 +696,45 @@ if (cpartyCount[0].n === 0) {
   console.log("• claim parties/litigation demo data already present — skipped");
 }
 
+// 21. Commissions — producers, splits, carrier statements, payouts.
+const prodCount = await sql.query("SELECT count(*)::int AS n FROM producers WHERE tenant_id = $1", [demo]);
+if (prodCount[0].n === 0) {
+  const p1 = await sql.query(
+    "INSERT INTO producers (tenant_id, name, code, email, default_rate_percent, status) VALUES ($1,'Matt Slade','MS01','matt@prismams.com','12','active') RETURNING id",
+    [demo],
+  );
+  const p2 = await sql.query(
+    "INSERT INTO producers (tenant_id, name, code, email, default_rate_percent, status) VALUES ($1,'Polina Slade','PS01','polina@prismams.com','10','active') RETURNING id",
+    [demo],
+  );
+  await sql.query(
+    "INSERT INTO commission_statements (tenant_id, carrier_name, statement_date, period_label, expected_cents, reported_cents, status, notes) VALUES ($1,'Travelers','2026-04-30','April 2026',1240000,1240000,'reconciled',''),($1,'Liberty Mutual','2026-04-30','April 2026',880000,842000,'disputed','Short-paid two policies')",
+    [demo],
+  );
+  await sql.query(
+    "INSERT INTO producer_payouts (tenant_id, producer_id, payout_date, period_label, amount_cents, method, status) VALUES ($1,$2,'2026-04-15','March 2026',420000,'ACH','paid'),($1,$2,'2026-05-15','April 2026',385000,'ACH','scheduled')",
+    [demo, p1[0].id],
+  );
+  const cms = await sql.query(
+    "SELECT id, amount_cents FROM commissions WHERE tenant_id = $1 ORDER BY created_at LIMIT 1",
+    [demo],
+  );
+  if (cms.length >= 1) {
+    await sql.query(
+      "INSERT INTO commission_splits (tenant_id, commission_id, producer_id, share_percent, amount_cents) VALUES ($1,$2,$3,'60',$4),($1,$2,$5,'40',$6)",
+      [
+        demo,
+        cms[0].id,
+        p1[0].id,
+        Math.round(cms[0].amount_cents * 0.6),
+        p2[0].id,
+        Math.round(cms[0].amount_cents * 0.4),
+      ],
+    );
+  }
+  console.log("✓ seeded 2 producers, 2 statements, 2 payouts, splits");
+} else {
+  console.log("• commissions demo data already present — skipped");
+}
+
 console.log("✓ demo tenant seeded: modules, custom fields, 3 carrier connections, VoIP");

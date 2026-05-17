@@ -43,3 +43,7 @@ export * from "./claim-payments";
 export * from "./claim-recoveries";
 export * from "./claim-parties";
 export * from "./claim-litigation";
+export * from "./producers";
+export * from "./commission-splits";
+export * from "./commission-statements";
+export * from "./producer-payouts";
