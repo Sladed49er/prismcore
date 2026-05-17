@@ -191,6 +191,20 @@ Days 7–10 complete for the planned scope. Follow-ons (not blockers): the
 form-builder / workflow-builder slices of customization, and pouring in real
 module service/schema logic module by module behind the contract.
 
+### Authentication — 2026-05-16 ✅ Clerk + platform admin
+
+- Clerk app provisioned via the Vercel Marketplace (`clerk-aquamarine-diamond`);
+  keys set on the project for all environments.
+- `clerkMiddleware` route protection: `/`, `/sign-in`, `/sign-up` public;
+  everything else requires a login. In-app `/sign-in` + `/sign-up` pages.
+- `lib/auth.ts` — `PLATFORM_ADMINS = matt@prismams.com, polina@prismams.com`;
+  `getViewer()` + `requireAdmin()`. `/admin` is the cross-tenant platform-admin
+  view; the sidebar's Platform Admin link shows only to admins.
+- Note: on the Clerk *development* instance, `auth.protect()` cannot complete its
+  browser handshake for non-browser clients (curl), so gated routes 404 under
+  curl — they redirect correctly in a real browser. A Clerk production instance
+  (needs a custom domain) removes that quirk — a later hardening step.
+
 ## Reference
 
 - Source survey: PrismAMS = `~/Tresorit/ClaudeProjects/prismams/` (Next.js 16, 35
