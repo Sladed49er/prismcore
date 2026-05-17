@@ -3,16 +3,21 @@ import { UserButton } from "@clerk/nextjs";
 import { NavLinks, type NavItem } from "@/components/nav-links";
 
 /**
- * The shell sidebar. Module nav is generated from the registry; the Platform Admin
- * link shows only for platform administrators.
+ * The shell sidebar. Module nav is generated from the registry; the workspace
+ * name, logo, and accent colour are the tenant's own branding. The Platform
+ * Admin link shows only for platform administrators.
  */
 export function Sidebar({
-  tenantName,
+  workspaceName,
+  logoUrl,
+  accentColor,
   items,
   viewerName,
   isAdmin,
 }: {
-  tenantName: string;
+  workspaceName: string;
+  logoUrl: string | null;
+  accentColor: string;
   items: NavItem[];
   viewerName: string;
   isAdmin: boolean;
@@ -24,17 +29,37 @@ export function Sidebar({
 
   return (
     <aside className="flex w-60 flex-col border-r border-gray-200 bg-white">
-      <div className="border-b border-gray-200 px-5 py-4">
-        <p className="text-xs font-semibold uppercase tracking-widest text-indigo-500">
-          Prism Core
-        </p>
-        <p className="mt-0.5 truncate text-sm font-semibold text-gray-900">
-          {tenantName}
-        </p>
+      <div className="flex items-center gap-2.5 border-b border-gray-200 px-5 py-4">
+        {logoUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={logoUrl}
+            alt=""
+            className="h-8 w-8 shrink-0 rounded-md object-contain"
+          />
+        ) : (
+          <span
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-sm font-bold text-white"
+            style={{ backgroundColor: accentColor }}
+          >
+            {workspaceName.charAt(0).toUpperCase()}
+          </span>
+        )}
+        <div className="min-w-0">
+          <p
+            className="text-xs font-semibold uppercase tracking-widest"
+            style={{ color: accentColor }}
+          >
+            Prism Core
+          </p>
+          <p className="mt-0.5 truncate text-sm font-semibold text-gray-900">
+            {workspaceName}
+          </p>
+        </div>
       </div>
 
       <div className="flex-1 overflow-y-auto p-3">
-        <NavLinks items={nav} />
+        <NavLinks items={nav} accentColor={accentColor} />
       </div>
 
       <div className="space-y-0.5 border-t border-gray-200 p-3">

@@ -10,7 +10,13 @@ export interface NavItem {
   icon: string;
 }
 
-export function NavLinks({ items }: { items: NavItem[] }) {
+export function NavLinks({
+  items,
+  accentColor,
+}: {
+  items: NavItem[];
+  accentColor: string;
+}) {
   const pathname = usePathname();
 
   return (
@@ -22,10 +28,15 @@ export function NavLinks({ items }: { items: NavItem[] }) {
             key={item.href}
             href={item.href}
             className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition ${
-              active
-                ? "bg-indigo-50 text-indigo-700"
-                : "text-gray-600 hover:bg-gray-50"
+              active ? "" : "text-gray-600 hover:bg-gray-50"
             }`}
+            // Active item is tinted with the tenant's accent colour
+            // (`1f` ≈ 12% alpha) rather than a fixed indigo.
+            style={
+              active
+                ? { backgroundColor: `${accentColor}1f`, color: accentColor }
+                : undefined
+            }
           >
             <ModuleIcon name={item.icon} className="h-4 w-4" />
             {item.label}
