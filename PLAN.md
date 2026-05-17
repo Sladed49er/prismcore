@@ -349,20 +349,22 @@ fees), Quarterly Taxes, **1099/W-2 Reporting** (computed from payroll + AP),
 **Financial Reports** (P&L, Balance Sheet, Trial Balance computed live from
 posted journal entries). Migrations through 0015; RLS on 40 tenant tables.
 
-### Policies & Servicing — deep build (1:1 with PrismAMS) — 2026-05-17 🔄
+### Policies & Servicing — deep build (1:1 with PrismAMS) — 2026-05-17 ✅
 
-`/m/policies` is now a **hub** (mirroring the Accounting pattern). The policy
-register moved to `/m/policies/register`. Built so far (5 of ~9 sub-modules):
-**Policy Register**, **Coverages** (limits/deductibles/allocated premium),
-**Endorsements** (mid-term changes, premium delta, pending/issued/voided),
-**Cancellations** (flat/pro-rata/short-rate, return premium, reinstatement),
-**Premium Schedule** (installment billing with mark-paid). Migrations through
-0016; RLS on 44 tenant tables.
+**Policies & Servicing is fully built — all 9 sub-modules live.** `/m/policies`
+is a **hub** (Accounting pattern); the policy register moved to
+`/m/policies/register`. Sub-modules: Policy Register, Coverages
+(limits/deductibles/allocated premium), Endorsements (mid-term changes,
+premium delta), Cancellations (flat/pro-rata/short-rate, return premium,
+reinstatement), Premium Schedule (installment billing with mark-paid),
+**Insured Schedules** (vehicles/drivers/locations/equipment), **Premium
+Audits** (estimated vs. audited premium, computed adjustment), **Service
+Activities** (the servicing log), **ID Cards & Documents** (policy paperwork).
+Migrations through 0017; RLS on 48 tenant tables.
 
-Remaining servicing sub-modules (the hub lists them): Insured Schedules,
-Premium Audits, Service Activities, ID Cards & Documents.
-
-Then: deepen the remaining lean MVP modules to PrismAMS parity the same way.
+Modules now at full PrismAMS depth: Accounting (18), Policies & Servicing (9).
+Next: deepen the remaining lean MVP modules the same way — Claims, Commissions,
+and Renewals are the next pillars.
 
 ## Reference
 

@@ -611,4 +611,35 @@ if (covCount[0].n === 0) {
   console.log("• policy servicing demo data already present — skipped");
 }
 
+// 18. Policy servicing extras — schedules, audits, activities, documents.
+const schedCount = await sql.query("SELECT count(*)::int AS n FROM insured_schedule_items WHERE tenant_id = $1", [demo]);
+if (schedCount[0].n === 0) {
+  const pols = await sql.query(
+    "SELECT id FROM policies WHERE tenant_id = $1 ORDER BY created_at LIMIT 1",
+    [demo],
+  );
+  if (pols.length >= 1) {
+    const p0 = pols[0].id;
+    await sql.query(
+      "INSERT INTO insured_schedule_items (tenant_id, policy_id, item_type, description, identifier, value_cents, notes) VALUES ($1,$2,'vehicle','2024 Ford Transit 250','1FTBR1Y89PKA12345',4200000,'Delivery van'),($1,$2,'equipment','Commercial espresso machine','SN-88421',1850000,'')",
+      [demo, p0],
+    );
+    await sql.query(
+      "INSERT INTO premium_audits (tenant_id, policy_id, audit_type, period_start, period_end, estimated_premium_cents, audited_premium_cents, status, notes) VALUES ($1,$2,'Workers Comp','2025-01-01','2025-12-31',1200000,1345000,'completed','Payroll exceeded estimate')",
+      [demo, p0],
+    );
+    await sql.query(
+      "INSERT INTO service_activities (tenant_id, policy_id, activity_type, subject, detail, assigned_to, due_date, status) VALUES ($1,$2,'change_request','Add new driver to auto policy','Insured hired a delivery driver','Polina','2026-05-25','open'),($1,$2,'coverage_review','Annual coverage review','','Matt','2026-06-10','in_progress')",
+      [demo, p0],
+    );
+    await sql.query(
+      "INSERT INTO policy_documents (tenant_id, policy_id, document_type, title, reference, issued_date, notes) VALUES ($1,$2,'dec_page','2026 Declarations Page','DOC-2026-0142','2026-01-05',''),($1,$2,'id_card','Auto ID Cards','DOC-2026-0143','2026-01-05','')",
+      [demo, p0],
+    );
+  }
+  console.log("✓ seeded schedule items, audit, activities, documents");
+} else {
+  console.log("• policy servicing extras already present — skipped");
+}
+
 console.log("✓ demo tenant seeded: modules, custom fields, 3 carrier connections, VoIP");

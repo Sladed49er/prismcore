@@ -28,15 +28,30 @@ const BUILT = [
     name: "Premium Schedule",
     desc: "Installment billing schedule and payments per policy.",
   },
+  {
+    href: "/m/policies/schedules",
+    name: "Insured Schedules",
+    desc: "Scheduled items — vehicles, drivers, locations, equipment.",
+  },
+  {
+    href: "/m/policies/audits",
+    name: "Premium Audits",
+    desc: "End-of-term audits — estimated vs. audited premium.",
+  },
+  {
+    href: "/m/policies/service",
+    name: "Service Activities",
+    desc: "The servicing log — inquiries, change requests, follow-ups.",
+  },
+  {
+    href: "/m/policies/documents",
+    name: "ID Cards & Documents",
+    desc: "Policy paperwork — ID cards, dec pages, certificates.",
+  },
 ];
 
 /** The remaining servicing sub-modules, ported in over the coming turns. */
-const PLANNED = [
-  "Insured Schedules",
-  "Premium Audits",
-  "Service Activities",
-  "ID Cards & Documents",
-];
+const PLANNED: string[] = [];
 
 export default async function PoliciesHub() {
   await requireModule("policies");

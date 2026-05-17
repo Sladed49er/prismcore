@@ -33,3 +33,7 @@ export * from "./coverages";
 export * from "./endorsements";
 export * from "./cancellations";
 export * from "./installments";
+export * from "./schedules";
+export * from "./audits";
+export * from "./service-activities";
+export * from "./policy-documents";

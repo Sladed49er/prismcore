@@ -79,6 +79,10 @@ const TENANT_TABLES = [
   "policy_endorsements",
   "policy_cancellations",
   "premium_installments",
+  "insured_schedule_items",
+  "premium_audits",
+  "service_activities",
+  "policy_documents",
 ];
 
 const owner = neon(ownerUrl);
