@@ -24,5 +24,5 @@ export async function addCertificate(input: {
     issuedDate: input.issuedDate || null,
     status: input.status,
   });
-  revalidatePath("/m/certificates");
+  revalidatePath("/m/certificates/register");
 }

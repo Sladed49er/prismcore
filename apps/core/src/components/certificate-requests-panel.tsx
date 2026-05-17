@@ -1,46 +1,41 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { addCertificate } from "@/app/(shell)/m/certificates/register/actions";
+import {
+  newCertificateRequest,
+  updateCertificateRequestStatus,
+} from "@/app/(shell)/m/certificates/requests/actions";
 
-export interface CertificateDTO {
+export interface CertificateRequestDTO {
   id: string;
-  certNumber: string;
   holderName: string;
-  policyNumber: string;
-  clientName: string;
-  issuedDate: string | null;
-  status: string;
+  requestedBy: string;
+  policyReference: string;
+  neededByDate: string | null;
+  status: "open" | "issued" | "declined";
 }
 
-export interface PolicyOption {
-  id: string;
-  label: string;
-}
-
-const STYLE: Record<string, string> = {
-  draft: "bg-amber-50 text-amber-700",
-  issued: "bg-green-50 text-green-700",
-  expired: "bg-gray-100 text-gray-500",
+const STATUS_COLOR: Record<CertificateRequestDTO["status"], string> = {
+  open: "bg-amber-50 text-amber-700",
+  issued: "bg-emerald-50 text-emerald-700",
+  declined: "bg-rose-50 text-rose-700",
 };
 
 const EMPTY = {
-  certNumber: "",
   holderName: "",
-  issuedDate: "",
-  status: "draft",
+  requestedBy: "",
+  policyReference: "",
+  neededByDate: "",
+  notes: "",
 };
 
-export function CertificatesPanel({
-  certificates,
-  policies,
+export function CertificateRequestsPanel({
+  requests,
 }: {
-  certificates: CertificateDTO[];
-  policies: PolicyOption[];
+  requests: CertificateRequestDTO[];
 }) {
   const [pending, startTransition] = useTransition();
   const [showForm, setShowForm] = useState(false);
-  const [policyId, setPolicyId] = useState("");
   const [form, setForm] = useState({ ...EMPTY });
 
   function set(key: keyof typeof EMPTY, value: string): void {
@@ -49,19 +44,22 @@ export function CertificatesPanel({
 
   function submit(): void {
     startTransition(async () => {
-      await addCertificate({
-        policyId,
-        certNumber: form.certNumber,
-        holderName: form.holderName,
-        issuedDate: form.issuedDate,
-        status: form.status as "draft" | "issued" | "expired",
-      });
+      await newCertificateRequest(form);
       setForm({ ...EMPTY });
-      setPolicyId("");
       setShowForm(false);
     });
   }
 
+  function changeStatus(
+    id: string,
+    status: CertificateRequestDTO["status"],
+  ): void {
+    startTransition(async () => {
+      await updateCertificateRequestStatus({ id, status });
+    });
+  }
+
+  const open = requests.filter((r) => r.status === "open").length;
   const inputClass =
     "mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-indigo-500";
   const labelClass =
@@ -71,46 +69,25 @@ export function CertificatesPanel({
     <div className="mt-6">
       <div className="flex items-center justify-between">
         <p className="text-sm text-gray-500">
-          {certificates.length} certificate
-          {certificates.length === 1 ? "" : "s"}
+          {requests.length} request{requests.length === 1 ? "" : "s"} ·{" "}
+          {open} open
         </p>
-        {!showForm && policies.length > 0 ? (
+        {!showForm ? (
           <button
             type="button"
             onClick={() => setShowForm(true)}
             className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-700"
           >
-            + New certificate
+            + New request
           </button>
         ) : null}
       </div>
 
-      {policies.length === 0 ? (
-        <p className="mt-4 rounded-xl border border-dashed border-gray-300 bg-white px-5 py-6 text-sm text-gray-500">
-          Add a policy first — a certificate is issued against a policy.
-        </p>
-      ) : null}
-
       {showForm ? (
         <div className="mt-4 rounded-xl border border-gray-200 bg-white p-5">
           <div className="grid gap-3 sm:grid-cols-2">
-            <label className={`${labelClass} sm:col-span-2`}>
-              Policy
-              <select
-                value={policyId}
-                onChange={(e) => setPolicyId(e.target.value)}
-                className={inputClass}
-              >
-                <option value="">Select a policy…</option>
-                {policies.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.label}
-                  </option>
-                ))}
-              </select>
-            </label>
             <label className={labelClass}>
-              Certificate holder
+              Holder name
               <input
                 value={form.holderName}
                 onChange={(e) => set("holderName", e.target.value)}
@@ -118,43 +95,47 @@ export function CertificatesPanel({
               />
             </label>
             <label className={labelClass}>
-              Certificate number
+              Requested by
               <input
-                value={form.certNumber}
-                onChange={(e) => set("certNumber", e.target.value)}
+                value={form.requestedBy}
+                onChange={(e) => set("requestedBy", e.target.value)}
                 className={inputClass}
               />
             </label>
             <label className={labelClass}>
-              Issued date
+              Policy reference
+              <input
+                value={form.policyReference}
+                onChange={(e) => set("policyReference", e.target.value)}
+                className={inputClass}
+              />
+            </label>
+            <label className={labelClass}>
+              Needed by
               <input
                 type="date"
-                value={form.issuedDate}
-                onChange={(e) => set("issuedDate", e.target.value)}
+                value={form.neededByDate}
+                onChange={(e) => set("neededByDate", e.target.value)}
                 className={inputClass}
               />
             </label>
-            <label className={labelClass}>
-              Status
-              <select
-                value={form.status}
-                onChange={(e) => set("status", e.target.value)}
+            <label className={`${labelClass} sm:col-span-2`}>
+              Notes
+              <input
+                value={form.notes}
+                onChange={(e) => set("notes", e.target.value)}
                 className={inputClass}
-              >
-                <option value="draft">draft</option>
-                <option value="issued">issued</option>
-                <option value="expired">expired</option>
-              </select>
+              />
             </label>
           </div>
           <div className="mt-4 flex gap-2">
             <button
               type="button"
               onClick={submit}
-              disabled={pending || !policyId || !form.holderName.trim()}
+              disabled={pending || !form.holderName.trim()}
               className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-700 disabled:opacity-40"
             >
-              {pending ? "Saving…" : "Save certificate"}
+              {pending ? "Saving…" : "Save request"}
             </button>
             <button
               type="button"
@@ -168,40 +149,50 @@ export function CertificatesPanel({
       ) : null}
 
       <div className="mt-5 overflow-hidden rounded-xl border border-gray-200 bg-white">
-        {certificates.length === 0 ? (
+        {requests.length === 0 ? (
           <p className="px-5 py-8 text-center text-sm text-gray-500">
-            No certificates yet.
+            No certificate requests yet.
           </p>
         ) : (
           <table className="w-full text-sm">
             <thead className="border-b border-gray-200 bg-gray-50 text-left text-xs uppercase tracking-wide text-gray-500">
               <tr>
                 <th className="px-4 py-3 font-semibold">Holder</th>
-                <th className="px-4 py-3 font-semibold">Cert #</th>
+                <th className="px-4 py-3 font-semibold">Requested by</th>
                 <th className="px-4 py-3 font-semibold">Policy</th>
-                <th className="px-4 py-3 font-semibold">Insured</th>
-                <th className="px-4 py-3 font-semibold">Issued</th>
+                <th className="px-4 py-3 font-semibold">Needed by</th>
                 <th className="px-4 py-3 font-semibold">Status</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {certificates.map((c) => (
-                <tr key={c.id}>
-                  <td className="px-4 py-3 font-medium">{c.holderName}</td>
-                  <td className="px-4 py-3 text-gray-500">
-                    {c.certNumber || "—"}
+              {requests.map((r) => (
+                <tr key={r.id}>
+                  <td className="px-4 py-3 font-medium">{r.holderName}</td>
+                  <td className="px-4 py-3 text-gray-600">
+                    {r.requestedBy || "—"}
                   </td>
-                  <td className="px-4 py-3 text-gray-500">{c.policyNumber}</td>
-                  <td className="px-4 py-3 text-gray-600">{c.clientName}</td>
                   <td className="px-4 py-3 text-gray-500">
-                    {c.issuedDate ?? "—"}
+                    {r.policyReference || "—"}
+                  </td>
+                  <td className="px-4 py-3 text-gray-500">
+                    {r.neededByDate ?? "—"}
                   </td>
                   <td className="px-4 py-3">
-                    <span
-                      className={`rounded-full px-2 py-0.5 text-xs font-medium ${STYLE[c.status] ?? "bg-gray-100 text-gray-500"}`}
+                    <select
+                      value={r.status}
+                      disabled={pending}
+                      onChange={(e) =>
+                        changeStatus(
+                          r.id,
+                          e.target.value as CertificateRequestDTO["status"],
+                        )
+                      }
+                      className={`rounded-full border-0 px-2 py-0.5 text-xs font-semibold ${STATUS_COLOR[r.status]}`}
                     >
-                      {c.status}
-                    </span>
+                      <option value="open">open</option>
+                      <option value="issued">issued</option>
+                      <option value="declined">declined</option>
+                    </select>
                   </td>
                 </tr>
               ))}

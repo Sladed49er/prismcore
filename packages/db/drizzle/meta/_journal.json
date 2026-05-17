@@ -190,6 +190,13 @@
       "when": 1779001547978,
       "tag": "0026_dusty_marvel_boy",
       "breakpoints": true
+    },
+    {
+      "idx": 27,
+      "version": "7",
+      "when": 1779001981079,
+      "tag": "0027_glorious_vulture",
+      "breakpoints": true
     }
   ]
 }

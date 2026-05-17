@@ -873,4 +873,24 @@ if (rtCount[0].n === 0) {
   console.log("• tasks demo data already present — skipped");
 }
 
+// 28. Certificates — holders, templates, requests.
+const chCount = await sql.query("SELECT count(*)::int AS n FROM certificate_holders WHERE tenant_id = $1", [demo]);
+if (chCount[0].n === 0) {
+  await sql.query(
+    "INSERT INTO certificate_holders (tenant_id, name, address, contact_name, email, phone, notes) VALUES ($1,'Harborview Property Mgmt','450 Wharf Rd, Santa Cruz, CA 95060','Janet Cole','janet@harborviewpm.com','555-0510','Landlord — requires GL + Umbrella'),($1,'BuildRight General Contractors','88 Industrial Pkwy, Watsonville, CA 95076','Mike Doan','mike@buildright.com','555-0511','GC — additional insured required')",
+    [demo],
+  );
+  await sql.query(
+    "INSERT INTO certificate_templates (tenant_id, name, description, coverage_summary, status) VALUES ($1,'Standard COI — Commercial','Default certificate for commercial accounts','GL $1M/$2M, Auto $1M, Umbrella $5M, WC statutory','published'),($1,'Contractor COI','For accounts working with general contractors','GL $1M/$2M w/ additional insured, Auto $1M, WC statutory','draft')",
+    [demo],
+  );
+  await sql.query(
+    "INSERT INTO certificate_requests (tenant_id, holder_name, requested_by, policy_reference, needed_by_date, status, notes) VALUES ($1,'Harborview Property Mgmt','Sandra Lee','SL-2026-008','2026-05-25','open','New lease — needs additional insured'),($1,'City of Santa Cruz','Greg Mason','POL-2026-044','2026-05-20','issued','')",
+    [demo],
+  );
+  console.log("✓ seeded 2 holders, 2 templates, 2 requests");
+} else {
+  console.log("• certificates demo data already present — skipped");
+}
+
 console.log("✓ demo tenant seeded: modules, custom fields, 3 carrier connections, VoIP");

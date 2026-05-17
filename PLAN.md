@@ -433,10 +433,19 @@ recur daily/weekly/monthly/quarterly/annually, active/paused), **Workflows**
 (named multi-step processes, draft→active→archived), **Queues** (work queues
 for routing). Migrations through 0026; RLS on 74 tenant tables.
 
+### Certificates — deep build (1:1 with PrismAMS) — 2026-05-17 ✅
+
+**Certificates is fully built — all 4 sub-modules live.** `/m/certificates` is
+a **hub** (Accounting pattern); the register moved to
+`/m/certificates/register`. Sub-modules: Certificate Register, **Holders**
+(parties requiring COIs), **Templates** (reusable coverage summaries,
+draft→published→archived), **Requests** (inbound COI requests, open→issued→
+declined). Migrations through 0027; RLS on 77 tenant tables.
+
 Modules now at full PrismAMS depth: Accounting (18), Policies & Servicing (9),
 Claims (7), Commissions (6), Renewals (4), Clients & CRM (4), Pipeline &
-Marketing (4), Documents (4), Tasks (4). Remaining lean modules (Certificates,
-Carriers, etc.) are next for the same hub treatment.
+Marketing (4), Documents (4), Tasks (4), Certificates (4). Remaining lean
+module: Carriers — next for the same hub treatment.
 
 ## Reference
 

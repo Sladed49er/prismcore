@@ -109,6 +109,9 @@ const TENANT_TABLES = [
   "recurring_tasks",
   "task_workflows",
   "task_queues",
+  "certificate_holders",
+  "certificate_templates",
+  "certificate_requests",
 ];
 
 const owner = neon(ownerUrl);

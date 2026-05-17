@@ -63,3 +63,6 @@ export * from "./document-shares";
 export * from "./recurring-tasks";
 export * from "./task-workflows";
 export * from "./task-queues";
+export * from "./certificate-holders";
+export * from "./certificate-templates";
+export * from "./certificate-requests";
