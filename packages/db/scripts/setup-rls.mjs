@@ -48,6 +48,7 @@ const TENANT_TABLES = [
   "tenant_voip_connections",
   "tenant_ams_connections",
   "calls",
+  "tenant_reports",
   "tickets",
   "ticket_comments",
   "clients",

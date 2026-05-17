@@ -239,6 +239,13 @@
       "when": 1779046601049,
       "tag": "0033_sturdy_infant_terrible",
       "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1779048913228,
+      "tag": "0034_hard_ultragirl",
+      "breakpoints": true
     }
   ]
 }
