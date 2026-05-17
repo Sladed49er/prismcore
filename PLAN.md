@@ -247,6 +247,22 @@ Follow-ons: AI phone-receptionist (needs an off-platform voice worker — LiveKi
 real number-to-client screen-pop matching once the Clients module has real data;
 per-tenant API-key auth on the webhook.
 
+### Two-level admin + ticketing — 2026-05-16 ✅
+
+Per Matt's steer: platform admins (matt@ / polina@) and a separate per-tenant
+customer panel, fully siloed.
+
+- New schema: `tickets` + `ticket_comments`, both tenant-scoped; migration 0004.
+- `/support` — the customer's own panel: file requests, comment, track status.
+  Queries scoped to the current tenant — a customer cannot see another tenant's
+  tickets. (The PIA West request-portal pattern, brought into the platform.)
+- `/admin/tickets` — platform-admin cross-tenant ticket queue (behind
+  `requireAdmin`): every tenant's tickets, status control, reply as the Prism team.
+- Verified: typecheck 4/4, build green, deployed.
+
+Siloing note: isolation is enforced today by tenant-scoped queries. DB-level RLS
+on these tables remains the documented hardening follow-on.
+
 ## Reference
 
 - Source survey: PrismAMS = `~/Tresorit/ClaudeProjects/prismams/` (Next.js 16, 35
