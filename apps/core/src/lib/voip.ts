@@ -1,10 +1,12 @@
 import { and, desc, eq } from "drizzle-orm";
 import {
   withTenantContext,
+  adminDb,
   calls,
   tenantVoipConnections,
   type Call,
 } from "@prismcore/db";
+import { encryptSecret, decryptSecret } from "@/lib/crypto";
 
 export interface VoipProvider {
   id: string;
@@ -59,19 +61,23 @@ export interface VoipCredentials {
   webhookSecret: string;
 }
 
-const EMPTY_CREDENTIALS: VoipCredentials = {
-  accountId: "",
-  apiKey: "",
-  apiSecret: "",
-  webhookSecret: "",
-};
-
 export interface VoipConnectionRow {
   providerId: string;
   credentials: VoipCredentials;
 }
 
-/** A tenant's VoIP connections with their stored credentials. */
+/** Read a stored config blob back into credentials, decrypting the secrets. */
+function credentialsFromConfig(raw: unknown): VoipCredentials {
+  const cfg = (raw ?? {}) as Record<string, string>;
+  return {
+    accountId: cfg.accountId ?? "",
+    apiKey: cfg.apiKey ?? "",
+    apiSecret: decryptSecret(cfg.apiSecret ?? ""),
+    webhookSecret: decryptSecret(cfg.webhookSecret ?? ""),
+  };
+}
+
+/** A tenant's VoIP connections with their stored credentials (decrypted). */
 export async function listConnectionDetails(
   tenantId: string,
 ): Promise<VoipConnectionRow[]> {
@@ -86,21 +92,27 @@ export async function listConnectionDetails(
   );
   return rows.map((r) => ({
     providerId: r.providerId,
-    credentials: { ...EMPTY_CREDENTIALS, ...(r.config as object) },
+    credentials: credentialsFromConfig(r.config),
   }));
 }
 
 /**
- * Connect — or re-save credentials for — a VoIP provider. The credentials are
- * stored in the connection's `config`; the row is upserted so saving again
- * just updates them. Tenant-scoped, RLS-isolated.
+ * Connect — or re-save credentials for — a VoIP provider. The two secret
+ * fields (API secret, webhook signing secret) are encrypted at rest with
+ * AES-256-GCM before they touch the database; account ID and API key are
+ * identifiers and stay readable. Upserted, tenant-scoped, RLS-isolated.
  */
 export async function connectProvider(
   tenantId: string,
   providerId: string,
   credentials: VoipCredentials,
 ): Promise<void> {
-  const config = { ...credentials } as Record<string, unknown>;
+  const config: Record<string, unknown> = {
+    accountId: credentials.accountId,
+    apiKey: credentials.apiKey,
+    apiSecret: encryptSecret(credentials.apiSecret),
+    webhookSecret: encryptSecret(credentials.webhookSecret),
+  };
   await withTenantContext(tenantId, async (tx) => {
     await tx
       .insert(tenantVoipConnections)
@@ -129,6 +141,28 @@ export async function disconnectProvider(
         ),
       );
   });
+}
+
+/**
+ * Every webhook signing secret configured for a tenant, decrypted.
+ *
+ * Uses `adminDb()` deliberately: the inbound webhook is not a trusted tenant
+ * session yet — it is being authenticated. The caller (the webhook route)
+ * verifies the request signature against these before recording anything.
+ */
+export async function getTenantWebhookSecrets(
+  tenantId: string,
+): Promise<string[]> {
+  const rows = await adminDb()
+    .select({ config: tenantVoipConnections.config })
+    .from(tenantVoipConnections)
+    .where(eq(tenantVoipConnections.tenantId, tenantId));
+  return rows
+    .map((r) => {
+      const cfg = (r.config ?? {}) as Record<string, string>;
+      return decryptSecret(cfg.webhookSecret ?? "");
+    })
+    .filter((s) => s.length > 0);
 }
 
 export async function listCalls(tenantId: string, limit = 25): Promise<Call[]> {
