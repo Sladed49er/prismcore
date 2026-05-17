@@ -60,3 +60,6 @@ export * from "./campaigns";
 export * from "./document-templates";
 export * from "./document-folders";
 export * from "./document-shares";
+export * from "./recurring-tasks";
+export * from "./task-workflows";
+export * from "./task-queues";

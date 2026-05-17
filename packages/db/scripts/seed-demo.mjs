@@ -849,4 +849,28 @@ if (dtCount[0].n === 0) {
   console.log("• documents demo data already present — skipped");
 }
 
+// 27. Tasks — recurring tasks, workflows, queues.
+const rtCount = await sql.query("SELECT count(*)::int AS n FROM recurring_tasks WHERE tenant_id = $1", [demo]);
+if (rtCount[0].n === 0) {
+  await sql.query(
+    "INSERT INTO recurring_tasks (tenant_id, title, description, assignee, priority, frequency, next_due_date, status) VALUES ($1,'Monthly trust account reconciliation','Reconcile the premium trust account','Polina','high','monthly','2026-06-01','active'),($1,'Weekly renewal review','Review policies expiring within 60 days','Matt','normal','weekly','2026-05-22','active')",
+    [demo],
+  );
+  await sql.query(
+    "INSERT INTO task_workflows (tenant_id, name, description, steps, status) VALUES ($1,'New client onboarding','Standard onboarding sequence',$2,'active'),($1,'Claim intake','First-notice-of-loss handling',$3,'active')",
+    [
+      demo,
+      "Collect signed agreement\nCreate client record\nSet up policies\nSchedule welcome call",
+      "Record FNOL details\nConfirm coverage\nAssign adjuster\nNotify carrier",
+    ],
+  );
+  await sql.query(
+    "INSERT INTO task_queues (tenant_id, name, description) VALUES ($1,'Service desk','Day-to-day client service requests'),($1,'New business','Quoting and onboarding work'),($1,'Accounting','Billing and reconciliation tasks')",
+    [demo],
+  );
+  console.log("✓ seeded 2 recurring tasks, 2 workflows, 3 queues");
+} else {
+  console.log("• tasks demo data already present — skipped");
+}
+
 console.log("✓ demo tenant seeded: modules, custom fields, 3 carrier connections, VoIP");

@@ -30,7 +30,7 @@ export async function addTask(input: {
     assignee: input.assignee.trim(),
     customValues: input.customValues,
   });
-  revalidatePath("/m/tasks");
+  revalidatePath("/m/tasks/list");
 }
 
 export async function advanceTask(
@@ -39,5 +39,5 @@ export async function advanceTask(
 ): Promise<void> {
   const tenant = await getCurrentTenant();
   await setTaskStatus(tenant.id, taskId, status);
-  revalidatePath("/m/tasks");
+  revalidatePath("/m/tasks/list");
 }

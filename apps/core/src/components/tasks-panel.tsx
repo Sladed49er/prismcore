@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { addTask, advanceTask } from "@/app/(shell)/m/tasks/actions";
+import { addTask, advanceTask } from "@/app/(shell)/m/tasks/list/actions";
 
 export interface TaskDTO {
   id: string;
