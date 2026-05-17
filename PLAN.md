@@ -57,7 +57,7 @@ They adapt to the module-SDK contract and get poured in. Multi-tenancy (RLS,
 | Days | Milestone | Status |
 |------|-----------|--------|
 | 1–2  | Repo scaffold, module-SDK contract, `packages/db` (kernel schema) | ✅ 2026-05-16 |
-| 3–6  | Kernel: registry + runtime loader + new shell; composer onboarding skeleton | todo |
+| 3–6  | Kernel: registry + runtime loader + new shell; composer onboarding skeleton | ✅ 2026-05-16 |
 | 7–10 | Pour in AMS modules onto the SDK; customization engine MVP (fields + forms) | todo |
 | 11–14| API clearinghouse MVP + carrier marketplace stub; `apps/voice` screen-pop demo | todo |
 | 15–17| Demo tenant — all 4 pillars working end-to-end; marketing capture | todo |
@@ -100,6 +100,32 @@ compiles, `/` prerenders static.
 **Repo & deploy** — renamed `prism-core` → `prismcore`. GitHub: `Sladed49er/prismcore`
 (public). Live on Vercel: https://prismcore-gray.vercel.app — monorepo, project root
 directory `apps/core`, deployment protection disabled (public).
+
+### Days 3–6 — 2026-05-16 ✅
+
+Kernel runtime loader, registry-driven shell, and composer onboarding — live.
+
+- **Runtime loader** (`lib/kernel.ts`) — `loadTenant()` resolves a tenant's enabled
+  module ids against the registry into ordered modules + a navigation tree.
+  `requireModule()` enforces route→module gating: a page 404s unless the tenant has
+  that module enabled.
+- **Shell** (`app/(shell)/` route group) — sidebar generated from
+  `registry.navFor()`; add a module to a tenant and its nav entry appears with no
+  shell change. Module pages for `clients` / `documents` / `calls`, each guarded.
+- **Composer** (`/compose`) — pick modules as cards; dependency closure is computed
+  live (selecting Call Center auto-adds Clients), price totals update, and the
+  `createWorkspace` server action provisions the workspace.
+- **Tenant seam** (`lib/tenant.ts`, `current-tenant.ts`) — workspace is cookie-backed
+  for now; swaps to Drizzle `tenants`/`tenant_modules` when Neon is provisioned, with
+  no change to the kernel, shell, or composer.
+
+Verification: typecheck 4/4, build green (8 routes). Live and confirmed at
+https://prismcore-gray.vercel.app — `/`, `/compose`, `/dashboard`, `/clients`,
+`/documents`, `/calls` all 200. Auto-deploys on push (GitHub→Vercel connected).
+
+**Next — before Days 7–10:** provision a Neon Postgres database (Vercel Marketplace)
+so the kernel loader, composer, and tenant seam move off the cookie onto real
+`tenants`/`tenant_modules` rows. Required before pouring in module-owned schema.
 
 ## Reference
 
