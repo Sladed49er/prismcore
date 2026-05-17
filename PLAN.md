@@ -442,10 +442,22 @@ a **hub** (Accounting pattern); the register moved to
 draft→published→archived), **Requests** (inbound COI requests, open→issued→
 declined). Migrations through 0027; RLS on 77 tenant tables.
 
-Modules now at full PrismAMS depth: Accounting (18), Policies & Servicing (9),
-Claims (7), Commissions (6), Renewals (4), Clients & CRM (4), Pipeline &
-Marketing (4), Documents (4), Tasks (4), Certificates (4). Remaining lean
-module: Carriers — next for the same hub treatment.
+### Carriers — deep build (1:1 with PrismAMS) — 2026-05-17 ✅
+
+**Carriers is fully built — all 4 sub-modules live.** `/m/carriers` is a
+**hub** (Accounting pattern); the directory moved to `/m/carriers/directory`.
+Sub-modules: Carrier Directory, **Appointments** (by line, commission rate,
+active/pending/terminated), **Carrier Contacts** (underwriters/marketing/
+claims/billing), **Underwriting Guidelines** (appetite & rules per carrier,
+current/under_review/retired). Migrations through 0028; RLS on 80 tenant
+tables.
+
+**The full module sweep is complete — all 11 modules are at PrismAMS depth:**
+Accounting (18), Policies & Servicing (9), Claims (7), Commissions (6),
+Renewals (4), Clients & CRM (4), Pipeline & Marketing (4), Documents (4),
+Tasks (4), Certificates (4), Carriers (4) — 68 sub-modules, 80 RLS tables,
+migrations through 0028. Next: platform-admin console + customer
+support-ticketing console.
 
 ## Reference
 

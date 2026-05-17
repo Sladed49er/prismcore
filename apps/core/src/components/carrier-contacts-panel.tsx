@@ -1,36 +1,48 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { addCarrier } from "@/app/(shell)/m/carriers/directory/actions";
+import { newCarrierContact } from "@/app/(shell)/m/carriers/contacts/actions";
 
-export interface CarrierDTO {
+export interface CarrierOption {
   id: string;
-  name: string;
-  naicCode: string;
-  appetite: string;
-  contactName: string;
-  contactEmail: string;
-  status: string;
+  label: string;
 }
 
-const STATUS_STYLE: Record<string, string> = {
-  active: "bg-green-50 text-green-700",
-  prospective: "bg-amber-50 text-amber-700",
-  inactive: "bg-gray-100 text-gray-500",
+export interface CarrierContactDTO {
+  id: string;
+  carrierName: string;
+  name: string;
+  title: string;
+  role: "underwriter" | "marketing" | "claims" | "billing" | "other";
+  email: string;
+  phone: string;
+}
+
+const ROLE_LABEL: Record<CarrierContactDTO["role"], string> = {
+  underwriter: "Underwriter",
+  marketing: "Marketing rep",
+  claims: "Claims",
+  billing: "Billing",
+  other: "Other",
 };
 
 const EMPTY = {
+  carrierId: "",
   name: "",
-  naicCode: "",
-  appetite: "",
-  contactName: "",
-  contactEmail: "",
-  contactPhone: "",
-  status: "active",
+  title: "",
+  role: "underwriter",
+  email: "",
+  phone: "",
   notes: "",
 };
 
-export function CarriersPanel({ carriers }: { carriers: CarrierDTO[] }) {
+export function CarrierContactsPanel({
+  contacts,
+  carriers,
+}: {
+  contacts: CarrierContactDTO[];
+  carriers: CarrierOption[];
+}) {
   const [pending, startTransition] = useTransition();
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ ...EMPTY });
@@ -41,15 +53,9 @@ export function CarriersPanel({ carriers }: { carriers: CarrierDTO[] }) {
 
   function submit(): void {
     startTransition(async () => {
-      await addCarrier({
-        name: form.name,
-        naicCode: form.naicCode,
-        appetite: form.appetite,
-        contactName: form.contactName,
-        contactEmail: form.contactEmail,
-        contactPhone: form.contactPhone,
-        status: form.status as "active" | "prospective" | "inactive",
-        notes: form.notes,
+      await newCarrierContact({
+        ...form,
+        role: form.role as CarrierContactDTO["role"],
       });
       setForm({ ...EMPTY });
       setShowForm(false);
@@ -65,15 +71,15 @@ export function CarriersPanel({ carriers }: { carriers: CarrierDTO[] }) {
     <div className="mt-6">
       <div className="flex items-center justify-between">
         <p className="text-sm text-gray-500">
-          {carriers.length} carrier{carriers.length === 1 ? "" : "s"}
+          {contacts.length} contact{contacts.length === 1 ? "" : "s"}
         </p>
-        {!showForm ? (
+        {!showForm && carriers.length > 0 ? (
           <button
             type="button"
             onClick={() => setShowForm(true)}
             className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-700"
           >
-            + New carrier
+            + New contact
           </button>
         ) : null}
       </div>
@@ -82,7 +88,36 @@ export function CarriersPanel({ carriers }: { carriers: CarrierDTO[] }) {
         <div className="mt-4 rounded-xl border border-gray-200 bg-white p-5">
           <div className="grid gap-3 sm:grid-cols-2">
             <label className={labelClass}>
-              Carrier name
+              Carrier
+              <select
+                value={form.carrierId}
+                onChange={(e) => set("carrierId", e.target.value)}
+                className={inputClass}
+              >
+                <option value="">Select a carrier…</option>
+                {carriers.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className={labelClass}>
+              Role
+              <select
+                value={form.role}
+                onChange={(e) => set("role", e.target.value)}
+                className={inputClass}
+              >
+                <option value="underwriter">Underwriter</option>
+                <option value="marketing">Marketing rep</option>
+                <option value="claims">Claims</option>
+                <option value="billing">Billing</option>
+                <option value="other">Other</option>
+              </select>
+            </label>
+            <label className={labelClass}>
+              Name
               <input
                 value={form.name}
                 onChange={(e) => set("name", e.target.value)}
@@ -90,64 +125,34 @@ export function CarriersPanel({ carriers }: { carriers: CarrierDTO[] }) {
               />
             </label>
             <label className={labelClass}>
-              NAIC code
+              Title
               <input
-                value={form.naicCode}
-                onChange={(e) => set("naicCode", e.target.value)}
-                className={inputClass}
-              />
-            </label>
-            <label className={`${labelClass} sm:col-span-2`}>
-              Appetite
-              <input
-                value={form.appetite}
-                onChange={(e) => set("appetite", e.target.value)}
-                placeholder="What they write — lines, classes, states"
+                value={form.title}
+                onChange={(e) => set("title", e.target.value)}
                 className={inputClass}
               />
             </label>
             <label className={labelClass}>
-              Contact name
+              Email
               <input
-                value={form.contactName}
-                onChange={(e) => set("contactName", e.target.value)}
+                value={form.email}
+                onChange={(e) => set("email", e.target.value)}
                 className={inputClass}
               />
             </label>
             <label className={labelClass}>
-              Contact email
+              Phone
               <input
-                value={form.contactEmail}
-                onChange={(e) => set("contactEmail", e.target.value)}
+                value={form.phone}
+                onChange={(e) => set("phone", e.target.value)}
                 className={inputClass}
               />
-            </label>
-            <label className={labelClass}>
-              Contact phone
-              <input
-                value={form.contactPhone}
-                onChange={(e) => set("contactPhone", e.target.value)}
-                className={inputClass}
-              />
-            </label>
-            <label className={labelClass}>
-              Status
-              <select
-                value={form.status}
-                onChange={(e) => set("status", e.target.value)}
-                className={inputClass}
-              >
-                <option value="active">active</option>
-                <option value="prospective">prospective</option>
-                <option value="inactive">inactive</option>
-              </select>
             </label>
             <label className={`${labelClass} sm:col-span-2`}>
               Notes
-              <textarea
+              <input
                 value={form.notes}
                 onChange={(e) => set("notes", e.target.value)}
-                rows={2}
                 className={inputClass}
               />
             </label>
@@ -156,17 +161,14 @@ export function CarriersPanel({ carriers }: { carriers: CarrierDTO[] }) {
             <button
               type="button"
               onClick={submit}
-              disabled={pending || !form.name.trim()}
+              disabled={pending || !form.carrierId || !form.name.trim()}
               className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-700 disabled:opacity-40"
             >
-              {pending ? "Saving…" : "Save carrier"}
+              {pending ? "Saving…" : "Save contact"}
             </button>
             <button
               type="button"
-              onClick={() => {
-                setShowForm(false);
-                setForm({ ...EMPTY });
-              }}
+              onClick={() => setShowForm(false)}
               className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-600"
             >
               Cancel
@@ -176,40 +178,47 @@ export function CarriersPanel({ carriers }: { carriers: CarrierDTO[] }) {
       ) : null}
 
       <div className="mt-5 overflow-hidden rounded-xl border border-gray-200 bg-white">
-        {carriers.length === 0 ? (
+        {contacts.length === 0 ? (
           <p className="px-5 py-8 text-center text-sm text-gray-500">
-            No carriers yet.
+            {carriers.length === 0
+              ? "Add a carrier first, then record its contacts."
+              : "No carrier contacts yet."}
           </p>
         ) : (
           <table className="w-full text-sm">
             <thead className="border-b border-gray-200 bg-gray-50 text-left text-xs uppercase tracking-wide text-gray-500">
               <tr>
                 <th className="px-4 py-3 font-semibold">Carrier</th>
-                <th className="px-4 py-3 font-semibold">NAIC</th>
-                <th className="px-4 py-3 font-semibold">Appetite</th>
                 <th className="px-4 py-3 font-semibold">Contact</th>
-                <th className="px-4 py-3 font-semibold">Status</th>
+                <th className="px-4 py-3 font-semibold">Role</th>
+                <th className="px-4 py-3 font-semibold">Reach</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {carriers.map((c) => (
+              {contacts.map((c) => (
                 <tr key={c.id}>
-                  <td className="px-4 py-3 font-medium">{c.name}</td>
-                  <td className="px-4 py-3 text-gray-500">
-                    {c.naicCode || "—"}
-                  </td>
-                  <td className="px-4 py-3 text-gray-500">
-                    {c.appetite || "—"}
-                  </td>
-                  <td className="px-4 py-3 text-gray-500">
-                    {c.contactName || c.contactEmail || "—"}
-                  </td>
+                  <td className="px-4 py-3 font-medium">{c.carrierName}</td>
                   <td className="px-4 py-3">
-                    <span
-                      className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_STYLE[c.status] ?? "bg-gray-100 text-gray-500"}`}
-                    >
-                      {c.status}
-                    </span>
+                    <span className="font-medium">{c.name}</span>
+                    {c.title ? (
+                      <span className="ml-2 text-xs text-gray-400">
+                        {c.title}
+                      </span>
+                    ) : null}
+                  </td>
+                  <td className="px-4 py-3 text-gray-600">
+                    {ROLE_LABEL[c.role]}
+                  </td>
+                  <td className="px-4 py-3 text-gray-500">
+                    {c.email || c.phone ? (
+                      <>
+                        {c.email}
+                        {c.email && c.phone ? " · " : ""}
+                        {c.phone}
+                      </>
+                    ) : (
+                      "—"
+                    )}
                   </td>
                 </tr>
               ))}

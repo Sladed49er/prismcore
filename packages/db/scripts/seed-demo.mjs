@@ -893,4 +893,37 @@ if (chCount[0].n === 0) {
   console.log("• certificates demo data already present — skipped");
 }
 
+// 29. Carriers — appointments, contacts, underwriting guidelines.
+const caCount = await sql.query("SELECT count(*)::int AS n FROM carrier_appointments WHERE tenant_id = $1", [demo]);
+if (caCount[0].n === 0) {
+  const cxs = await sql.query(
+    "SELECT id FROM carriers WHERE tenant_id = $1 ORDER BY created_at LIMIT 2",
+    [demo],
+  );
+  if (cxs.length >= 1) {
+    const x0 = cxs[0].id;
+    await sql.query(
+      "INSERT INTO carrier_appointments (tenant_id, carrier_id, line_of_business, appointment_number, effective_date, commission_rate_percent, status, notes) VALUES ($1,$2,'Commercial Property','APT-44820','2024-01-01','15','active',''),($1,$2,'Commercial Auto','APT-44821','2024-01-01','12','active','')",
+      [demo, x0],
+    );
+    await sql.query(
+      "INSERT INTO carrier_contacts (tenant_id, carrier_id, name, title, role, email, phone, notes) VALUES ($1,$2,'Erica Vance','Senior Underwriter','underwriter','erica.vance@carrier.com','555-0610',''),($1,$2,'Paul Ng','Territory Marketing Rep','marketing','paul.ng@carrier.com','555-0611','')",
+      [demo, x0],
+    );
+    await sql.query(
+      "INSERT INTO underwriting_guidelines (tenant_id, carrier_id, line_of_business, title, guidelines, status) VALUES ($1,$2,'Commercial Property','Property appetite — habitational','Prefers buildings under 25 years, sprinklered. Avoids coastal exposure within 1 mile. Max TIV $10M per location.','current')",
+      [demo, x0],
+    );
+    if (cxs.length >= 2) {
+      await sql.query(
+        "INSERT INTO carrier_appointments (tenant_id, carrier_id, line_of_business, appointment_number, effective_date, commission_rate_percent, status, notes) VALUES ($1,$2,'Workers Comp','APT-91002','2025-06-01','10','pending','')",
+        [demo, cxs[1].id],
+      );
+    }
+  }
+  console.log("✓ seeded carrier appointments, contacts, guidelines");
+} else {
+  console.log("• carriers demo data already present — skipped");
+}
+
 console.log("✓ demo tenant seeded: modules, custom fields, 3 carrier connections, VoIP");

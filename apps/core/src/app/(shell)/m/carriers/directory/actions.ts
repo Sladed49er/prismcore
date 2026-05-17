@@ -27,5 +27,5 @@ export async function addCarrier(input: {
     status: input.status,
     notes: input.notes.trim(),
   });
-  revalidatePath("/m/carriers");
+  revalidatePath("/m/carriers/directory");
 }

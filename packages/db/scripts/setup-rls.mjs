@@ -112,6 +112,9 @@ const TENANT_TABLES = [
   "certificate_holders",
   "certificate_templates",
   "certificate_requests",
+  "carrier_appointments",
+  "carrier_contacts",
+  "underwriting_guidelines",
 ];
 
 const owner = neon(ownerUrl);
