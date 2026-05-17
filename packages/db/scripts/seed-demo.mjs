@@ -749,4 +749,31 @@ if (contCount[0].n === 0) {
   console.log("• contingency income already present — skipped");
 }
 
+// 23. Renewals — remarketing quotes, offers, retention records.
+const rmCount = await sql.query("SELECT count(*)::int AS n FROM remarketing_quotes WHERE tenant_id = $1", [demo]);
+if (rmCount[0].n === 0) {
+  const rns = await sql.query(
+    "SELECT id FROM renewals WHERE tenant_id = $1 ORDER BY created_at LIMIT 1",
+    [demo],
+  );
+  if (rns.length >= 1) {
+    const r0 = rns[0].id;
+    await sql.query(
+      "INSERT INTO remarketing_quotes (tenant_id, renewal_id, carrier_name, quoted_premium_cents, coverage_summary, status, notes) VALUES ($1,$2,'Travelers',1320000,'Same limits, $1k deductible','received',''),($1,$2,'The Hartford',1185000,'Equivalent program','selected','Best price'),($1,$2,'Nationwide',0,'','declined','Declined to quote')",
+      [demo, r0],
+    );
+    await sql.query(
+      "INSERT INTO renewal_offers (tenant_id, renewal_id, carrier_name, offer_date, premium_cents, prior_premium_cents, term_summary, expires_date, status) VALUES ($1,$2,'The Hartford','2026-05-10',1185000,1240000,'12-month term, no coverage changes','2026-06-01','presented')",
+      [demo, r0],
+    );
+    await sql.query(
+      "INSERT INTO retention_records (tenant_id, renewal_id, outcome, reason_code, prior_premium_cents, new_premium_cents, recorded_date, notes) VALUES ($1,$2,'rewritten','price',1240000,1185000,'2026-05-12','Rewrote with The Hartford for a lower rate')",
+      [demo, r0],
+    );
+  }
+  console.log("✓ seeded remarketing quotes, offer, retention record");
+} else {
+  console.log("• renewals demo data already present — skipped");
+}
+
 console.log("✓ demo tenant seeded: modules, custom fields, 3 carrier connections, VoIP");

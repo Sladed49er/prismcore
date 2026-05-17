@@ -384,8 +384,20 @@ Producer Payouts (scheduled→paid), **Contingency & Bonus** (carrier
 contingency/profit-share/bonus income, projected vs. received by carrier &
 year). Migrations through 0021; RLS on 59 tenant tables.
 
+### Renewals — deep build (1:1 with PrismAMS) — 2026-05-17 ✅
+
+**Renewals is fully built — all 4 sub-modules live.** `/m/renewals` is a
+**hub** (Accounting pattern); the renewal worklist moved to
+`/m/renewals/pipeline`. Sub-modules: Renewal Pipeline (worklist by stage),
+**Remarketing** (carrier quotes gathered shopping a renewal, compared),
+**Renewal Offers** (terms presented to the insured, with premium change),
+**Retention Tracking** (renewed/rewritten/lost with reason codes, computed
+retention rate). Migrations through 0022; RLS on 62 tenant tables.
+
 Modules now at full PrismAMS depth: Accounting (18), Policies & Servicing (9),
-Claims (7), Commissions (6). Next pillar: Renewals.
+Claims (7), Commissions (6), Renewals (4). The five core insurance pillars are
+done; remaining lean modules (Marketing, Documents, Tasks, Certificates, etc.)
+are next for the same hub treatment.
 
 ## Reference
 

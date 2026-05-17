@@ -23,7 +23,7 @@ export async function addRenewal(input: {
     dueDate: input.dueDate || null,
     notes: input.notes.trim(),
   });
-  revalidatePath("/m/renewals");
+  revalidatePath("/m/renewals/pipeline");
 }
 
 export async function advanceStage(
@@ -32,5 +32,5 @@ export async function advanceStage(
 ): Promise<void> {
   const tenant = await getCurrentTenant();
   await setRenewalStage(tenant.id, renewalId, stage);
-  revalidatePath("/m/renewals");
+  revalidatePath("/m/renewals/pipeline");
 }

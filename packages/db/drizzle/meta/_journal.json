@@ -155,6 +155,13 @@
       "when": 1778998822222,
       "tag": "0021_volatile_smasher",
       "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1778999353678,
+      "tag": "0022_jittery_cyclops",
+      "breakpoints": true
     }
   ]
 }

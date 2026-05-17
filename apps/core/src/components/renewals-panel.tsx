@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { addRenewal, advanceStage } from "@/app/(shell)/m/renewals/actions";
+import { addRenewal, advanceStage } from "@/app/(shell)/m/renewals/pipeline/actions";
 
 export interface RenewalDTO {
   id: string;
