@@ -1,10 +1,9 @@
 /**
  * Provision the real (non-demo) tenants — idempotent.
  *
- *  - PrismAMS      — Netstar's own workspace, full module suite, empty.
- *  - Mitchell Reed — starts on telephony only (CallIntel replacement);
- *                    more modules added later via /admin/modules.
- *  - Schmitten     — same: telephony only to start.
+ *  - PrismAMS                  — Netstar's own workspace, full suite, empty.
+ *  - Mitchell, Reed & Schmitten — starts on telephony only (the CallIntel
+ *                    replacement); more modules added later via /admin.
  *
  * These carry NO sample data — unlike the `demo` tenant. Run:
  *   node --env-file=packages/db/.env packages/db/scripts/provision-tenants.mjs
@@ -49,14 +48,10 @@ const FULL_SUITE = [
 const TENANTS = [
   { name: "PrismAMS", slug: "prismams", tier: "enterprise", modules: FULL_SUITE },
   {
-    name: "Mitchell Reed",
-    slug: "mitchell-reed",
-    tier: "professional",
-    modules: ["telephony"],
-  },
-  {
-    name: "Schmitten",
-    slug: "schmitten",
+    // One agency — Mitchell, Reed & Schmitten. Starts on telephony only
+    // (the CallIntel replacement); more modules added later via /admin.
+    name: "Mitchell, Reed & Schmitten",
+    slug: "mitchell-reed-schmitten",
     tier: "professional",
     modules: ["telephony"],
   },
