@@ -1,7 +1,10 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { submitTicket, commentOnTicket } from "@/app/(shell)/support/actions";
+import {
+  submitTicket,
+  commentOnTicket,
+} from "@/app/(shell)/support/requests/actions";
 
 export interface TicketDTO {
   id: string;

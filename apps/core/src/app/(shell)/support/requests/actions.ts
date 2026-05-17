@@ -3,7 +3,11 @@
 import { revalidatePath } from "next/cache";
 import { getCurrentTenant } from "@/lib/current-tenant";
 import { getViewer } from "@/lib/auth";
-import { createTicket, addTicketComment, type TicketPriority } from "@/lib/tickets";
+import {
+  createTicket,
+  addTicketComment,
+  type TicketPriority,
+} from "@/lib/tickets";
 
 /** Customer files a request — scoped to their own tenant. */
 export async function submitTicket(input: {
@@ -14,7 +18,10 @@ export async function submitTicket(input: {
 }): Promise<void> {
   const title = input.title.trim();
   if (!title) return;
-  const [tenant, viewer] = await Promise.all([getCurrentTenant(), getViewer()]);
+  const [tenant, viewer] = await Promise.all([
+    getCurrentTenant(),
+    getViewer(),
+  ]);
   await createTicket({
     tenantId: tenant.id,
     title,
@@ -24,7 +31,7 @@ export async function submitTicket(input: {
     createdByEmail: viewer?.email ?? null,
     createdByName: viewer?.name ?? "User",
   });
-  revalidatePath("/support");
+  revalidatePath("/support/requests");
 }
 
 export async function commentOnTicket(
@@ -33,7 +40,10 @@ export async function commentOnTicket(
 ): Promise<void> {
   const text = body.trim();
   if (!text) return;
-  const [tenant, viewer] = await Promise.all([getCurrentTenant(), getViewer()]);
+  const [tenant, viewer] = await Promise.all([
+    getCurrentTenant(),
+    getViewer(),
+  ]);
   await addTicketComment({
     ticketId,
     tenantId: tenant.id,
@@ -41,5 +51,5 @@ export async function commentOnTicket(
     authorName: viewer?.name ?? "User",
     fromAdmin: false,
   });
-  revalidatePath("/support");
+  revalidatePath("/support/requests");
 }

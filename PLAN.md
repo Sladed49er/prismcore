@@ -471,7 +471,22 @@ security advisories to all tenants). New platform-global table
 only). Migrations through 0029. Admin libs use `adminDb()` (owner role), never
 `withTenantContext`.
 
-Next: customer-facing per-tenant admin/support console (`/support` deepening).
+### Customer account console — deep build — 2026-05-17 ✅
+
+`/support` is now the customer's **account console hub** — every section
+scoped strictly to the signed-in tenant (RLS via `withTenantContext`; a
+customer cannot see or reach another tenant's data). Sections: **Requests**
+(`/support/requests` — file & track tickets; the customer's write surface),
+**Team** (`/support/team` — the tenant's user roster, read-only), **Workspace**
+(`/support/workspace` — the modules enabled for this tenant, read-only),
+**Announcements** (`/support/announcements` — published platform announcements,
+the consumer side of the admin broadcast). No new tables. Module/team changes
+are requested via tickets and applied centrally by the Prism team — keeping
+control central while every change stays tenant-scoped.
+
+**Build complete:** 11 modules (68 sub-modules) at PrismAMS depth + the
+platform-admin console + the customer account console. 80 RLS tenant tables,
+1 platform-global table, migrations through 0029, all deployed and live.
 
 ## Reference
 

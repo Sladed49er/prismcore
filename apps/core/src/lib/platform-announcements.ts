@@ -28,6 +28,21 @@ export async function createAnnouncement(input: {
   await adminDb().insert(platformAnnouncements).values(input);
 }
 
+/**
+ * Published announcements only — safe for any signed-in user to read. Used by
+ * the customer-facing console; still goes through `adminDb()` because the
+ * table is platform-global, but only ever returns published rows.
+ */
+export async function listPublishedAnnouncements(): Promise<
+  PlatformAnnouncement[]
+> {
+  return adminDb()
+    .select()
+    .from(platformAnnouncements)
+    .where(eq(platformAnnouncements.status, "published"))
+    .orderBy(desc(platformAnnouncements.publishedAt));
+}
+
 export async function setAnnouncementStatus(input: {
   id: string;
   status: AnnouncementStatus;
