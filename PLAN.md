@@ -58,7 +58,7 @@ They adapt to the module-SDK contract and get poured in. Multi-tenancy (RLS,
 |------|-----------|--------|
 | 1–2  | Repo scaffold, module-SDK contract, `packages/db` (kernel schema) | ✅ 2026-05-16 |
 | 3–6  | Kernel: registry + runtime loader + new shell; composer onboarding skeleton | ✅ 2026-05-16 |
-| 7–10 | Pour in AMS modules onto the SDK; customization engine MVP (fields + forms) | todo |
+| 7–10 | Pour in AMS modules onto the SDK; customization engine MVP (fields + forms) | 🔄 catalog poured in 2026-05-16; customization engine + DB next |
 | 11–14| API clearinghouse MVP + carrier marketplace stub; `apps/voice` screen-pop demo | todo |
 | 15–17| Demo tenant — all 4 pillars working end-to-end; marketing capture | todo |
 | 18   | Dry run with Tony | todo |
@@ -126,6 +126,36 @@ https://prismcore-gray.vercel.app — `/`, `/compose`, `/dashboard`, `/clients`,
 **Next — before Days 7–10:** provision a Neon Postgres database (Vercel Marketplace)
 so the kernel loader, composer, and tenant seam move off the cookie onto real
 `tenants`/`tenant_modules` rows. Required before pouring in module-owned schema.
+
+### Days 7–10 (part 1) — 2026-05-16 🔄
+
+Full module catalog poured in — live and verified.
+
+- **`modules/catalog.ts`** — all 33 PrismAMS modules ported onto the module-SDK
+  contract (id, category, dependencies, pricing, customizable entities) plus **Call
+  Center** (CallIntel) and the **API Clearinghouse**. 36 modules across 7 categories.
+  The composer now offers the real product surface; the home page reports it live
+  from the registry.
+- **Unified module routing** — every module routes through `/m/[module]`; one generic
+  shell page replaced the bespoke per-module pages. `requireModule()` gating verified:
+  `/m/policies` renders for the demo tenant, `/m/bookscan` 404s (not enabled).
+- **Composer** grouped by category with a sticky create bar; `module-icon` does
+  dynamic lucide lookup so 36 modules need zero hand-wired imports.
+- **Kernel migration generated** — `packages/db/drizzle/0000_*.sql` (tenants, users,
+  tenant_modules). Ready to apply with `npm run db:migrate -w @prismcore/db` once
+  Neon is connected.
+
+Verification: typecheck 4/4, build green (4 routes), live at
+https://prismcore-gray.vercel.app.
+
+**Still open in Days 7–10:**
+- Provision Neon (Vercel Marketplace) — needs a one-time browser step:
+  `vercel integration add neon` from the repo. Then move the tenant seam off the
+  cookie onto real `tenants`/`tenant_modules` rows + apply the migration.
+- Customization engine MVP — per-tenant custom fields on the entities each module
+  declares via `customizableEntities`.
+- Pour in real module service/schema implementations (module by module, behind the
+  contract — the catalog metadata is in place; the logic follows).
 
 ## Reference
 
