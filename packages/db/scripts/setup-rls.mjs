@@ -93,6 +93,7 @@ const TENANT_TABLES = [
   "commission_splits",
   "commission_statements",
   "producer_payouts",
+  "contingency_income",
 ];
 
 const owner = neon(ownerUrl);

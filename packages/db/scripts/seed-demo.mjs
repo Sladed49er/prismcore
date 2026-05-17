@@ -737,4 +737,16 @@ if (prodCount[0].n === 0) {
   console.log("• commissions demo data already present — skipped");
 }
 
+// 22. Contingency & bonus income.
+const contCount = await sql.query("SELECT count(*)::int AS n FROM contingency_income WHERE tenant_id = $1", [demo]);
+if (contCount[0].n === 0) {
+  await sql.query(
+    "INSERT INTO contingency_income (tenant_id, carrier_name, year, income_type, expected_cents, received_cents, status, notes) VALUES ($1,'Travelers','2025','profit_share',3200000,3200000,'received','Loss ratio under target'),($1,'Liberty Mutual','2025','contingency',1450000,0,'projected','Awaiting year-end statement'),($1,'Nationwide','2025','growth',680000,680000,'closed','New-business growth bonus')",
+    [demo],
+  );
+  console.log("✓ seeded 3 contingency income records");
+} else {
+  console.log("• contingency income already present — skipped");
+}
+
 console.log("✓ demo tenant seeded: modules, custom fields, 3 carrier connections, VoIP");

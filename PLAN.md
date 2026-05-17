@@ -373,20 +373,19 @@ Sub-modules: Claims Register, Claim Diary (chronological notes), Reserves
 **Litigation** (suits — court, docket, defense counsel, trial date,
 pre-suit→resolution). Migrations through 0019; RLS on 54 tenant tables.
 
-### Commissions — deep build (1:1 with PrismAMS) — 2026-05-17 🔄
+### Commissions — deep build (1:1 with PrismAMS) — 2026-05-17 ✅
 
-`/m/commissions` is now a **hub** (Accounting pattern); the commission register
-moved to `/m/commissions/register`. Built so far (5 of 6 sub-modules):
-**Commission Register**, **Producers** (producer master, active/inactive),
-**Commission Splits** (share a commission among producers by %/amount),
-**Carrier Statements** (expected vs. reported, computed variance,
-received/reconciled/disputed), **Producer Payouts** (scheduled→paid).
-Migrations through 0020; RLS on 58 tenant tables.
-
-Remaining commissions sub-module (the hub lists it): Contingency & Bonus.
+**Commissions is fully built — all 6 sub-modules live.** `/m/commissions` is a
+**hub** (Accounting pattern); the commission register moved to
+`/m/commissions/register`. Sub-modules: Commission Register, Producers
+(producer master), Commission Splits (share a commission among producers by
+%/amount), Carrier Statements (expected vs. reported, computed variance),
+Producer Payouts (scheduled→paid), **Contingency & Bonus** (carrier
+contingency/profit-share/bonus income, projected vs. received by carrier &
+year). Migrations through 0021; RLS on 59 tenant tables.
 
 Modules now at full PrismAMS depth: Accounting (18), Policies & Servicing (9),
-Claims (7), Commissions (5 of 6). Next pillar: Renewals.
+Claims (7), Commissions (6). Next pillar: Renewals.
 
 ## Reference
 

@@ -47,3 +47,4 @@ export * from "./producers";
 export * from "./commission-splits";
 export * from "./commission-statements";
 export * from "./producer-payouts";
+export * from "./contingency";

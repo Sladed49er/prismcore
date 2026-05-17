@@ -28,10 +28,15 @@ const BUILT = [
     name: "Producer Payouts",
     desc: "Commission payouts to producers, scheduled and paid.",
   },
+  {
+    href: "/m/commissions/contingency",
+    name: "Contingency & Bonus",
+    desc: "Carrier contingency, profit-share, and bonus income.",
+  },
 ];
 
 /** The remaining commissions sub-modules, ported in over the coming turns. */
-const PLANNED = ["Contingency & Bonus"];
+const PLANNED: string[] = [];
 
 export default async function CommissionsHub() {
   await requireModule("commissions");
