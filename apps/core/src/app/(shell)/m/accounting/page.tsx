@@ -83,10 +83,20 @@ const BUILT = [
     name: "Quarterly Taxes",
     desc: "Estimated quarterly tax payment schedule.",
   },
+  {
+    href: "/m/accounting/tax-forms",
+    name: "1099 / W-2 Reporting",
+    desc: "Year-end W-2 wages and 1099-NEC compensation totals.",
+  },
+  {
+    href: "/m/accounting/financial-reports",
+    name: "Financial Reports",
+    desc: "P&L, Balance Sheet, and Trial Balance from the GL.",
+  },
 ];
 
 /** The remaining accounting sub-modules, ported in over the coming turns. */
-const PLANNED = ["1099 / W-2 Reporting", "Financial Reports"];
+const PLANNED: string[] = [];
 
 export default async function AccountingHub() {
   await requireModule("accounting");
@@ -115,19 +125,27 @@ export default async function AccountingHub() {
         ))}
       </div>
 
-      <h2 className="mt-8 text-xs font-semibold uppercase tracking-wide text-gray-500">
-        Coming next in the accounting build-out
-      </h2>
-      <div className="mt-3 flex flex-wrap gap-2">
-        {PLANNED.map((p) => (
-          <span
-            key={p}
-            className="rounded-full border border-dashed border-gray-300 px-3 py-1 text-sm text-gray-400"
-          >
-            {p}
-          </span>
-        ))}
-      </div>
+      {PLANNED.length > 0 ? (
+        <>
+          <h2 className="mt-8 text-xs font-semibold uppercase tracking-wide text-gray-500">
+            Coming next in the accounting build-out
+          </h2>
+          <div className="mt-3 flex flex-wrap gap-2">
+            {PLANNED.map((p) => (
+              <span
+                key={p}
+                className="rounded-full border border-dashed border-gray-300 px-3 py-1 text-sm text-gray-400"
+              >
+                {p}
+              </span>
+            ))}
+          </div>
+        </>
+      ) : (
+        <p className="mt-8 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+          ✓ Accounting is fully built out — all 18 sub-modules are live.
+        </p>
+      )}
     </div>
   );
 }

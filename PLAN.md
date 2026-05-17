@@ -339,18 +339,18 @@ Course-correction: the lean modules were too shallow. PrismAMS is 176 tables /
 155 pages; Accounting alone is 32 tables / 25 pages. Modules are now being built
 to true PrismAMS depth, improved and flowed. Accounting first.
 
-`/m/accounting` is now a **hub** with sub-modules. Built so far (16 of ~18):
-Chart of Accounts, Journal Entries (real double-entry — won't post unless
-balanced), Invoices, Vendors, Bills, Trust Accounting, Employees, Payroll,
-Bank Reconciliation, **Budgets** (by GL account), **Fixed Assets** (computed
-depreciation + book value), **Estimates**, **Checks & Positive Pay** (check
-register with clearing workflow), **Fiscal Periods** (open/closed locking),
-**Surplus Lines Tax** (per-state, tax = premium × rate + fees), **Quarterly
-Taxes** (estimated payment schedule). Migrations through 0015; RLS on 40
-tenant tables.
+**Accounting is fully built — all 18 sub-modules live.** `/m/accounting` is a
+**hub**: Chart of Accounts, Journal Entries (real double-entry — won't post
+unless balanced), Invoices, Vendors, Bills, Trust Accounting, Employees,
+Payroll, Bank Reconciliation, Budgets (by GL account), Fixed Assets (computed
+depreciation + book value), Estimates, Checks & Positive Pay, Fiscal Periods
+(open/closed locking), Surplus Lines Tax (per-state, tax = premium × rate +
+fees), Quarterly Taxes, **1099/W-2 Reporting** (computed from payroll + AP),
+**Financial Reports** (P&L, Balance Sheet, Trial Balance computed live from
+posted journal entries). Migrations through 0015; RLS on 40 tenant tables.
 
-Remaining accounting sub-modules (the hub lists them): 1099/W-2 Reporting,
-Financial Reports.
+Next: deepen the remaining lean MVP modules to PrismAMS parity, the same way
+Accounting was — pick the next module and build its hub + sub-modules.
 
 ## Reference
 
