@@ -27,8 +27,9 @@ await sql.query("DELETE FROM calls WHERE provider = 'rls-verify'");
 
 // 1. Module set (idempotent).
 const MODULES = [
-  "clients", "policies", "documents", "tasks", "renewals",
-  "carriers", "accounting", "reports", "telephony", "api_clearinghouse",
+  "clients", "policies", "documents", "tasks", "renewals", "carriers",
+  "claims", "certificates", "commissions", "accounting", "reports",
+  "telephony", "api_clearinghouse",
 ];
 for (const moduleId of MODULES) {
   await sql.query(
@@ -187,6 +188,66 @@ if (carrierCount[0].n === 0) {
   console.log("✓ seeded 3 carriers");
 } else {
   console.log("• carriers already present — skipped");
+}
+
+// 9. Insurance-core demo data — claims, certificates, commissions, documents, tasks.
+const taskSeedCount = await sql.query("SELECT count(*)::int AS n FROM tasks WHERE tenant_id = $1", [demo]);
+if (taskSeedCount[0].n === 0) {
+  const pols = await sql.query(
+    "SELECT id FROM policies WHERE tenant_id = $1 ORDER BY policy_number LIMIT 2",
+    [demo],
+  );
+  if (pols.length === 2) {
+    const [p0, p1] = [pols[0].id, pols[1].id];
+    await sql.query(
+      "INSERT INTO claims (tenant_id, policy_id, claim_number, date_of_loss, description, status, reserve_cents) VALUES ($1,$2,'CLM-50231','2026-04-12','Rear-end collision; third-party vehicle damage.','investigating',850000)",
+      [demo, p0],
+    );
+    await sql.query(
+      "INSERT INTO claims (tenant_id, policy_id, claim_number, date_of_loss, description, status, reserve_cents) VALUES ($1,$2,'CLM-50244','2026-02-28','Water damage from a burst supply line.','paid',1240000)",
+      [demo, p1],
+    );
+    await sql.query(
+      "INSERT INTO certificates (tenant_id, policy_id, cert_number, holder_name, issued_date, status) VALUES ($1,$2,'COI-2026-118','City of Portland — Permits Office','2026-03-05','issued')",
+      [demo, p0],
+    );
+    await sql.query(
+      "INSERT INTO certificates (tenant_id, policy_id, cert_number, holder_name, issued_date, status) VALUES ($1,$2,'COI-2026-141','Prime Property Management LLC',NULL,'draft')",
+      [demo, p1],
+    );
+    await sql.query(
+      "INSERT INTO commissions (tenant_id, policy_id, amount_cents, rate_percent, status, received_date) VALUES ($1,$2,73125,'15','received','2026-02-05')",
+      [demo, p0],
+    );
+    await sql.query(
+      "INSERT INTO commissions (tenant_id, policy_id, amount_cents, rate_percent, status, received_date) VALUES ($1,$2,46800,'15','pending',NULL)",
+      [demo, p1],
+    );
+  }
+  for (const [name, category, notes] of [
+    ["Becker Construction — signed BOR", "Signed agreement", "Broker-of-record letter on file."],
+    ["ACORD 125 — Cascade Cannabis Co.", "ACORD form", "Commercial application submitted to Greenleaf Specialty."],
+    ["Renewal proposal — Wu homeowners", "Correspondence", "Sent to the insured ahead of the November renewal."],
+  ]) {
+    await sql.query(
+      "INSERT INTO documents (tenant_id, name, category, notes) VALUES ($1,$2,$3,$4)",
+      [demo, name, category, notes],
+    );
+  }
+  for (const [title, status, priority, due, assignee] of [
+    ["Follow up on the Cascade Cannabis GL quote", "in_progress", "high", "2026-05-30", "Matt"],
+    ["Order MVRs for the HaulGuard fleet renewal", "open", "normal", "2026-06-10", "Polina"],
+    ["Send the COI to Prime Property Management", "open", "high", "2026-05-22", "Matt"],
+    ["Reconcile the April commission statement", "done", "normal", null, "Polina"],
+  ]) {
+    await sql.query(
+      "INSERT INTO tasks (tenant_id, title, status, priority, due_date, assignee) VALUES ($1,$2,$3,$4,$5,$6)",
+      [demo, title, status, priority, due, assignee],
+    );
+  }
+  console.log("✓ seeded claims, certificates, commissions, documents, tasks");
+} else {
+  console.log("• insurance-core demo data already present — skipped");
 }
 
 console.log("✓ demo tenant seeded: modules, custom fields, 3 carrier connections, VoIP");

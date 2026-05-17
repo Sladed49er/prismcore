@@ -47,6 +47,11 @@ const TENANT_TABLES = [
   "policies",
   "renewals",
   "carriers",
+  "claims",
+  "certificates",
+  "commissions",
+  "documents",
+  "tasks",
 ];
 
 const owner = neon(ownerUrl);

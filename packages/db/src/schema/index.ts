@@ -7,3 +7,8 @@ export * from "./clients";
 export * from "./policies";
 export * from "./renewals";
 export * from "./carriers";
+export * from "./claims";
+export * from "./certificates";
+export * from "./commissions";
+export * from "./documents";
+export * from "./tasks";

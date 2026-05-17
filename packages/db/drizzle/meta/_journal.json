@@ -64,6 +64,13 @@
       "when": 1778991853114,
       "tag": "0008_famous_smasher",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1778992334115,
+      "tag": "0009_orange_gorilla_man",
+      "breakpoints": true
     }
   ]
 }
