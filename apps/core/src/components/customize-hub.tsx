@@ -10,6 +10,7 @@ import { TerminologyPanel } from "@/components/terminology-panel";
 import { OptionSetsPanel } from "@/components/option-sets-panel";
 import { SavedViewsPanel } from "@/components/saved-views-panel";
 import { BrandingPanel } from "@/components/branding-panel";
+import { AssistantPanel } from "@/components/assistant-panel";
 
 export type { EntityRef, CustomFieldDTO };
 
@@ -53,9 +54,20 @@ export interface BrandingDTO {
   logoUrl: string;
 }
 
-type TabKey = "fields" | "terminology" | "statuses" | "views" | "branding";
+type TabKey =
+  | "assistant"
+  | "fields"
+  | "terminology"
+  | "statuses"
+  | "views"
+  | "branding";
 
 const TABS: { key: TabKey; label: string; blurb: string }[] = [
+  {
+    key: "assistant",
+    label: "AI assistant",
+    blurb: "Describe a change in plain words — the assistant makes it.",
+  },
   {
     key: "fields",
     label: "Custom fields",
@@ -103,7 +115,7 @@ export function CustomizeHub({
   views: SavedViewDTO[];
   branding: BrandingDTO;
 }) {
-  const [tab, setTab] = useState<TabKey>("fields");
+  const [tab, setTab] = useState<TabKey>("assistant");
   const active = TABS.find((t) => t.key === tab)!;
 
   return (
@@ -126,6 +138,8 @@ export function CustomizeHub({
       </div>
 
       <p className="mt-3 text-sm text-gray-500">{active.blurb}</p>
+
+      {tab === "assistant" ? <AssistantPanel /> : null}
 
       {tab === "fields" ? (
         entities.length === 0 ? (
