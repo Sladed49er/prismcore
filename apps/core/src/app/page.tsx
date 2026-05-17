@@ -44,6 +44,12 @@ export default function Home() {
         >
           Open the demo workspace
         </Link>
+        <Link
+          href="/sign-in"
+          className="px-5 py-2.5 text-sm font-semibold text-gray-500 transition hover:text-gray-900"
+        >
+          Sign in
+        </Link>
       </div>
 
       <p className="mt-12 text-sm text-gray-500">

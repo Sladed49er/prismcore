@@ -1,18 +1,24 @@
 import type { ReactNode } from "react";
 import { loadCurrentTenant } from "@/lib/kernel";
+import { getViewer } from "@/lib/auth";
 import { Sidebar } from "@/components/sidebar";
 import type { NavItem } from "@/components/nav-links";
 
 /**
  * The workspace shell. The sidebar is generated from the current tenant's enabled
- * modules — add a module to the tenant and its nav appears, with no shell changes.
+ * modules; the signed-in user (and whether they are a platform admin) comes from
+ * Clerk.
  */
 export default async function ShellLayout({
   children,
 }: {
   children: ReactNode;
 }) {
-  const { config, nav } = await loadCurrentTenant();
+  const [{ config, nav }, viewer] = await Promise.all([
+    loadCurrentTenant(),
+    getViewer(),
+  ]);
+
   const items: NavItem[] = nav.map((entry) => ({
     label: entry.label,
     href: entry.href,
@@ -21,7 +27,12 @@ export default async function ShellLayout({
 
   return (
     <div className="flex min-h-screen">
-      <Sidebar tenantName={config.name} items={items} />
+      <Sidebar
+        tenantName={config.name}
+        items={items}
+        viewerName={viewer?.name ?? "Account"}
+        isAdmin={viewer?.isAdmin ?? false}
+      />
       <main className="flex-1 overflow-y-auto bg-gray-50">{children}</main>
     </div>
   );
