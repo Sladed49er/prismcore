@@ -27,6 +27,7 @@ export const DEMO_TENANT: TenantConfig = {
     "accounting",
     "reports",
     "telephony",
+    "api_clearinghouse",
   ],
 };
 
