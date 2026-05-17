@@ -108,6 +108,57 @@ export async function createBill(input: {
   });
 }
 
+/** Update a bill's fields; status is recomputed from amount vs. amount paid. */
+export async function updateBill(input: {
+  tenantId: string;
+  id: string;
+  vendorId: string;
+  billNumber: string;
+  billDate: string | null;
+  dueDate: string | null;
+  amountCents: number;
+  memo: string;
+}): Promise<void> {
+  await withTenantContext(input.tenantId, async (tx) => {
+    const rows = await tx
+      .select()
+      .from(bills)
+      .where(eq(bills.id, input.id))
+      .limit(1);
+    const bill = rows[0];
+    if (!bill) return;
+    const paid = bill.amountPaidCents;
+    const status =
+      paid >= input.amountCents && input.amountCents > 0
+        ? "paid"
+        : paid > 0
+          ? "partial"
+          : "pending";
+    await tx
+      .update(bills)
+      .set({
+        vendorId: input.vendorId,
+        billNumber: input.billNumber,
+        billDate: input.billDate,
+        dueDate: input.dueDate,
+        amountCents: input.amountCents,
+        memo: input.memo,
+        status,
+        updatedAt: new Date(),
+      })
+      .where(eq(bills.id, input.id));
+  });
+}
+
+export async function deleteBill(
+  tenantId: string,
+  id: string,
+): Promise<void> {
+  await withTenantContext(tenantId, async (tx) => {
+    await tx.delete(bills).where(eq(bills.id, id));
+  });
+}
+
 /** Record a payment against a bill; status follows from amount paid vs. due. */
 export async function recordBillPayment(
   tenantId: string,

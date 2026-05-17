@@ -17,12 +17,15 @@ export default async function BillsPage() {
 
   const bills: BillDTO[] = billRows.map((b) => ({
     id: b.id,
+    vendorId: b.vendorId,
     billNumber: b.billNumber,
     vendorName: b.vendorName,
+    billDate: b.billDate,
     dueDate: b.dueDate,
     amountCents: b.amountCents,
     amountPaidCents: b.amountPaidCents,
     balanceCents: b.balanceCents,
+    memo: b.memo,
     status: b.status,
   }));
   const vendors: VendorOption[] = vendorRows.map((v) => ({

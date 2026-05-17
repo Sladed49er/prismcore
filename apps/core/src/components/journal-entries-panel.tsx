@@ -1,7 +1,10 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
-import { postJournalEntry } from "@/app/(shell)/m/accounting/journal-entries/actions";
+import {
+  postJournalEntry,
+  removeJournalEntry,
+} from "@/app/(shell)/m/accounting/journal-entries/actions";
 
 export interface JournalEntryDTO {
   id: string;
@@ -60,6 +63,7 @@ export function JournalEntriesPanel({
     { ...BLANK_LINE },
   ]);
   const [error, setError] = useState("");
+  const [query, setQuery] = useState("");
 
   const totals = useMemo(() => {
     let debit = 0;
@@ -103,6 +107,26 @@ export function JournalEntriesPanel({
     });
   }
 
+  function remove(e: JournalEntryDTO): void {
+    if (
+      !confirm(
+        `Delete journal entry ${e.entryNumber}? Its ${e.lineCount} line` +
+          `${e.lineCount === 1 ? "" : "s"} are removed too. This cannot be undone.`,
+      )
+    )
+      return;
+    startTransition(async () => {
+      await removeJournalEntry(e.id);
+    });
+  }
+
+  const q = query.trim().toLowerCase();
+  const visible = q
+    ? entries.filter((e) =>
+        [e.entryNumber, e.memo].join(" ").toLowerCase().includes(q),
+      )
+    : entries;
+
   const inputClass =
     "rounded-lg border border-gray-300 px-2 py-1.5 text-sm outline-none focus:border-indigo-500";
   const labelClass =
@@ -110,10 +134,13 @@ export function JournalEntriesPanel({
 
   return (
     <div className="mt-6">
-      <div className="flex items-center justify-between">
-        <p className="text-sm text-gray-500">
-          {entries.length} journal entr{entries.length === 1 ? "y" : "ies"}
-        </p>
+      <div className="flex items-center justify-between gap-3">
+        <input
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Search entries…"
+          className="w-56 rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-indigo-500"
+        />
         {!showForm && accounts.length > 0 ? (
           <button
             type="button"
@@ -288,9 +315,11 @@ export function JournalEntriesPanel({
       ) : null}
 
       <div className="mt-5 overflow-hidden rounded-xl border border-gray-200 bg-white">
-        {entries.length === 0 ? (
+        {visible.length === 0 ? (
           <p className="px-5 py-8 text-center text-sm text-gray-500">
-            No journal entries yet.
+            {entries.length === 0
+              ? "No journal entries yet."
+              : "No entries match your search."}
           </p>
         ) : (
           <table className="w-full text-sm">
@@ -301,10 +330,11 @@ export function JournalEntriesPanel({
                 <th className="px-4 py-3 font-semibold">Memo</th>
                 <th className="px-4 py-3 font-semibold">Lines</th>
                 <th className="px-4 py-3 font-semibold">Amount</th>
+                <th className="px-4 py-3" />
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {entries.map((e) => (
+              {visible.map((e) => (
                 <tr key={e.id}>
                   <td className="px-4 py-3 font-medium">{e.entryNumber}</td>
                   <td className="px-4 py-3 text-gray-500">
@@ -314,6 +344,16 @@ export function JournalEntriesPanel({
                   <td className="px-4 py-3 text-gray-500">{e.lineCount}</td>
                   <td className="px-4 py-3 text-gray-600">
                     {money(e.totalCents)}
+                  </td>
+                  <td className="px-4 py-3 text-right whitespace-nowrap">
+                    <button
+                      type="button"
+                      disabled={pending}
+                      onClick={() => remove(e)}
+                      className="text-xs font-semibold text-rose-600 transition hover:text-rose-700 disabled:opacity-40"
+                    >
+                      Delete
+                    </button>
                   </td>
                 </tr>
               ))}

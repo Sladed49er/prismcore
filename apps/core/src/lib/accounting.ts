@@ -55,3 +55,38 @@ export async function setInvoiceStatus(
       .where(eq(invoices.id, invoiceId));
   });
 }
+
+export async function updateInvoice(input: {
+  tenantId: string;
+  id: string;
+  clientId: string;
+  invoiceNumber: string;
+  description: string;
+  amountCents: number;
+  status: InvoiceStatus;
+  dueDate: string | null;
+}): Promise<void> {
+  await withTenantContext(input.tenantId, async (tx) => {
+    await tx
+      .update(invoices)
+      .set({
+        clientId: input.clientId,
+        invoiceNumber: input.invoiceNumber,
+        description: input.description,
+        amountCents: input.amountCents,
+        status: input.status,
+        dueDate: input.dueDate,
+        updatedAt: new Date(),
+      })
+      .where(eq(invoices.id, input.id));
+  });
+}
+
+export async function deleteInvoice(
+  tenantId: string,
+  id: string,
+): Promise<void> {
+  await withTenantContext(tenantId, async (tx) => {
+    await tx.delete(invoices).where(eq(invoices.id, id));
+  });
+}

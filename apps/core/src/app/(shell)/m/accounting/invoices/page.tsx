@@ -18,6 +18,7 @@ export default async function InvoicesPage() {
 
   const invoices: InvoiceDTO[] = invoiceRows.map((i) => ({
     id: i.id,
+    clientId: i.clientId,
     invoiceNumber: i.invoiceNumber,
     clientName: i.clientName,
     description: i.description,

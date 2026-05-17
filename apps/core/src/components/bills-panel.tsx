@@ -1,16 +1,24 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { addBill, payBill } from "@/app/(shell)/m/accounting/bills/actions";
+import {
+  addBill,
+  payBill,
+  editBill,
+  removeBill,
+} from "@/app/(shell)/m/accounting/bills/actions";
 
 export interface BillDTO {
   id: string;
+  vendorId: string;
   billNumber: string;
   vendorName: string;
+  billDate: string | null;
   dueDate: string | null;
   amountCents: number;
   amountPaidCents: number;
   balanceCents: number;
+  memo: string;
   status: string;
 }
 
@@ -47,26 +55,58 @@ export function BillsPanel({
 }) {
   const [pending, startTransition] = useTransition();
   const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [vendorId, setVendorId] = useState("");
   const [form, setForm] = useState({ ...EMPTY });
+  const [query, setQuery] = useState("");
 
   function set(key: keyof typeof EMPTY, value: string): void {
     setForm((f) => ({ ...f, [key]: value }));
   }
 
+  function startCreate(): void {
+    setForm({ ...EMPTY });
+    setVendorId("");
+    setEditingId(null);
+    setShowForm(true);
+  }
+
+  function startEdit(b: BillDTO): void {
+    setForm({
+      billNumber: b.billNumber,
+      billDate: b.billDate ?? "",
+      dueDate: b.dueDate ?? "",
+      amountDollars: String(b.amountCents / 100),
+      memo: b.memo,
+    });
+    setVendorId(b.vendorId);
+    setEditingId(b.id);
+    setShowForm(true);
+  }
+
+  function close(): void {
+    setShowForm(false);
+    setEditingId(null);
+    setForm({ ...EMPTY });
+    setVendorId("");
+  }
+
   function submit(): void {
     startTransition(async () => {
-      await addBill({
+      const payload = {
         vendorId,
         billNumber: form.billNumber,
         billDate: form.billDate,
         dueDate: form.dueDate,
         amountDollars: form.amountDollars,
         memo: form.memo,
-      });
-      setForm({ ...EMPTY });
-      setVendorId("");
-      setShowForm(false);
+      };
+      if (editingId) {
+        await editBill({ id: editingId, ...payload });
+      } else {
+        await addBill(payload);
+      }
+      close();
     });
   }
 
@@ -75,6 +115,24 @@ export function BillsPanel({
       await payBill(billId, String(balanceCents / 100));
     });
   }
+
+  function remove(b: BillDTO): void {
+    if (!confirm(`Delete bill ${b.billNumber}? This cannot be undone.`))
+      return;
+    startTransition(async () => {
+      await removeBill(b.id);
+    });
+  }
+
+  const q = query.trim().toLowerCase();
+  const visible = q
+    ? bills.filter((b) =>
+        [b.billNumber, b.vendorName, b.memo, b.status]
+          .join(" ")
+          .toLowerCase()
+          .includes(q),
+      )
+    : bills;
 
   const owed = bills
     .filter((b) => b.status !== "void")
@@ -86,20 +144,27 @@ export function BillsPanel({
 
   return (
     <div className="mt-6">
-      <div className="flex items-center justify-between">
-        <p className="text-sm text-gray-500">
-          {bills.length} bill{bills.length === 1 ? "" : "s"} · {money(owed)}{" "}
-          payable
-        </p>
-        {!showForm && vendors.length > 0 ? (
-          <button
-            type="button"
-            onClick={() => setShowForm(true)}
-            className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-700"
-          >
-            + New bill
-          </button>
-        ) : null}
+      <div className="flex items-center justify-between gap-3">
+        <input
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Search bills…"
+          className="w-56 rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-indigo-500"
+        />
+        <div className="flex items-center gap-3">
+          <span className="text-sm text-gray-500">
+            {money(owed)} payable
+          </span>
+          {!showForm && vendors.length > 0 ? (
+            <button
+              type="button"
+              onClick={startCreate}
+              className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-700"
+            >
+              + New bill
+            </button>
+          ) : null}
+        </div>
       </div>
 
       {vendors.length === 0 ? (
@@ -110,6 +175,9 @@ export function BillsPanel({
 
       {showForm ? (
         <div className="mt-4 rounded-xl border border-gray-200 bg-white p-5">
+          <p className="mb-3 text-sm font-semibold text-gray-700">
+            {editingId ? "Edit bill" : "New bill"}
+          </p>
           <div className="grid gap-3 sm:grid-cols-2">
             <label className={`${labelClass} sm:col-span-2`}>
               Vendor
@@ -177,11 +245,15 @@ export function BillsPanel({
               disabled={pending || !vendorId || !form.billNumber.trim()}
               className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-700 disabled:opacity-40"
             >
-              {pending ? "Saving…" : "Save bill"}
+              {pending
+                ? "Saving…"
+                : editingId
+                  ? "Update bill"
+                  : "Save bill"}
             </button>
             <button
               type="button"
-              onClick={() => setShowForm(false)}
+              onClick={close}
               className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-600"
             >
               Cancel
@@ -191,9 +263,11 @@ export function BillsPanel({
       ) : null}
 
       <div className="mt-5 overflow-hidden rounded-xl border border-gray-200 bg-white">
-        {bills.length === 0 ? (
+        {visible.length === 0 ? (
           <p className="px-5 py-8 text-center text-sm text-gray-500">
-            No bills yet.
+            {bills.length === 0
+              ? "No bills yet."
+              : "No bills match your search."}
           </p>
         ) : (
           <table className="w-full text-sm">
@@ -208,7 +282,7 @@ export function BillsPanel({
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {bills.map((b) => (
+              {visible.map((b) => (
                 <tr key={b.id}>
                   <td className="px-4 py-3 font-medium">{b.billNumber}</td>
                   <td className="px-4 py-3 text-gray-600">{b.vendorName}</td>
@@ -225,7 +299,7 @@ export function BillsPanel({
                       {b.status}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-right">
+                  <td className="px-4 py-3 text-right whitespace-nowrap">
                     {b.balanceCents > 0 && b.status !== "void" ? (
                       <button
                         type="button"
@@ -236,6 +310,21 @@ export function BillsPanel({
                         Pay balance
                       </button>
                     ) : null}
+                    <button
+                      type="button"
+                      onClick={() => startEdit(b)}
+                      className="ml-3 text-xs font-semibold text-indigo-600 transition hover:text-indigo-700"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      type="button"
+                      disabled={pending}
+                      onClick={() => remove(b)}
+                      className="ml-3 text-xs font-semibold text-rose-600 transition hover:text-rose-700 disabled:opacity-40"
+                    >
+                      Delete
+                    </button>
                   </td>
                 </tr>
               ))}

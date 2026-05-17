@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { getCurrentTenant } from "@/lib/current-tenant";
-import { createJournalEntry } from "@/lib/gl";
+import { createJournalEntry, deleteJournalEntry } from "@/lib/gl";
 
 interface RawLine {
   accountId: string;
@@ -57,4 +57,12 @@ export async function postJournalEntry(input: {
   });
   revalidatePath("/m/accounting/journal-entries");
   return { ok: true };
+}
+
+/** Delete a journal entry and its lines. */
+export async function removeJournalEntry(id: string): Promise<void> {
+  if (!id) return;
+  const tenant = await getCurrentTenant();
+  await deleteJournalEntry(tenant.id, id);
+  revalidatePath("/m/accounting/journal-entries");
 }

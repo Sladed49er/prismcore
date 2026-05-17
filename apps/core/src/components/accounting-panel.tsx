@@ -4,10 +4,13 @@ import { useState, useTransition } from "react";
 import {
   addInvoice,
   advanceInvoice,
+  editInvoice,
+  removeInvoice,
 } from "@/app/(shell)/m/accounting/invoices/actions";
 
 export interface InvoiceDTO {
   id: string;
+  clientId: string;
   invoiceNumber: string;
   clientName: string;
   description: string;
@@ -52,26 +55,58 @@ export function AccountingPanel({
 }) {
   const [pending, startTransition] = useTransition();
   const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [clientId, setClientId] = useState("");
   const [form, setForm] = useState({ ...EMPTY });
+  const [query, setQuery] = useState("");
 
   function set(key: keyof typeof EMPTY, value: string): void {
     setForm((f) => ({ ...f, [key]: value }));
   }
 
+  function startCreate(): void {
+    setForm({ ...EMPTY });
+    setClientId("");
+    setEditingId(null);
+    setShowForm(true);
+  }
+
+  function startEdit(i: InvoiceDTO): void {
+    setForm({
+      invoiceNumber: i.invoiceNumber,
+      description: i.description,
+      amountDollars: String(i.amountCents / 100),
+      status: i.status,
+      dueDate: i.dueDate ?? "",
+    });
+    setClientId(i.clientId);
+    setEditingId(i.id);
+    setShowForm(true);
+  }
+
+  function close(): void {
+    setShowForm(false);
+    setEditingId(null);
+    setForm({ ...EMPTY });
+    setClientId("");
+  }
+
   function submit(): void {
     startTransition(async () => {
-      await addInvoice({
+      const payload = {
         clientId,
         invoiceNumber: form.invoiceNumber,
         description: form.description,
         amountDollars: form.amountDollars,
         status: form.status as Status,
         dueDate: form.dueDate,
-      });
-      setForm({ ...EMPTY });
-      setClientId("");
-      setShowForm(false);
+      };
+      if (editingId) {
+        await editInvoice({ id: editingId, ...payload });
+      } else {
+        await addInvoice(payload);
+      }
+      close();
     });
   }
 
@@ -80,6 +115,24 @@ export function AccountingPanel({
       await advanceInvoice(id, status);
     });
   }
+
+  function remove(i: InvoiceDTO): void {
+    if (!confirm(`Delete invoice ${i.invoiceNumber}? This cannot be undone.`))
+      return;
+    startTransition(async () => {
+      await removeInvoice(i.id);
+    });
+  }
+
+  const q = query.trim().toLowerCase();
+  const visible = q
+    ? invoices.filter((i) =>
+        [i.invoiceNumber, i.clientName, i.description, i.status]
+          .join(" ")
+          .toLowerCase()
+          .includes(q),
+      )
+    : invoices;
 
   const outstanding = invoices
     .filter((i) => i.status === "sent")
@@ -91,20 +144,27 @@ export function AccountingPanel({
 
   return (
     <div className="mt-6">
-      <div className="flex items-center justify-between">
-        <p className="text-sm text-gray-500">
-          {invoices.length} invoice{invoices.length === 1 ? "" : "s"} ·{" "}
-          {money(outstanding)} outstanding
-        </p>
-        {!showForm && clients.length > 0 ? (
-          <button
-            type="button"
-            onClick={() => setShowForm(true)}
-            className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-700"
-          >
-            + New invoice
-          </button>
-        ) : null}
+      <div className="flex items-center justify-between gap-3">
+        <input
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Search invoices…"
+          className="w-56 rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-indigo-500"
+        />
+        <div className="flex items-center gap-3">
+          <span className="text-sm text-gray-500">
+            {money(outstanding)} outstanding
+          </span>
+          {!showForm && clients.length > 0 ? (
+            <button
+              type="button"
+              onClick={startCreate}
+              className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-700"
+            >
+              + New invoice
+            </button>
+          ) : null}
+        </div>
       </div>
 
       {clients.length === 0 ? (
@@ -115,6 +175,9 @@ export function AccountingPanel({
 
       {showForm ? (
         <div className="mt-4 rounded-xl border border-gray-200 bg-white p-5">
+          <p className="mb-3 text-sm font-semibold text-gray-700">
+            {editingId ? "Edit invoice" : "New invoice"}
+          </p>
           <div className="grid gap-3 sm:grid-cols-2">
             <label className={`${labelClass} sm:col-span-2`}>
               Bill to (client)
@@ -187,11 +250,15 @@ export function AccountingPanel({
               disabled={pending || !clientId || !form.invoiceNumber.trim()}
               className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-700 disabled:opacity-40"
             >
-              {pending ? "Saving…" : "Save invoice"}
+              {pending
+                ? "Saving…"
+                : editingId
+                  ? "Update invoice"
+                  : "Save invoice"}
             </button>
             <button
               type="button"
-              onClick={() => setShowForm(false)}
+              onClick={close}
               className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-600"
             >
               Cancel
@@ -201,9 +268,11 @@ export function AccountingPanel({
       ) : null}
 
       <div className="mt-5 overflow-hidden rounded-xl border border-gray-200 bg-white">
-        {invoices.length === 0 ? (
+        {visible.length === 0 ? (
           <p className="px-5 py-8 text-center text-sm text-gray-500">
-            No invoices yet.
+            {invoices.length === 0
+              ? "No invoices yet."
+              : "No invoices match your search."}
           </p>
         ) : (
           <table className="w-full text-sm">
@@ -214,12 +283,15 @@ export function AccountingPanel({
                 <th className="px-4 py-3 font-semibold">Amount</th>
                 <th className="px-4 py-3 font-semibold">Due</th>
                 <th className="px-4 py-3 font-semibold">Status</th>
+                <th className="px-4 py-3" />
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {invoices.map((i) => (
+              {visible.map((i) => (
                 <tr key={i.id}>
-                  <td className="px-4 py-3 font-medium">{i.invoiceNumber}</td>
+                  <td className="px-4 py-3 font-medium">
+                    {i.invoiceNumber}
+                  </td>
                   <td className="px-4 py-3 text-gray-600">{i.clientName}</td>
                   <td className="px-4 py-3 text-gray-600">
                     {money(i.amountCents)}
@@ -243,6 +315,23 @@ export function AccountingPanel({
                         </option>
                       ))}
                     </select>
+                  </td>
+                  <td className="px-4 py-3 text-right whitespace-nowrap">
+                    <button
+                      type="button"
+                      onClick={() => startEdit(i)}
+                      className="text-xs font-semibold text-indigo-600 transition hover:text-indigo-700"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      type="button"
+                      disabled={pending}
+                      onClick={() => remove(i)}
+                      className="ml-3 text-xs font-semibold text-rose-600 transition hover:text-rose-700 disabled:opacity-40"
+                    >
+                      Delete
+                    </button>
                   </td>
                 </tr>
               ))}

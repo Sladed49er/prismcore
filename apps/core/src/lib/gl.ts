@@ -112,6 +112,16 @@ export async function listJournalEntries(
   });
 }
 
+/** Delete a journal entry; its lines cascade away with it. */
+export async function deleteJournalEntry(
+  tenantId: string,
+  id: string,
+): Promise<void> {
+  await withTenantContext(tenantId, async (tx) => {
+    await tx.delete(journalEntries).where(eq(journalEntries.id, id));
+  });
+}
+
 export interface JournalLineInput {
   accountId: string;
   debitCents: number;
