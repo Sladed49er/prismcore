@@ -339,15 +339,15 @@ Course-correction: the lean modules were too shallow. PrismAMS is 176 tables /
 155 pages; Accounting alone is 32 tables / 25 pages. Modules are now being built
 to true PrismAMS depth, improved and flowed. Accounting first.
 
-`/m/accounting` is now a **hub** with sub-modules. Built so far (9 of ~19):
+`/m/accounting` is now a **hub** with sub-modules. Built so far (12 of ~19):
 Chart of Accounts, Journal Entries (real double-entry — won't post unless
-balanced), Invoices, Vendors, Bills, Trust Accounting, **Employees**, **Payroll**
-(pay runs auto-generate gross/tax/net per active employee), **Bank
-Reconciliation**. Migrations through 0013; RLS on 32 tenant tables.
+balanced), Invoices, Vendors, Bills, Trust Accounting, Employees, Payroll,
+Bank Reconciliation, **Budgets** (by GL account), **Fixed Assets** (computed
+depreciation + book value), **Estimates**. Migrations through 0014; RLS on 36
+tenant tables.
 
-Remaining accounting sub-modules (the hub lists them): Checks, Budgets, Fixed
-Assets, Estimates, Periods, Surplus Lines Tax, Quarterly Taxes, 1099/W-2,
-Financial Reports.
+Remaining accounting sub-modules (the hub lists them): Checks & Positive Pay,
+Fiscal Periods, Surplus Lines Tax, Quarterly Taxes, 1099/W-2, Financial Reports.
 
 ## Reference
 

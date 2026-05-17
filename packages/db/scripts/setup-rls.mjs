@@ -67,6 +67,10 @@ const TENANT_TABLES = [
   "pay_runs",
   "pay_run_entries",
   "bank_reconciliations",
+  "budgets",
+  "budget_lines",
+  "fixed_assets",
+  "estimates",
 ];
 
 const owner = neon(ownerUrl);

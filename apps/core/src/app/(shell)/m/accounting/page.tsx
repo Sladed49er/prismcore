@@ -48,14 +48,26 @@ const BUILT = [
     name: "Bank Reconciliation",
     desc: "Reconcile each statement against the books.",
   },
+  {
+    href: "/m/accounting/budgets",
+    name: "Budgets",
+    desc: "Annual budgets by GL account.",
+  },
+  {
+    href: "/m/accounting/fixed-assets",
+    name: "Fixed Assets",
+    desc: "Depreciable assets with computed book value.",
+  },
+  {
+    href: "/m/accounting/estimates",
+    name: "Estimates",
+    desc: "Client quotes and estimates.",
+  },
 ];
 
 /** The remaining accounting sub-modules, ported in over the coming turns. */
 const PLANNED = [
   "Checks & Positive Pay",
-  "Budgets",
-  "Fixed Assets",
-  "Estimates",
   "Fiscal Periods",
   "Surplus Lines Tax",
   "Quarterly Taxes",

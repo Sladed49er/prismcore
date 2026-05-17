@@ -464,4 +464,73 @@ if (reconCount[0].n === 0) {
   console.log("• bank reconciliations already present — skipped");
 }
 
+// 15. Budgets, fixed assets, estimates demo data.
+const budgetCount = await sql.query("SELECT count(*)::int AS n FROM budgets WHERE tenant_id = $1", [demo]);
+if (budgetCount[0].n === 0) {
+  const accts = await sql.query(
+    "SELECT id, account_number FROM chart_of_accounts WHERE tenant_id = $1",
+    [demo],
+  );
+  const byNum = {};
+  for (const a of accts) byNum[a.account_number] = a.id;
+  const b = await sql.query(
+    "INSERT INTO budgets (tenant_id, name, fiscal_year, status) VALUES ($1,'Operating Budget','2026','active') RETURNING id",
+    [demo],
+  );
+  for (const [num, amt] of [
+    ["5000", 2880000],
+    ["6000", 4560000],
+    ["6100", 1800000],
+    ["6200", 960000],
+  ]) {
+    if (byNum[num]) {
+      await sql.query(
+        "INSERT INTO budget_lines (tenant_id, budget_id, account_id, annual_amount_cents) VALUES ($1,$2,$3,$4)",
+        [demo, b[0].id, byNum[num], amt],
+      );
+    }
+  }
+  console.log("✓ seeded 1 budget + 4 lines");
+} else {
+  console.log("• budgets already present — skipped");
+}
+
+const assetCount = await sql.query("SELECT count(*)::int AS n FROM fixed_assets WHERE tenant_id = $1", [demo]);
+if (assetCount[0].n === 0) {
+  for (const [name, cat, cost, salvage, life, acq] of [
+    ["Office workstations (6)", "Computer equipment", 1080000, 108000, 5, "2025-03-01"],
+    ["Conference room AV", "Office equipment", 420000, 40000, 7, "2025-09-15"],
+    ["Company vehicle", "Vehicle", 3850000, 800000, 5, "2024-06-01"],
+  ]) {
+    await sql.query(
+      "INSERT INTO fixed_assets (tenant_id, name, category, acquisition_cost_cents, salvage_value_cents, useful_life_years, method, acquired_date) VALUES ($1,$2,$3,$4,$5,$6,'straight_line',$7)",
+      [demo, name, cat, cost, salvage, life, acq],
+    );
+  }
+  console.log("✓ seeded 3 fixed assets");
+} else {
+  console.log("• fixed assets already present — skipped");
+}
+
+const estCount = await sql.query("SELECT count(*)::int AS n FROM estimates WHERE tenant_id = $1", [demo]);
+if (estCount[0].n === 0) {
+  const cls = await sql.query(
+    "SELECT id FROM clients WHERE tenant_id = $1 ORDER BY created_at LIMIT 2",
+    [demo],
+  );
+  if (cls.length === 2) {
+    await sql.query(
+      "INSERT INTO estimates (tenant_id, client_id, estimate_number, description, amount_cents, status, valid_until) VALUES ($1,$2,'EST-2026-044','Commercial package — proposed program',1850000,'sent','2026-06-30')",
+      [demo, cls[0].id],
+    );
+    await sql.query(
+      "INSERT INTO estimates (tenant_id, client_id, estimate_number, description, amount_cents, status, valid_until) VALUES ($1,$2,'EST-2026-051','Workers comp and GL bundle',640000,'accepted','2026-07-15')",
+      [demo, cls[1].id],
+    );
+  }
+  console.log("✓ seeded 2 estimates");
+} else {
+  console.log("• estimates already present — skipped");
+}
+
 console.log("✓ demo tenant seeded: modules, custom fields, 3 carrier connections, VoIP");
