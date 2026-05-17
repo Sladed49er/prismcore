@@ -8,6 +8,13 @@
       "when": 1778982801650,
       "tag": "0000_chemical_captain_britain",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1778985279951,
+      "tag": "0001_calm_shadow_king",
+      "breakpoints": true
     }
   ]
 }

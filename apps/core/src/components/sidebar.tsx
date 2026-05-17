@@ -30,7 +30,13 @@ export function Sidebar({
       <div className="flex-1 overflow-y-auto p-3">
         <NavLinks items={nav} />
       </div>
-      <div className="border-t border-gray-200 p-3">
+      <div className="space-y-0.5 border-t border-gray-200 p-3">
+        <Link
+          href="/settings/customize"
+          className="block rounded-lg px-3 py-2 text-sm font-medium text-gray-600 transition hover:bg-gray-50"
+        >
+          Customize
+        </Link>
         <Link
           href="/compose"
           className="block rounded-lg px-3 py-2 text-sm font-medium text-gray-600 transition hover:bg-gray-50"

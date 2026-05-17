@@ -57,12 +57,20 @@ function withDependencies(
  * The composer onboarding. Pick the modules an agency needs; dependencies are
  * pulled in automatically and pricing updates live. "Software your way."
  */
-export function Composer({ modules }: { modules: ComposableModule[] }) {
+export function Composer({
+  modules,
+  initialSelected,
+}: {
+  modules: ComposableModule[];
+  initialSelected?: string[];
+}) {
   const byId = useMemo(
     () => new Map(modules.map((m) => [m.id, m])),
     [modules],
   );
-  const [picked, setPicked] = useState<ReadonlySet<string>>(new Set());
+  const [picked, setPicked] = useState<ReadonlySet<string>>(
+    () => new Set(initialSelected ?? []),
+  );
   const [name, setName] = useState("");
   const [pending, startTransition] = useTransition();
 
