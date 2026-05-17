@@ -1,0 +1,23 @@
+{
+  "name": "prismcore",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Prism Core — the composable multi-tenant platform. Software your way.",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "turbo dev",
+    "build": "turbo build",
+    "typecheck": "turbo typecheck"
+  },
+  "devDependencies": {
+    "turbo": "^2.5.5",
+    "typescript": "^5.7.3"
+  },
+  "packageManager": "npm@11.12.1",
+  "engines": {
+    "node": ">=20"
+  }
+}

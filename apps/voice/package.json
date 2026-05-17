@@ -1,0 +1,9 @@
+{
+  "name": "@prismcore/voice",
+  "version": "0.0.0",
+  "private": true,
+  "description": "New-branded CallIntel — VoIP<->AMS middleware. Scaffold pending (Days 11-14).",
+  "scripts": {
+    "typecheck": "node --eval \"process.stdout.write('voice: scaffold pending (Days 11-14)\\n')\""
+  }
+}
