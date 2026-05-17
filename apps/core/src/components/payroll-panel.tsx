@@ -1,7 +1,12 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { newPayRun, postPayRun } from "@/app/(shell)/m/accounting/payroll/actions";
+import {
+  newPayRun,
+  postPayRun,
+  editPayRun,
+  removePayRun,
+} from "@/app/(shell)/m/accounting/payroll/actions";
 
 export interface PayRunDTO {
   id: string;
@@ -37,16 +42,41 @@ export function PayrollPanel({
 }) {
   const [pending, startTransition] = useTransition();
   const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [label, setLabel] = useState("");
   const [payDate, setPayDate] = useState("");
   const [openId, setOpenId] = useState<string | null>(null);
+  const [query, setQuery] = useState("");
+
+  function startCreate(): void {
+    setLabel("");
+    setPayDate("");
+    setEditingId(null);
+    setShowForm(true);
+  }
+
+  function startEdit(r: PayRunDTO): void {
+    setLabel(r.label);
+    setPayDate(r.payDate ?? "");
+    setEditingId(r.id);
+    setShowForm(true);
+  }
+
+  function close(): void {
+    setShowForm(false);
+    setEditingId(null);
+    setLabel("");
+    setPayDate("");
+  }
 
   function submit(): void {
     startTransition(async () => {
-      await newPayRun({ label, payDate });
-      setLabel("");
-      setPayDate("");
-      setShowForm(false);
+      if (editingId) {
+        await editPayRun({ id: editingId, label, payDate });
+      } else {
+        await newPayRun({ label, payDate });
+      }
+      close();
     });
   }
 
@@ -56,6 +86,24 @@ export function PayrollPanel({
     });
   }
 
+  function remove(r: PayRunDTO): void {
+    if (
+      !confirm(
+        `Delete pay run "${r.label}"? Its ${r.entryCount} employee ` +
+          `entr${r.entryCount === 1 ? "y" : "ies"} are removed too.`,
+      )
+    )
+      return;
+    startTransition(async () => {
+      await removePayRun(r.id);
+    });
+  }
+
+  const q = query.trim().toLowerCase();
+  const visible = q
+    ? runs.filter((r) => r.label.toLowerCase().includes(q))
+    : runs;
+
   const inputClass =
     "mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-indigo-500";
   const labelClass =
@@ -63,14 +111,17 @@ export function PayrollPanel({
 
   return (
     <div className="mt-6">
-      <div className="flex items-center justify-between">
-        <p className="text-sm text-gray-500">
-          {runs.length} pay run{runs.length === 1 ? "" : "s"}
-        </p>
+      <div className="flex items-center justify-between gap-3">
+        <input
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Search pay runs…"
+          className="w-56 rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-indigo-500"
+        />
         {!showForm ? (
           <button
             type="button"
-            onClick={() => setShowForm(true)}
+            onClick={startCreate}
             className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-700"
           >
             + New pay run
@@ -87,9 +138,13 @@ export function PayrollPanel({
 
       {showForm ? (
         <div className="mt-4 rounded-xl border border-gray-200 bg-white p-5">
-          <p className="text-sm text-gray-600">
-            A pay run generates an entry for every active employee — gross from
-            their period pay, a withholding estimate, and net.
+          <p className="text-sm font-semibold text-gray-700">
+            {editingId ? "Edit pay run" : "New pay run"}
+          </p>
+          <p className="mt-1 text-sm text-gray-600">
+            {editingId
+              ? "Updates the period label and pay date. Employee entries are unchanged."
+              : "A pay run generates an entry for every active employee — gross from their period pay, a withholding estimate, and net."}
           </p>
           <div className="mt-3 grid gap-3 sm:grid-cols-2">
             <label className={labelClass}>
@@ -118,11 +173,15 @@ export function PayrollPanel({
               disabled={pending || !label.trim()}
               className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-700 disabled:opacity-40"
             >
-              {pending ? "Generating…" : "Generate pay run"}
+              {pending
+                ? "Saving…"
+                : editingId
+                  ? "Update pay run"
+                  : "Generate pay run"}
             </button>
             <button
               type="button"
-              onClick={() => setShowForm(false)}
+              onClick={close}
               className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-600"
             >
               Cancel
@@ -132,12 +191,14 @@ export function PayrollPanel({
       ) : null}
 
       <div className="mt-5 space-y-3">
-        {runs.length === 0 ? (
+        {visible.length === 0 ? (
           <p className="rounded-xl border border-dashed border-gray-300 bg-white px-5 py-8 text-center text-sm text-gray-500">
-            No pay runs yet.
+            {runs.length === 0
+              ? "No pay runs yet."
+              : "No pay runs match your search."}
           </p>
         ) : (
-          runs.map((r) => {
+          visible.map((r) => {
             const isOpen = openId === r.id;
             const runEntries = entries.filter((e) => e.payRunId === r.id);
             return (
@@ -174,6 +235,21 @@ export function PayrollPanel({
                       posted
                     </span>
                   )}
+                  <button
+                    type="button"
+                    onClick={() => startEdit(r)}
+                    className="text-xs font-semibold text-indigo-600 transition hover:text-indigo-700"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    type="button"
+                    disabled={pending}
+                    onClick={() => remove(r)}
+                    className="text-xs font-semibold text-rose-600 transition hover:text-rose-700 disabled:opacity-40"
+                  >
+                    Delete
+                  </button>
                 </div>
                 {isOpen ? (
                   <table className="w-full border-t border-gray-100 text-sm">

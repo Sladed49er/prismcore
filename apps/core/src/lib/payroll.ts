@@ -184,3 +184,31 @@ export async function setPayRunStatus(
       .where(eq(payRuns.id, runId));
   });
 }
+
+export async function updatePayRun(input: {
+  tenantId: string;
+  id: string;
+  label: string;
+  payDate: string | null;
+}): Promise<void> {
+  await withTenantContext(input.tenantId, async (tx) => {
+    await tx
+      .update(payRuns)
+      .set({
+        label: input.label,
+        payDate: input.payDate,
+        updatedAt: new Date(),
+      })
+      .where(eq(payRuns.id, input.id));
+  });
+}
+
+/** Delete a pay run; its per-employee entries cascade away with it. */
+export async function deletePayRun(
+  tenantId: string,
+  id: string,
+): Promise<void> {
+  await withTenantContext(tenantId, async (tx) => {
+    await tx.delete(payRuns).where(eq(payRuns.id, id));
+  });
+}

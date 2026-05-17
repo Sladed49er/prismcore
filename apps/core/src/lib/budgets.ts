@@ -90,3 +90,42 @@ export async function addBudgetLine(input: {
     await tx.insert(budgetLines).values(input);
   });
 }
+
+export async function updateBudget(input: {
+  tenantId: string;
+  id: string;
+  name: string;
+  fiscalYear: string;
+  status: BudgetStatus;
+}): Promise<void> {
+  await withTenantContext(input.tenantId, async (tx) => {
+    await tx
+      .update(budgets)
+      .set({
+        name: input.name,
+        fiscalYear: input.fiscalYear,
+        status: input.status,
+        updatedAt: new Date(),
+      })
+      .where(eq(budgets.id, input.id));
+  });
+}
+
+/** Delete a budget; its lines cascade away with it. */
+export async function deleteBudget(
+  tenantId: string,
+  id: string,
+): Promise<void> {
+  await withTenantContext(tenantId, async (tx) => {
+    await tx.delete(budgets).where(eq(budgets.id, id));
+  });
+}
+
+export async function deleteBudgetLine(
+  tenantId: string,
+  id: string,
+): Promise<void> {
+  await withTenantContext(tenantId, async (tx) => {
+    await tx.delete(budgetLines).where(eq(budgetLines.id, id));
+  });
+}

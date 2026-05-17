@@ -1,7 +1,13 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { newBudget, addLine } from "@/app/(shell)/m/accounting/budgets/actions";
+import {
+  newBudget,
+  addLine,
+  editBudget,
+  removeBudget,
+  removeBudgetLine,
+} from "@/app/(shell)/m/accounting/budgets/actions";
 
 export interface BudgetDTO {
   id: string;
@@ -42,6 +48,7 @@ export function BudgetsPanel({
 }) {
   const [pending, startTransition] = useTransition();
   const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [name, setName] = useState("");
   const [fiscalYear, setFiscalYear] = useState("");
   const [status, setStatus] = useState<Status>("draft");
@@ -49,13 +56,51 @@ export function BudgetsPanel({
   const [lineAccount, setLineAccount] = useState("");
   const [lineAmount, setLineAmount] = useState("");
 
-  function createBudget(): void {
+  function startCreate(): void {
+    setName("");
+    setFiscalYear("");
+    setStatus("draft");
+    setEditingId(null);
+    setShowForm(true);
+  }
+
+  function startEdit(b: BudgetDTO): void {
+    setName(b.name);
+    setFiscalYear(b.fiscalYear);
+    setStatus(b.status as Status);
+    setEditingId(b.id);
+    setShowForm(true);
+  }
+
+  function close(): void {
+    setShowForm(false);
+    setEditingId(null);
+    setName("");
+    setFiscalYear("");
+    setStatus("draft");
+  }
+
+  function submit(): void {
     startTransition(async () => {
-      await newBudget({ name, fiscalYear, status });
-      setName("");
-      setFiscalYear("");
-      setStatus("draft");
-      setShowForm(false);
+      if (editingId) {
+        await editBudget({ id: editingId, name, fiscalYear, status });
+      } else {
+        await newBudget({ name, fiscalYear, status });
+      }
+      close();
+    });
+  }
+
+  function removeBudgetCard(b: BudgetDTO): void {
+    if (
+      !confirm(
+        `Delete budget "${b.name}"? Its ${b.lineCount} line` +
+          `${b.lineCount === 1 ? "" : "s"} are removed too.`,
+      )
+    )
+      return;
+    startTransition(async () => {
+      await removeBudget(b.id);
     });
   }
 
@@ -69,6 +114,12 @@ export function BudgetsPanel({
       });
       setLineAccount("");
       setLineAmount("");
+    });
+  }
+
+  function removeLine(id: string): void {
+    startTransition(async () => {
+      await removeBudgetLine(id);
     });
   }
 
@@ -86,7 +137,7 @@ export function BudgetsPanel({
         {!showForm ? (
           <button
             type="button"
-            onClick={() => setShowForm(true)}
+            onClick={startCreate}
             className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-700"
           >
             + New budget
@@ -96,6 +147,9 @@ export function BudgetsPanel({
 
       {showForm ? (
         <div className="mt-4 rounded-xl border border-gray-200 bg-white p-5">
+          <p className="mb-3 text-sm font-semibold text-gray-700">
+            {editingId ? "Edit budget" : "New budget"}
+          </p>
           <div className="grid gap-3 sm:grid-cols-3">
             <label className={labelClass}>
               Budget name
@@ -132,15 +186,19 @@ export function BudgetsPanel({
           <div className="mt-4 flex gap-2">
             <button
               type="button"
-              onClick={createBudget}
+              onClick={submit}
               disabled={pending || !name.trim()}
               className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-700 disabled:opacity-40"
             >
-              {pending ? "Saving…" : "Save budget"}
+              {pending
+                ? "Saving…"
+                : editingId
+                  ? "Update budget"
+                  : "Save budget"}
             </button>
             <button
               type="button"
-              onClick={() => setShowForm(false)}
+              onClick={close}
               className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-600"
             >
               Cancel
@@ -163,26 +221,41 @@ export function BudgetsPanel({
                 key={b.id}
                 className="rounded-xl border border-gray-200 bg-white"
               >
-                <button
-                  type="button"
-                  onClick={() => {
-                    setOpenId(isOpen ? null : b.id);
-                    setLineAccount("");
-                    setLineAmount("");
-                  }}
-                  className="flex w-full items-center justify-between gap-3 px-5 py-3 text-left"
-                >
-                  <span>
+                <div className="flex items-center justify-between gap-3 px-5 py-3">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setOpenId(isOpen ? null : b.id);
+                      setLineAccount("");
+                      setLineAmount("");
+                    }}
+                    className="flex flex-1 items-center gap-2 text-left"
+                  >
                     <span className="font-medium">{b.name}</span>
-                    <span className="ml-2 text-xs text-gray-400">
+                    <span className="text-xs text-gray-400">
                       FY {b.fiscalYear || "—"} · {b.lineCount} line
                       {b.lineCount === 1 ? "" : "s"} · {b.status}
                     </span>
-                  </span>
+                  </button>
                   <span className="text-sm text-gray-600">
                     {money(b.totalCents)}
                   </span>
-                </button>
+                  <button
+                    type="button"
+                    onClick={() => startEdit(b)}
+                    className="text-xs font-semibold text-indigo-600 transition hover:text-indigo-700"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    type="button"
+                    disabled={pending}
+                    onClick={() => removeBudgetCard(b)}
+                    className="text-xs font-semibold text-rose-600 transition hover:text-rose-700 disabled:opacity-40"
+                  >
+                    Delete
+                  </button>
+                </div>
                 {isOpen ? (
                   <div className="border-t border-gray-100 px-5 py-4">
                     {budgetLines.length > 0 ? (
@@ -193,6 +266,17 @@ export function BudgetsPanel({
                               <td className="py-1.5">{l.accountName}</td>
                               <td className="py-1.5 text-right text-gray-600">
                                 {money(l.annualAmountCents)}
+                              </td>
+                              <td className="py-1.5 pl-3 text-right">
+                                <button
+                                  type="button"
+                                  disabled={pending}
+                                  onClick={() => removeLine(l.id)}
+                                  className="text-gray-400 transition hover:text-rose-600 disabled:opacity-40"
+                                  aria-label="Remove line"
+                                >
+                                  ✕
+                                </button>
                               </td>
                             </tr>
                           ))}

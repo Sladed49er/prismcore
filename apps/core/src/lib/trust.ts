@@ -59,3 +59,39 @@ export async function createTrustEntry(input: {
     await tx.insert(trustLedgerEntries).values(input);
   });
 }
+
+export async function updateTrustEntry(input: {
+  tenantId: string;
+  id: string;
+  entryType: TrustEntryType;
+  amountCents: number;
+  description: string;
+  party: string;
+  state: string;
+  entryDate: string | null;
+}): Promise<void> {
+  await withTenantContext(input.tenantId, async (tx) => {
+    await tx
+      .update(trustLedgerEntries)
+      .set({
+        entryType: input.entryType,
+        amountCents: input.amountCents,
+        description: input.description,
+        party: input.party,
+        state: input.state,
+        entryDate: input.entryDate,
+      })
+      .where(eq(trustLedgerEntries.id, input.id));
+  });
+}
+
+export async function deleteTrustEntry(
+  tenantId: string,
+  id: string,
+): Promise<void> {
+  await withTenantContext(tenantId, async (tx) => {
+    await tx
+      .delete(trustLedgerEntries)
+      .where(eq(trustLedgerEntries.id, id));
+  });
+}
