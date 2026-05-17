@@ -28,10 +28,20 @@ const BUILT = [
     name: "Recovery & Subrogation",
     desc: "Subrogation, salvage, and deductible recovery on the claim file.",
   },
+  {
+    href: "/m/claims/parties",
+    name: "Claim Parties",
+    desc: "Claimants, witnesses, adjusters, attorneys, and third parties.",
+  },
+  {
+    href: "/m/claims/litigation",
+    name: "Litigation",
+    desc: "Suits arising from a claim — court, docket, defense, trial date.",
+  },
 ];
 
 /** The remaining claims sub-modules, ported in over the coming turns. */
-const PLANNED = ["Claim Parties", "Litigation"];
+const PLANNED: string[] = [];
 
 export default async function ClaimsHub() {
   await requireModule("claims");

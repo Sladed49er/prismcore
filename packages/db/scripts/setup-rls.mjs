@@ -87,6 +87,8 @@ const TENANT_TABLES = [
   "claim_reserve_entries",
   "claim_payments",
   "claim_recoveries",
+  "claim_parties",
+  "claim_litigation",
 ];
 
 const owner = neon(ownerUrl);

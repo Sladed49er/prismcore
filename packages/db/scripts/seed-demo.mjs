@@ -673,4 +673,27 @@ if (cnoteCount[0].n === 0) {
   console.log("• claims lifecycle demo data already present — skipped");
 }
 
+// 20. Claim parties and litigation.
+const cpartyCount = await sql.query("SELECT count(*)::int AS n FROM claim_parties WHERE tenant_id = $1", [demo]);
+if (cpartyCount[0].n === 0) {
+  const cls = await sql.query(
+    "SELECT id FROM claims WHERE tenant_id = $1 ORDER BY created_at LIMIT 1",
+    [demo],
+  );
+  if (cls.length >= 1) {
+    const c0 = cls[0].id;
+    await sql.query(
+      "INSERT INTO claim_parties (tenant_id, claim_id, role, name, organization, phone, email, notes) VALUES ($1,$2,'adjuster','Dana Whitfield','Allied Adjusters','555-0142','dana@alliedadj.com','Field adjuster'),($1,$2,'attorney','R. Patel, Esq.','Patel & Cole LLP','555-0188','rpatel@patelcole.com','Defense counsel'),($1,$2,'witness','Jordan Bell','','555-0200','','On-site at time of loss')",
+      [demo, c0],
+    );
+    await sql.query(
+      "INSERT INTO claim_litigation (tenant_id, claim_id, case_caption, court, docket_number, defense_attorney, filed_date, trial_date, status, notes) VALUES ($1,$2,'Bell v. Coastal Cannery','Santa Cruz County Superior Court','SC-2026-04417','R. Patel, Esq.','2026-04-28','2026-11-10','discovery','Depositions scheduled for September')",
+      [demo, c0],
+    );
+  }
+  console.log("✓ seeded claim parties + litigation");
+} else {
+  console.log("• claim parties/litigation demo data already present — skipped");
+}
+
 console.log("✓ demo tenant seeded: modules, custom fields, 3 carrier connections, VoIP");
