@@ -1,10 +1,17 @@
+import { headers } from "next/headers";
 import { loadCurrentTenant, requireModule } from "@/lib/kernel";
 import { VOIP_PROVIDERS, listConnectionDetails, listCalls } from "@/lib/voip";
+import { AMS_PROVIDERS, getAmsConnection } from "@/lib/ams";
 import {
   PrismVoicePanel,
   type CallDTO,
   type ConnectionDTO,
 } from "@/components/prismvoice-panel";
+import {
+  AmsConnectionCard,
+  type AmsConnectionDTO,
+} from "@/components/ams-connection-card";
+import { DialpadWebhookCard } from "@/components/dialpad-webhook-card";
 
 /**
  * PrismVoice — the rebuilt CallIntel, now a native Prism Core module. Screen pop,
@@ -14,9 +21,11 @@ export default async function PrismVoicePage() {
   await requireModule("telephony");
   const { config } = await loadCurrentTenant();
 
-  const [connectionRows, callRows] = await Promise.all([
+  const [connectionRows, callRows, amsConn, hdrs] = await Promise.all([
     listConnectionDetails(config.id),
     listCalls(config.id),
+    getAmsConnection(config.id),
+    headers(),
   ]);
 
   const connections: ConnectionDTO[] = connectionRows.map((c) => ({
@@ -34,6 +43,39 @@ export default async function PrismVoicePage() {
     occurredAt: c.occurredAt.toISOString(),
   }));
 
+  // The screen-pop credentials never leave the server — only the readable
+  // identifiers and toggles do; `hasPassword` tells the form one is stored.
+  const ams: AmsConnectionDTO = amsConn
+    ? {
+        connected: true,
+        provider: amsConn.provider,
+        endpoint: amsConn.endpoint,
+        username: amsConn.username,
+        employeeCode: amsConn.employeeCode,
+        webTenantId: amsConn.webTenantId,
+        autoSyncCalls: amsConn.autoSyncCalls,
+        screenPopEnabled: amsConn.screenPopEnabled,
+        hasPassword: amsConn.password.length > 0,
+      }
+    : {
+        connected: false,
+        provider: "ams360",
+        endpoint: "",
+        username: "",
+        employeeCode: "",
+        webTenantId: "",
+        autoSyncCalls: true,
+        screenPopEnabled: true,
+        hasPassword: false,
+      };
+
+  const host = hdrs.get("x-forwarded-host") ?? hdrs.get("host") ?? "";
+  const proto = hdrs.get("x-forwarded-proto") ?? "https";
+  const dialpadConnected = connections.some((c) => c.providerId === "dialpad");
+  const webhookUrl = host
+    ? `${proto}://${host}/api/voip/webhook/dialpad?tenant=${config.id}`
+    : "";
+
   return (
     <div className="mx-auto max-w-5xl px-8 py-10">
       <p className="text-xs font-semibold uppercase tracking-wide text-indigo-500">
@@ -50,6 +92,13 @@ export default async function PrismVoicePage() {
         connections={connections}
         calls={calls}
       />
+      <div className="mt-10 space-y-10">
+        <DialpadWebhookCard
+          connected={dialpadConnected}
+          webhookUrl={webhookUrl}
+        />
+        <AmsConnectionCard providers={AMS_PROVIDERS} connection={ams} />
+      </div>
     </div>
   );
 }

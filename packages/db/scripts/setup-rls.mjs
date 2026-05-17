@@ -40,6 +40,7 @@ const TENANT_TABLES = [
   "tenant_custom_fields",
   "tenant_carrier_connections",
   "tenant_voip_connections",
+  "tenant_ams_connections",
   "calls",
   "tickets",
   "ticket_comments",

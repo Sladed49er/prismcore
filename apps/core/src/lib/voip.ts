@@ -1,9 +1,10 @@
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, sql } from "drizzle-orm";
 import {
   withTenantContext,
   adminDb,
   calls,
   tenantVoipConnections,
+  tenantAmsConnections,
   type Call,
 } from "@prismcore/db";
 import { encryptSecret, decryptSecret } from "@/lib/crypto";
@@ -214,5 +215,239 @@ export async function simulateInboundCall(tenantId: string): Promise<void> {
     aiSummary: caller.summary,
     disposition: caller.disposition,
     provider: "demo",
+  });
+}
+
+/* ─── Provider webhook plumbing ───────────────────────────────────────────
+ * The functions below back the native VoIP webhooks (Dialpad first). They
+ * write calls keyed by the provider's own call id so a webhook firing twice
+ * for the same physical call updates one row rather than duplicating it.    */
+
+/** What a webhook needs to authenticate and act for a tenant's Dialpad. */
+export interface DialpadWebhookContext {
+  /** Webhook signing secret — verifies the inbound request. */
+  webhookSecret: string;
+  /** Dialpad API bearer token — used to trigger the screen pop. */
+  apiToken: string;
+}
+
+/**
+ * The Dialpad connection for a tenant, decrypted. `adminDb` — the webhook is
+ * being authenticated, it is not yet a trusted tenant session.
+ */
+export async function getDialpadWebhookContext(
+  tenantId: string,
+): Promise<DialpadWebhookContext | null> {
+  const rows = await adminDb()
+    .select({ config: tenantVoipConnections.config })
+    .from(tenantVoipConnections)
+    .where(
+      and(
+        eq(tenantVoipConnections.tenantId, tenantId),
+        eq(tenantVoipConnections.providerId, "dialpad"),
+      ),
+    );
+  const row = rows[0];
+  if (!row) return null;
+  const cfg = (row.config ?? {}) as Record<string, string>;
+  return {
+    webhookSecret: decryptSecret(cfg.webhookSecret ?? ""),
+    apiToken: decryptSecret(cfg.apiSecret ?? ""),
+  };
+}
+
+/** A call as a provider webhook records it. `providerCallId` is the dedup key. */
+export interface ProviderCallInput {
+  tenantId: string;
+  providerCallId: string;
+  masterCallId?: string | null;
+  direction: "inbound" | "outbound";
+  status: "ringing" | "in_progress" | "completed" | "missed" | "voicemail";
+  fromNumber: string;
+  toNumber?: string | null;
+  contactName?: string | null;
+  agentName?: string | null;
+  agentEmail?: string | null;
+  durationSeconds?: number;
+  provider: string;
+  occurredAt?: Date;
+}
+
+/** Read a call by its provider-native id. */
+export async function getProviderCall(
+  tenantId: string,
+  providerCallId: string,
+): Promise<Call | null> {
+  const rows = await withTenantContext(tenantId, async (tx) =>
+    tx
+      .select()
+      .from(calls)
+      .where(
+        and(
+          eq(calls.tenantId, tenantId),
+          eq(calls.providerCallId, providerCallId),
+        ),
+      )
+      .limit(1),
+  );
+  return rows[0] ?? null;
+}
+
+/** Insert — or update in place — the call for a provider call id. */
+export async function upsertProviderCall(
+  input: ProviderCallInput,
+): Promise<void> {
+  await withTenantContext(input.tenantId, async (tx) => {
+    await tx
+      .insert(calls)
+      .values({
+        tenantId: input.tenantId,
+        providerCallId: input.providerCallId,
+        masterCallId: input.masterCallId ?? null,
+        direction: input.direction,
+        status: input.status,
+        fromNumber: input.fromNumber,
+        toNumber: input.toNumber ?? null,
+        contactName: input.contactName ?? null,
+        agentName: input.agentName ?? null,
+        agentEmail: input.agentEmail ?? null,
+        durationSeconds: input.durationSeconds ?? 0,
+        provider: input.provider,
+        occurredAt: input.occurredAt ?? new Date(),
+      })
+      .onConflictDoUpdate({
+        target: [calls.tenantId, calls.providerCallId],
+        // `calls_provider_call_uq` is a partial unique index — Postgres needs
+        // the same predicate to infer it as the conflict arbiter.
+        targetWhere: sql`provider_call_id is not null`,
+        set: {
+          status: input.status,
+          masterCallId: input.masterCallId ?? null,
+          toNumber: input.toNumber ?? null,
+          ...(input.agentName ? { agentName: input.agentName } : {}),
+          ...(input.agentEmail ? { agentEmail: input.agentEmail } : {}),
+          ...(input.durationSeconds !== undefined
+            ? { durationSeconds: input.durationSeconds }
+            : {}),
+        },
+      });
+  });
+}
+
+/** Patch fields on an existing provider call (matched contact, end state…). */
+export async function patchProviderCall(
+  tenantId: string,
+  providerCallId: string,
+  patch: Partial<{
+    status: "ringing" | "in_progress" | "completed" | "missed" | "voicemail";
+    durationSeconds: number;
+    agentName: string | null;
+    agentEmail: string | null;
+    contactName: string | null;
+    matchedContactId: string | null;
+    matchedContactName: string | null;
+    recordingUrl: string | null;
+    transcript: string | null;
+    aiSummary: string | null;
+    endedAt: Date | null;
+  }>,
+): Promise<void> {
+  if (Object.keys(patch).length === 0) return;
+  await withTenantContext(tenantId, async (tx) => {
+    await tx
+      .update(calls)
+      .set(patch)
+      .where(
+        and(
+          eq(calls.tenantId, tenantId),
+          eq(calls.providerCallId, providerCallId),
+        ),
+      );
+  });
+}
+
+/**
+ * Trigger the Dialpad native screen pop — opens `url` in the agent's Dialpad
+ * app for the given Dialpad user id. Best-effort: logs and swallows failure
+ * so a screen-pop hiccup never fails the webhook.
+ */
+export async function triggerDialpadScreenPop(
+  apiToken: string,
+  dialpadUserId: string,
+  url: string,
+): Promise<boolean> {
+  try {
+    const res = await fetch(
+      `https://dialpad.com/api/v2/users/${dialpadUserId}/screenpop`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${apiToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ screen_pop_uri: url }),
+      },
+    );
+    if (!res.ok) {
+      console.error(
+        `[ScreenPop] Dialpad API failed (${res.status}):`,
+        (await res.text()).substring(0, 200),
+      );
+      return false;
+    }
+    return true;
+  } catch (error) {
+    console.error("[ScreenPop] trigger failed:", error);
+    return false;
+  }
+}
+
+/* ─── AMS connection ──────────────────────────────────────────────────────
+ * One agency-management system per tenant. The password is encrypted at rest
+ * exactly like the VoIP secrets; endpoint/username/webTenantId are readable
+ * identifiers.                                                              */
+
+/** AMS connection fields as the settings form supplies them. */
+export interface AmsCredentials {
+  provider: string;
+  endpoint: string;
+  username: string;
+  password: string;
+  employeeCode: string;
+  webTenantId: string;
+  autoSyncCalls: boolean;
+  screenPopEnabled: boolean;
+}
+
+/** Connect — or re-save — a tenant's AMS. Password encrypted before storage. */
+export async function connectAms(
+  tenantId: string,
+  credentials: AmsCredentials,
+): Promise<void> {
+  const config: Record<string, unknown> = {
+    endpoint: credentials.endpoint,
+    username: credentials.username,
+    password: encryptSecret(credentials.password),
+    employeeCode: credentials.employeeCode,
+    webTenantId: credentials.webTenantId,
+    autoSyncCalls: credentials.autoSyncCalls,
+    screenPopEnabled: credentials.screenPopEnabled,
+  };
+  await withTenantContext(tenantId, async (tx) => {
+    await tx
+      .insert(tenantAmsConnections)
+      .values({ tenantId, provider: credentials.provider, config })
+      .onConflictDoUpdate({
+        target: tenantAmsConnections.tenantId,
+        set: { provider: credentials.provider, config },
+      });
+  });
+}
+
+export async function disconnectAms(tenantId: string): Promise<void> {
+  await withTenantContext(tenantId, async (tx) => {
+    await tx
+      .delete(tenantAmsConnections)
+      .where(eq(tenantAmsConnections.tenantId, tenantId));
   });
 }
