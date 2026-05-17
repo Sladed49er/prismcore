@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { getRegistry } from "@/lib/registry";
 import type { BillingUnit } from "@prismcore/module-sdk";
 
@@ -20,14 +21,31 @@ export default function Home() {
         Software your way.
       </h1>
       <p className="mt-3 max-w-2xl text-lg text-gray-600">
-        The core is not a CRM — it is the composer. Pick only the modules you
-        need. The grid below is rendered live from the module registry, the same
-        source the composer onboarding will use.
+        The core is not a CRM — it is the composer. Pick only the modules your
+        agency needs, customize them yourself, and pay only for what you use.
       </p>
 
-      <h2 className="mt-12 text-sm font-semibold uppercase tracking-wide text-gray-500">
+      <div className="mt-6 flex flex-wrap gap-3">
+        <Link
+          href="/compose"
+          className="rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-indigo-700"
+        >
+          Compose a workspace
+        </Link>
+        <Link
+          href="/dashboard"
+          className="rounded-lg border border-gray-300 px-5 py-2.5 text-sm font-semibold text-gray-700 transition hover:border-indigo-300"
+        >
+          Open the demo workspace
+        </Link>
+      </div>
+
+      <h2 className="mt-14 text-sm font-semibold uppercase tracking-wide text-gray-500">
         Composable modules ({modules.length})
       </h2>
+      <p className="mt-1 text-sm text-gray-500">
+        Rendered live from the module registry — the same source the composer uses.
+      </p>
       <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {modules.map((m) => (
           <div
