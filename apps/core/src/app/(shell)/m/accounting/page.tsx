@@ -33,12 +33,25 @@ const BUILT = [
     name: "Trust Accounting",
     desc: "The fiduciary premium trust ledger with a running balance.",
   },
+  {
+    href: "/m/accounting/employees",
+    name: "Employees",
+    desc: "The payroll employee master — W-2 staff and 1099 contractors.",
+  },
+  {
+    href: "/m/accounting/payroll",
+    name: "Payroll",
+    desc: "Pay runs — gross, tax, and net per employee.",
+  },
+  {
+    href: "/m/accounting/bank-reconciliation",
+    name: "Bank Reconciliation",
+    desc: "Reconcile each statement against the books.",
+  },
 ];
 
 /** The remaining accounting sub-modules, ported in over the coming turns. */
 const PLANNED = [
-  "Payroll",
-  "Bank Reconciliation",
   "Checks & Positive Pay",
   "Budgets",
   "Fixed Assets",

@@ -413,4 +413,55 @@ if (vendorCount[0].n === 0) {
   console.log("• AP / trust demo data already present — skipped");
 }
 
+// 13. Payroll demo data — employees + a posted pay run.
+const empCount = await sql.query("SELECT count(*)::int AS n FROM payroll_employees WHERE tenant_id = $1", [demo]);
+if (empCount[0].n === 0) {
+  const EMPLOYEES = [
+    ["Matt Slade", "matt@prismams.com", "Principal", "w2", 625000],
+    ["Polina Yoshimura", "polina@prismams.com", "Operations", "w2", 480000],
+    ["Kim Carver", "kim@example.com", "Account Manager", "w2", 340000],
+  ];
+  const empIds = [];
+  for (const [name, email, title, type, pay] of EMPLOYEES) {
+    const r = await sql.query(
+      "INSERT INTO payroll_employees (tenant_id, name, email, title, employment_type, period_pay_cents) VALUES ($1,$2,$3,$4,$5,$6) RETURNING id",
+      [demo, name, email, title, type, pay],
+    );
+    empIds.push(r[0].id);
+  }
+  const run = await sql.query(
+    "INSERT INTO pay_runs (tenant_id, label, pay_date, status) VALUES ($1,'May 1-15, 2026','2026-05-15','posted') RETURNING id",
+    [demo],
+  );
+  for (let i = 0; i < EMPLOYEES.length; i++) {
+    const row = EMPLOYEES[i];
+    const name = row[0];
+    const pay = row[4];
+    const tax = Math.round(pay * 0.2);
+    await sql.query(
+      "INSERT INTO pay_run_entries (tenant_id, pay_run_id, employee_id, employee_name, gross_cents, tax_cents, net_cents) VALUES ($1,$2,$3,$4,$5,$6,$7)",
+      [demo, run[0].id, empIds[i], name, pay, tax, pay - tax],
+    );
+  }
+  console.log("✓ seeded 3 employees, 1 pay run");
+} else {
+  console.log("• payroll demo data already present — skipped");
+}
+
+// 14. Bank reconciliations.
+const reconCount = await sql.query("SELECT count(*)::int AS n FROM bank_reconciliations WHERE tenant_id = $1", [demo]);
+if (reconCount[0].n === 0) {
+  await sql.query(
+    "INSERT INTO bank_reconciliations (tenant_id, account_name, statement_date, statement_balance_cents, reconciled_balance_cents, status, notes) VALUES ($1,'Operating Cash — Chase 4471','2026-04-30',4185020,4185020,'completed','April reconciled — ties out to the penny.')",
+    [demo],
+  );
+  await sql.query(
+    "INSERT INTO bank_reconciliations (tenant_id, account_name, statement_date, statement_balance_cents, reconciled_balance_cents, status, notes) VALUES ($1,'Premium Trust — Chase 4488','2026-04-30',414375,401200,'in_progress','Two deposits not yet cleared.')",
+    [demo],
+  );
+  console.log("✓ seeded 2 bank reconciliations");
+} else {
+  console.log("• bank reconciliations already present — skipped");
+}
+
 console.log("✓ demo tenant seeded: modules, custom fields, 3 carrier connections, VoIP");

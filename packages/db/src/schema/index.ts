@@ -20,3 +20,5 @@ export * from "./esign";
 export * from "./gl";
 export * from "./ap";
 export * from "./trust";
+export * from "./payroll";
+export * from "./bank";
