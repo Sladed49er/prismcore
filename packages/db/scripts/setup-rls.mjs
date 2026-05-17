@@ -45,6 +45,7 @@ const TENANT_TABLES = [
   "ticket_comments",
   "clients",
   "policies",
+  "renewals",
 ];
 
 const owner = neon(ownerUrl);

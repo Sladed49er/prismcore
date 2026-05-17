@@ -148,4 +148,26 @@ if (clientCount[0].n === 0) {
   console.log("• clients already present — skipped clients/policies");
 }
 
+// 7. Renewals — only when the demo has none.
+const renewalCount = await sql.query("SELECT count(*)::int AS n FROM renewals WHERE tenant_id = $1", [demo]);
+if (renewalCount[0].n === 0) {
+  const pols = await sql.query(
+    "SELECT id FROM policies WHERE tenant_id = $1 ORDER BY policy_number LIMIT 2",
+    [demo],
+  );
+  if (pols.length === 2) {
+    await sql.query(
+      "INSERT INTO renewals (tenant_id, policy_id, stage, due_date, notes) VALUES ($1,$2,'in_progress','2026-11-20','Renewal review underway — loss history clean, premium tracking flat.')",
+      [demo, pols[0].id],
+    );
+    await sql.query(
+      "INSERT INTO renewals (tenant_id, policy_id, stage, due_date, notes) VALUES ($1,$2,'quoted','2027-01-15','Renewal quote sent to the insured; awaiting sign-off.')",
+      [demo, pols[1].id],
+    );
+    console.log("✓ seeded 2 renewals");
+  }
+} else {
+  console.log("• renewals already present — skipped");
+}
+
 console.log("✓ demo tenant seeded: modules, custom fields, 3 carrier connections, VoIP");

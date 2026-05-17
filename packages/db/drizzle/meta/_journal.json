@@ -50,6 +50,13 @@
       "when": 1778991362073,
       "tag": "0006_dizzy_jean_grey",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1778991662644,
+      "tag": "0007_lethal_maggott",
+      "breakpoints": true
     }
   ]
 }
