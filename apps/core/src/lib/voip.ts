@@ -51,15 +51,67 @@ export async function listConnections(tenantId: string): Promise<string[]> {
   return rows.map((r) => r.providerId);
 }
 
+/** Provider credentials a tenant plugs in to wire up its phone system. */
+export interface VoipCredentials {
+  accountId: string;
+  apiKey: string;
+  apiSecret: string;
+  webhookSecret: string;
+}
+
+const EMPTY_CREDENTIALS: VoipCredentials = {
+  accountId: "",
+  apiKey: "",
+  apiSecret: "",
+  webhookSecret: "",
+};
+
+export interface VoipConnectionRow {
+  providerId: string;
+  credentials: VoipCredentials;
+}
+
+/** A tenant's VoIP connections with their stored credentials. */
+export async function listConnectionDetails(
+  tenantId: string,
+): Promise<VoipConnectionRow[]> {
+  const rows = await withTenantContext(tenantId, async (tx) =>
+    tx
+      .select({
+        providerId: tenantVoipConnections.providerId,
+        config: tenantVoipConnections.config,
+      })
+      .from(tenantVoipConnections)
+      .where(eq(tenantVoipConnections.tenantId, tenantId)),
+  );
+  return rows.map((r) => ({
+    providerId: r.providerId,
+    credentials: { ...EMPTY_CREDENTIALS, ...(r.config as object) },
+  }));
+}
+
+/**
+ * Connect — or re-save credentials for — a VoIP provider. The credentials are
+ * stored in the connection's `config`; the row is upserted so saving again
+ * just updates them. Tenant-scoped, RLS-isolated.
+ */
 export async function connectProvider(
   tenantId: string,
   providerId: string,
+  credentials: VoipCredentials,
 ): Promise<void> {
+  const config = { ...credentials } as Record<string, unknown>;
   await withTenantContext(tenantId, async (tx) => {
     await tx
       .insert(tenantVoipConnections)
-      .values({ tenantId, providerId })
-      .onConflictDoNothing();
+      .values({ tenantId, providerId, config })
+      .onConflictDoUpdate({
+        target: [
+          tenantVoipConnections.tenantId,
+          tenantVoipConnections.providerId,
+        ],
+        set: { config },
+      });
   });
 }
 

@@ -1,21 +1,24 @@
 import Link from "next/link";
-import { adminDb, tenants, tenantModules } from "@prismcore/db";
 import { requireAdmin } from "@/lib/auth";
+import { listAdminTenantRows } from "@/lib/admin-tenants";
+import {
+  AdminTenantsPanel,
+  type AdminTenantDTO,
+} from "@/components/admin-tenants-panel";
 
-/** Platform-admin tenant directory — every agency on the platform. */
+/** Platform-admin tenant directory — provision tenants and switch into them. */
 export default async function AdminTenantsPage() {
   await requireAdmin();
-  const db = adminDb();
+  const rows = await listAdminTenantRows();
 
-  const allTenants = await db.select().from(tenants);
-  const allModules = await db
-    .select({ tenantId: tenantModules.tenantId })
-    .from(tenantModules);
-
-  const moduleCount = new Map<string, number>();
-  for (const m of allModules) {
-    moduleCount.set(m.tenantId, (moduleCount.get(m.tenantId) ?? 0) + 1);
-  }
+  const tenants: AdminTenantDTO[] = rows.map((t) => ({
+    id: t.id,
+    name: t.name,
+    slug: t.slug,
+    status: t.status,
+    tier: t.tier,
+    moduleCount: t.moduleCount,
+  }));
 
   return (
     <main className="mx-auto max-w-4xl px-8 py-12">
@@ -26,8 +29,7 @@ export default async function AdminTenantsPage() {
           </p>
           <h1 className="mt-1 text-2xl font-semibold">Tenants</h1>
           <p className="mt-1 text-sm text-gray-500">
-            {allTenants.length} tenant{allTenants.length === 1 ? "" : "s"} on
-            the platform.
+            Provision a tenant, or open any workspace to work inside it.
           </p>
         </div>
         <Link
@@ -37,43 +39,7 @@ export default async function AdminTenantsPage() {
           ← Console
         </Link>
       </div>
-
-      <div className="mt-6 overflow-hidden rounded-xl border border-gray-200 bg-white">
-        <table className="w-full text-sm">
-          <thead className="border-b border-gray-200 bg-gray-50 text-left text-xs uppercase tracking-wide text-gray-500">
-            <tr>
-              <th className="px-4 py-3 font-semibold">Tenant</th>
-              <th className="px-4 py-3 font-semibold">Slug</th>
-              <th className="px-4 py-3 font-semibold">Tier</th>
-              <th className="px-4 py-3 font-semibold">Status</th>
-              <th className="px-4 py-3 font-semibold">Modules</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-100">
-            {allTenants.map((t) => (
-              <tr key={t.id}>
-                <td className="px-4 py-3 font-medium">{t.name}</td>
-                <td className="px-4 py-3 text-gray-500">{t.slug}</td>
-                <td className="px-4 py-3 text-gray-500">{t.tier}</td>
-                <td className="px-4 py-3 text-gray-500">{t.status}</td>
-                <td className="px-4 py-3 text-gray-500">
-                  {moduleCount.get(t.id) ?? 0}
-                </td>
-              </tr>
-            ))}
-            {allTenants.length === 0 ? (
-              <tr>
-                <td
-                  colSpan={5}
-                  className="px-4 py-6 text-center text-gray-400"
-                >
-                  No tenants yet.
-                </td>
-              </tr>
-            ) : null}
-          </tbody>
-        </table>
-      </div>
+      <AdminTenantsPanel tenants={tenants} />
     </main>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useTransition } from "react";
+import { useState, useTransition } from "react";
 import {
   connectProvider,
   disconnectProvider,
@@ -15,6 +15,18 @@ export interface VoipProviderDTO {
   icon: string;
 }
 
+export interface VoipCredentials {
+  accountId: string;
+  apiKey: string;
+  apiSecret: string;
+  webhookSecret: string;
+}
+
+export interface ConnectionDTO {
+  providerId: string;
+  credentials: VoipCredentials;
+}
+
 export interface CallDTO {
   id: string;
   direction: "inbound" | "outbound";
@@ -25,6 +37,13 @@ export interface CallDTO {
   disposition: string | null;
   occurredAt: string;
 }
+
+const EMPTY_CREDS: VoipCredentials = {
+  accountId: "",
+  apiKey: "",
+  apiSecret: "",
+  webhookSecret: "",
+};
 
 function formatDuration(seconds: number): string {
   const m = Math.floor(seconds / 60);
@@ -43,20 +62,45 @@ function formatTime(iso: string): string {
 
 export function PrismVoicePanel({
   providers,
-  connectedIds,
+  connections,
   calls,
 }: {
   providers: VoipProviderDTO[];
-  connectedIds: string[];
+  connections: ConnectionDTO[];
   calls: CallDTO[];
 }) {
   const [pending, startTransition] = useTransition();
-  const connected = new Set(connectedIds);
+  const [editing, setEditing] = useState<string | null>(null);
+  const [form, setForm] = useState<VoipCredentials>({ ...EMPTY_CREDS });
 
-  function toggleProvider(id: string, isConnected: boolean): void {
+  const byProvider = new Map(connections.map((c) => [c.providerId, c]));
+
+  function set(key: keyof VoipCredentials, value: string): void {
+    setForm((f) => ({ ...f, [key]: value }));
+  }
+
+  function startConfigure(providerId: string): void {
+    const existing = byProvider.get(providerId);
+    setForm(existing ? { ...existing.credentials } : { ...EMPTY_CREDS });
+    setEditing(providerId);
+  }
+
+  function save(providerId: string): void {
     startTransition(async () => {
-      if (isConnected) await disconnectProvider(id);
-      else await connectProvider(id);
+      await connectProvider(providerId, form);
+      setEditing(null);
+      setForm({ ...EMPTY_CREDS });
+    });
+  }
+
+  function disconnect(providerId: string): void {
+    if (
+      !confirm("Disconnect this phone system? Its credentials are removed.")
+    )
+      return;
+    startTransition(async () => {
+      await disconnectProvider(providerId);
+      setEditing(null);
     });
   }
 
@@ -66,6 +110,12 @@ export function PrismVoicePanel({
     });
   }
 
+  const editingProvider = providers.find((p) => p.id === editing);
+  const inputClass =
+    "mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-indigo-500";
+  const labelClass =
+    "text-xs font-semibold uppercase tracking-wide text-gray-500";
+
   return (
     <div className="mt-8 space-y-10">
       <section>
@@ -73,12 +123,12 @@ export function PrismVoicePanel({
           Phone system
         </h2>
         <p className="mt-1 text-sm text-gray-600">
-          Connect your VoIP provider once. Inbound calls then screen-pop and log
-          themselves automatically.
+          Connect your VoIP provider and plug in its credentials. Inbound calls
+          then screen-pop and log themselves automatically.
         </p>
         <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {providers.map((p) => {
-            const isConnected = connected.has(p.id);
+            const isConnected = byProvider.has(p.id);
             return (
               <div
                 key={p.id}
@@ -93,23 +143,116 @@ export function PrismVoicePanel({
                   className={`h-5 w-5 ${isConnected ? "text-indigo-600" : "text-gray-400"}`}
                 />
                 <h3 className="mt-2 font-semibold">{p.name}</h3>
-                <p className="mt-0.5 text-sm text-gray-600">{p.description}</p>
-                <button
-                  type="button"
-                  onClick={() => toggleProvider(p.id, isConnected)}
-                  disabled={pending}
-                  className={`mt-3 w-full rounded-lg px-3 py-1.5 text-sm font-semibold transition disabled:opacity-50 ${
-                    isConnected
-                      ? "border border-gray-300 text-gray-600 hover:border-red-300 hover:text-red-600"
-                      : "bg-indigo-600 text-white hover:bg-indigo-700"
-                  }`}
-                >
-                  {isConnected ? "Connected" : "Connect"}
-                </button>
+                <p className="mt-0.5 text-sm text-gray-600">
+                  {p.description}
+                </p>
+                {isConnected ? (
+                  <>
+                    <div className="mt-3 flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => startConfigure(p.id)}
+                        disabled={pending}
+                        className="flex-1 rounded-lg border border-indigo-200 px-3 py-1.5 text-sm font-semibold text-indigo-600 transition hover:bg-indigo-50 disabled:opacity-50"
+                      >
+                        Credentials
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => disconnect(p.id)}
+                        disabled={pending}
+                        className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm font-semibold text-gray-600 transition hover:border-rose-300 hover:text-rose-600 disabled:opacity-50"
+                      >
+                        Disconnect
+                      </button>
+                    </div>
+                    <p className="mt-2 text-xs font-medium text-indigo-600">
+                      ● Connected
+                    </p>
+                  </>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => startConfigure(p.id)}
+                    disabled={pending}
+                    className="mt-3 w-full rounded-lg bg-indigo-600 px-3 py-1.5 text-sm font-semibold text-white transition hover:bg-indigo-700 disabled:opacity-50"
+                  >
+                    Connect
+                  </button>
+                )}
               </div>
             );
           })}
         </div>
+
+        {editingProvider ? (
+          <div className="mt-4 rounded-xl border border-gray-200 bg-white p-5">
+            <p className="text-sm font-semibold text-gray-700">
+              {editingProvider.name} credentials
+            </p>
+            <p className="mt-1 text-xs text-gray-500">
+              Stored against this tenant only, RLS-isolated. Used to
+              authenticate the screen-pop webhook and provider API calls.
+            </p>
+            <div className="mt-3 grid gap-3 sm:grid-cols-2">
+              <label className={labelClass}>
+                Account ID
+                <input
+                  value={form.accountId}
+                  onChange={(e) => set("accountId", e.target.value)}
+                  className={inputClass}
+                />
+              </label>
+              <label className={labelClass}>
+                API key / client ID
+                <input
+                  value={form.apiKey}
+                  onChange={(e) => set("apiKey", e.target.value)}
+                  className={inputClass}
+                />
+              </label>
+              <label className={labelClass}>
+                API secret / token
+                <input
+                  type="password"
+                  value={form.apiSecret}
+                  onChange={(e) => set("apiSecret", e.target.value)}
+                  className={inputClass}
+                />
+              </label>
+              <label className={labelClass}>
+                Webhook signing secret
+                <input
+                  type="password"
+                  value={form.webhookSecret}
+                  onChange={(e) => set("webhookSecret", e.target.value)}
+                  className={inputClass}
+                />
+              </label>
+            </div>
+            <div className="mt-4 flex gap-2">
+              <button
+                type="button"
+                onClick={() => save(editingProvider.id)}
+                disabled={pending}
+                className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-700 disabled:opacity-40"
+              >
+                {pending
+                  ? "Saving…"
+                  : byProvider.has(editingProvider.id)
+                    ? "Save credentials"
+                    : "Connect provider"}
+              </button>
+              <button
+                type="button"
+                onClick={() => setEditing(null)}
+                className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-600"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        ) : null}
       </section>
 
       <section>

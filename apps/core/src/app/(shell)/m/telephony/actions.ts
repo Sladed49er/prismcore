@@ -6,11 +6,22 @@ import {
   connectProvider as connectProviderDb,
   disconnectProvider as disconnectProviderDb,
   simulateInboundCall,
+  type VoipCredentials,
 } from "@/lib/voip";
 
-export async function connectProvider(providerId: string): Promise<void> {
+/** Connect a provider, or re-save its credentials. */
+export async function connectProvider(
+  providerId: string,
+  credentials: VoipCredentials,
+): Promise<void> {
+  if (!providerId) return;
   const tenant = await getCurrentTenant();
-  await connectProviderDb(tenant.id, providerId);
+  await connectProviderDb(tenant.id, providerId, {
+    accountId: credentials.accountId.trim(),
+    apiKey: credentials.apiKey.trim(),
+    apiSecret: credentials.apiSecret.trim(),
+    webhookSecret: credentials.webhookSecret.trim(),
+  });
   revalidatePath("/m/telephony");
 }
 

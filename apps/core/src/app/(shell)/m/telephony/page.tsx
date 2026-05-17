@@ -1,8 +1,9 @@
 import { loadCurrentTenant, requireModule } from "@/lib/kernel";
-import { VOIP_PROVIDERS, listConnections, listCalls } from "@/lib/voip";
+import { VOIP_PROVIDERS, listConnectionDetails, listCalls } from "@/lib/voip";
 import {
   PrismVoicePanel,
   type CallDTO,
+  type ConnectionDTO,
 } from "@/components/prismvoice-panel";
 
 /**
@@ -13,11 +14,15 @@ export default async function PrismVoicePage() {
   await requireModule("telephony");
   const { config } = await loadCurrentTenant();
 
-  const [connectedIds, callRows] = await Promise.all([
-    listConnections(config.id),
+  const [connectionRows, callRows] = await Promise.all([
+    listConnectionDetails(config.id),
     listCalls(config.id),
   ]);
 
+  const connections: ConnectionDTO[] = connectionRows.map((c) => ({
+    providerId: c.providerId,
+    credentials: c.credentials,
+  }));
   const calls: CallDTO[] = callRows.map((c) => ({
     id: c.id,
     direction: c.direction,
@@ -36,13 +41,13 @@ export default async function PrismVoicePage() {
       </p>
       <h1 className="mt-1 text-2xl font-semibold">PrismVoice</h1>
       <p className="mt-2 max-w-2xl text-gray-600">
-        The call center, inside Prism. Connect your phone system once — inbound
-        calls screen-pop the caller, log themselves, and get an AI summary. No
-        separate app, no separate login.
+        The call center, inside Prism. Connect your phone system once — plug in
+        the provider credentials and inbound calls screen-pop the caller, log
+        themselves, and get an AI summary. No separate app, no separate login.
       </p>
       <PrismVoicePanel
         providers={VOIP_PROVIDERS}
-        connectedIds={connectedIds}
+        connections={connections}
         calls={calls}
       />
     </div>
