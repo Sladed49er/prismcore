@@ -29,10 +29,16 @@ export default async function ClientRegisterPage() {
       id: c.id,
       type: c.type,
       displayName,
+      firstName: c.firstName,
+      lastName: c.lastName,
+      businessName: c.businessName,
       email: c.email,
       phone: c.phone,
+      city: c.city,
+      state: c.state,
       location,
       status: c.status,
+      customValues: c.customValues,
     };
   });
 

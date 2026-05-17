@@ -18,6 +18,7 @@ export default async function ClientContactsPage() {
 
   const contacts: ClientContactDTO[] = contactRows.map((c) => ({
     id: c.id,
+    clientId: c.clientId,
     clientName: c.clientName,
     name: c.name,
     title: c.title,

@@ -1,7 +1,11 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { newClientLocation } from "@/app/(shell)/m/clients/locations/actions";
+import {
+  newClientLocation,
+  editClientLocation,
+  removeClientLocation,
+} from "@/app/(shell)/m/clients/locations/actions";
 
 export interface ClientOption {
   id: string;
@@ -10,6 +14,7 @@ export interface ClientOption {
 
 export interface ClientLocationDTO {
   id: string;
+  clientId: string;
   clientName: string;
   label: string;
   locationType: "mailing" | "physical" | "billing" | "branch";
@@ -45,23 +50,76 @@ export function ClientLocationsPanel({
 }) {
   const [pending, startTransition] = useTransition();
   const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState({ ...EMPTY });
+  const [query, setQuery] = useState("");
 
   function set(key: keyof typeof EMPTY, value: string): void {
     setForm((f) => ({ ...f, [key]: value }));
   }
 
+  function startCreate(): void {
+    setForm({ ...EMPTY });
+    setEditingId(null);
+    setShowForm(true);
+  }
+
+  function startEdit(l: ClientLocationDTO): void {
+    setForm({
+      clientId: l.clientId,
+      label: l.label,
+      locationType: l.locationType,
+      addressLine: l.addressLine,
+      city: l.city,
+      state: l.state,
+      postalCode: l.postalCode,
+    });
+    setEditingId(l.id);
+    setShowForm(true);
+  }
+
+  function close(): void {
+    setShowForm(false);
+    setEditingId(null);
+    setForm({ ...EMPTY });
+  }
+
   function submit(): void {
     startTransition(async () => {
-      await newClientLocation({
-        ...form,
-        locationType:
-          form.locationType as ClientLocationDTO["locationType"],
-      });
-      setForm({ ...EMPTY });
-      setShowForm(false);
+      if (editingId) {
+        await editClientLocation({
+          id: editingId,
+          ...form,
+          locationType:
+            form.locationType as ClientLocationDTO["locationType"],
+        });
+      } else {
+        await newClientLocation({
+          ...form,
+          locationType:
+            form.locationType as ClientLocationDTO["locationType"],
+        });
+      }
+      close();
     });
   }
+
+  function remove(l: ClientLocationDTO): void {
+    if (!confirm(`Delete location "${l.label || l.addressLine}"?`)) return;
+    startTransition(async () => {
+      await removeClientLocation(l.id);
+    });
+  }
+
+  const q = query.trim().toLowerCase();
+  const visible = q
+    ? locations.filter((l) =>
+        [l.label, l.clientName, l.addressLine, l.city, l.state]
+          .join(" ")
+          .toLowerCase()
+          .includes(q),
+      )
+    : locations;
 
   const inputClass =
     "mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-indigo-500";
@@ -70,14 +128,17 @@ export function ClientLocationsPanel({
 
   return (
     <div className="mt-6">
-      <div className="flex items-center justify-between">
-        <p className="text-sm text-gray-500">
-          {locations.length} location{locations.length === 1 ? "" : "s"}
-        </p>
+      <div className="flex items-center justify-between gap-3">
+        <input
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Search locations…"
+          className="w-56 rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-indigo-500"
+        />
         {!showForm && clients.length > 0 ? (
           <button
             type="button"
-            onClick={() => setShowForm(true)}
+            onClick={startCreate}
             className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-700"
           >
             + New location
@@ -87,7 +148,10 @@ export function ClientLocationsPanel({
 
       {showForm ? (
         <div className="mt-4 rounded-xl border border-gray-200 bg-white p-5">
-          <div className="grid gap-3 sm:grid-cols-2">
+          <p className="text-sm font-semibold text-gray-700">
+            {editingId ? "Edit location" : "New location"}
+          </p>
+          <div className="mt-3 grid gap-3 sm:grid-cols-2">
             <label className={labelClass}>
               Client
               <select
@@ -165,11 +229,15 @@ export function ClientLocationsPanel({
               disabled={pending || !form.clientId}
               className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-700 disabled:opacity-40"
             >
-              {pending ? "Saving…" : "Save location"}
+              {pending
+                ? "Saving…"
+                : editingId
+                  ? "Update location"
+                  : "Save location"}
             </button>
             <button
               type="button"
-              onClick={() => setShowForm(false)}
+              onClick={close}
               className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-600"
             >
               Cancel
@@ -179,11 +247,13 @@ export function ClientLocationsPanel({
       ) : null}
 
       <div className="mt-5 overflow-hidden rounded-xl border border-gray-200 bg-white">
-        {locations.length === 0 ? (
+        {visible.length === 0 ? (
           <p className="px-5 py-8 text-center text-sm text-gray-500">
             {clients.length === 0
               ? "Add a client first, then record its locations."
-              : "No locations yet."}
+              : locations.length === 0
+                ? "No locations yet."
+                : "No locations match your search."}
           </p>
         ) : (
           <table className="w-full text-sm">
@@ -193,10 +263,11 @@ export function ClientLocationsPanel({
                 <th className="px-4 py-3 font-semibold">Location</th>
                 <th className="px-4 py-3 font-semibold">Type</th>
                 <th className="px-4 py-3 font-semibold">Address</th>
+                <th className="px-4 py-3" />
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {locations.map((l) => {
+              {visible.map((l) => {
                 const cityState = [l.city, l.state]
                   .filter(Boolean)
                   .join(", ");
@@ -214,6 +285,23 @@ export function ClientLocationsPanel({
                     </td>
                     <td className="px-4 py-3 text-gray-500">
                       {full || "—"}
+                    </td>
+                    <td className="px-4 py-3 text-right whitespace-nowrap">
+                      <button
+                        type="button"
+                        onClick={() => startEdit(l)}
+                        className="text-xs font-semibold text-indigo-600 transition hover:text-indigo-700"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        type="button"
+                        disabled={pending}
+                        onClick={() => remove(l)}
+                        className="ml-3 text-xs font-semibold text-rose-600 transition hover:text-rose-700 disabled:opacity-40"
+                      >
+                        Delete
+                      </button>
                     </td>
                   </tr>
                 );

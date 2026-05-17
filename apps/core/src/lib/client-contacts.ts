@@ -50,3 +50,40 @@ export async function createClientContact(input: {
     await tx.insert(clientContacts).values(input);
   });
 }
+
+export async function updateClientContact(input: {
+  tenantId: string;
+  id: string;
+  clientId: string;
+  name: string;
+  title: string;
+  email: string;
+  phone: string;
+  role: ClientContactRole;
+  notes: string;
+}): Promise<void> {
+  await withTenantContext(input.tenantId, async (tx) => {
+    await tx
+      .update(clientContacts)
+      .set({
+        clientId: input.clientId,
+        name: input.name,
+        title: input.title,
+        email: input.email,
+        phone: input.phone,
+        role: input.role,
+        notes: input.notes,
+        updatedAt: new Date(),
+      })
+      .where(eq(clientContacts.id, input.id));
+  });
+}
+
+export async function deleteClientContact(
+  tenantId: string,
+  id: string,
+): Promise<void> {
+  await withTenantContext(tenantId, async (tx) => {
+    await tx.delete(clientContacts).where(eq(clientContacts.id, id));
+  });
+}

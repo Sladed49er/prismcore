@@ -18,6 +18,7 @@ export default async function ClientLocationsPage() {
 
   const locations: ClientLocationDTO[] = locationRows.map((l) => ({
     id: l.id,
+    clientId: l.clientId,
     clientName: l.clientName,
     label: l.label,
     locationType: l.locationType,

@@ -18,6 +18,7 @@ export default async function ClientActivitiesPage() {
 
   const activities: ClientActivityDTO[] = activityRows.map((a) => ({
     id: a.id,
+    clientId: a.clientId,
     clientName: a.clientName,
     activityType: a.activityType,
     subject: a.subject,

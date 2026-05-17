@@ -46,3 +46,46 @@ export async function createClient(input: {
     await tx.insert(clients).values(input);
   });
 }
+
+export async function updateClient(input: {
+  tenantId: string;
+  id: string;
+  type: ClientType;
+  firstName: string | null;
+  lastName: string | null;
+  businessName: string | null;
+  email: string | null;
+  phone: string | null;
+  city: string | null;
+  state: string | null;
+  status: ClientStatus;
+  customValues: Record<string, string>;
+}): Promise<void> {
+  await withTenantContext(input.tenantId, async (tx) => {
+    await tx
+      .update(clients)
+      .set({
+        type: input.type,
+        firstName: input.firstName,
+        lastName: input.lastName,
+        businessName: input.businessName,
+        email: input.email,
+        phone: input.phone,
+        city: input.city,
+        state: input.state,
+        status: input.status,
+        customValues: input.customValues,
+        updatedAt: new Date(),
+      })
+      .where(eq(clients.id, input.id));
+  });
+}
+
+export async function deleteClient(
+  tenantId: string,
+  id: string,
+): Promise<void> {
+  await withTenantContext(tenantId, async (tx) => {
+    await tx.delete(clients).where(eq(clients.id, id));
+  });
+}

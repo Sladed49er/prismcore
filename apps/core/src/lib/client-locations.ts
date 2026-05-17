@@ -49,3 +49,40 @@ export async function createClientLocation(input: {
     await tx.insert(clientLocations).values(input);
   });
 }
+
+export async function updateClientLocation(input: {
+  tenantId: string;
+  id: string;
+  clientId: string;
+  label: string;
+  locationType: ClientLocationType;
+  addressLine: string;
+  city: string;
+  state: string;
+  postalCode: string;
+}): Promise<void> {
+  await withTenantContext(input.tenantId, async (tx) => {
+    await tx
+      .update(clientLocations)
+      .set({
+        clientId: input.clientId,
+        label: input.label,
+        locationType: input.locationType,
+        addressLine: input.addressLine,
+        city: input.city,
+        state: input.state,
+        postalCode: input.postalCode,
+        updatedAt: new Date(),
+      })
+      .where(eq(clientLocations.id, input.id));
+  });
+}
+
+export async function deleteClientLocation(
+  tenantId: string,
+  id: string,
+): Promise<void> {
+  await withTenantContext(tenantId, async (tx) => {
+    await tx.delete(clientLocations).where(eq(clientLocations.id, id));
+  });
+}

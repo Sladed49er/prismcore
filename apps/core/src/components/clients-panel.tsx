@@ -1,16 +1,26 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { addClient } from "@/app/(shell)/m/clients/register/actions";
+import {
+  addClient,
+  editClient,
+  removeClient,
+} from "@/app/(shell)/m/clients/register/actions";
 
 export interface ClientDTO {
   id: string;
   type: "person" | "business";
   displayName: string;
+  firstName: string | null;
+  lastName: string | null;
+  businessName: string | null;
   email: string | null;
   phone: string | null;
+  city: string | null;
+  state: string | null;
   location: string | null;
   status: string;
+  customValues: Record<string, string>;
 }
 
 export interface CustomFieldDTO {
@@ -46,17 +56,52 @@ export function ClientsPanel({
 }) {
   const [pending, startTransition] = useTransition();
   const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [type, setType] = useState<"person" | "business">("person");
   const [form, setForm] = useState({ ...EMPTY });
   const [custom, setCustom] = useState<Record<string, string>>({});
+  const [query, setQuery] = useState("");
 
   function set(key: keyof typeof EMPTY, value: string): void {
     setForm((f) => ({ ...f, [key]: value }));
   }
 
+  function startCreate(): void {
+    setForm({ ...EMPTY });
+    setCustom({});
+    setType("person");
+    setEditingId(null);
+    setShowForm(true);
+  }
+
+  function startEdit(c: ClientDTO): void {
+    setType(c.type);
+    setForm({
+      firstName: c.firstName ?? "",
+      lastName: c.lastName ?? "",
+      businessName: c.businessName ?? "",
+      email: c.email ?? "",
+      phone: c.phone ?? "",
+      city: c.city ?? "",
+      state: c.state ?? "",
+      status: c.status,
+    });
+    setCustom({ ...c.customValues });
+    setEditingId(c.id);
+    setShowForm(true);
+  }
+
+  function close(): void {
+    setShowForm(false);
+    setEditingId(null);
+    setForm({ ...EMPTY });
+    setCustom({});
+    setType("person");
+  }
+
   function submit(): void {
     startTransition(async () => {
-      await addClient({
+      const payload = {
         type,
         firstName: form.firstName,
         lastName: form.lastName,
@@ -67,27 +112,55 @@ export function ClientsPanel({
         state: form.state,
         status: form.status as "prospect" | "active" | "inactive",
         customValues: custom,
-      });
-      setForm({ ...EMPTY });
-      setCustom({});
-      setType("person");
-      setShowForm(false);
+      };
+      if (editingId) {
+        await editClient({ id: editingId, ...payload });
+      } else {
+        await addClient(payload);
+      }
+      close();
     });
   }
+
+  function remove(c: ClientDTO): void {
+    if (
+      !confirm(
+        `Delete ${c.displayName}? This also deletes the client's policies, ` +
+          `claims, and related records. This cannot be undone.`,
+      )
+    )
+      return;
+    startTransition(async () => {
+      await removeClient(c.id);
+    });
+  }
+
+  const q = query.trim().toLowerCase();
+  const visible = q
+    ? clients.filter((c) =>
+        [c.displayName, c.email ?? "", c.phone ?? "", c.location ?? ""]
+          .join(" ")
+          .toLowerCase()
+          .includes(q),
+      )
+    : clients;
 
   const inputClass =
     "mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-indigo-500";
 
   return (
     <div className="mt-6">
-      <div className="flex items-center justify-between">
-        <p className="text-sm text-gray-500">
-          {clients.length} client{clients.length === 1 ? "" : "s"}
-        </p>
+      <div className="flex items-center justify-between gap-3">
+        <input
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Search clients…"
+          className="w-56 rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-indigo-500"
+        />
         {!showForm ? (
           <button
             type="button"
-            onClick={() => setShowForm(true)}
+            onClick={startCreate}
             className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-700"
           >
             + New client
@@ -97,6 +170,9 @@ export function ClientsPanel({
 
       {showForm ? (
         <div className="mt-4 rounded-xl border border-gray-200 bg-white p-5">
+          <p className="mb-3 text-sm font-semibold text-gray-700">
+            {editingId ? "Edit client" : "New client"}
+          </p>
           <div className="flex gap-2">
             {(["person", "business"] as const).map((t) => (
               <button
@@ -211,7 +287,9 @@ export function ClientsPanel({
                           onChange={(e) =>
                             setCustom((c) => ({
                               ...c,
-                              [f.fieldKey]: e.target.checked ? "true" : "false",
+                              [f.fieldKey]: e.target.checked
+                                ? "true"
+                                : "false",
                             }))
                           }
                         />
@@ -248,15 +326,15 @@ export function ClientsPanel({
               disabled={pending}
               className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-700 disabled:opacity-40"
             >
-              {pending ? "Saving…" : "Save client"}
+              {pending
+                ? "Saving…"
+                : editingId
+                  ? "Update client"
+                  : "Save client"}
             </button>
             <button
               type="button"
-              onClick={() => {
-                setShowForm(false);
-                setForm({ ...EMPTY });
-                setCustom({});
-              }}
+              onClick={close}
               className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-600"
             >
               Cancel
@@ -266,9 +344,11 @@ export function ClientsPanel({
       ) : null}
 
       <div className="mt-5 overflow-hidden rounded-xl border border-gray-200 bg-white">
-        {clients.length === 0 ? (
+        {visible.length === 0 ? (
           <p className="px-5 py-8 text-center text-sm text-gray-500">
-            No clients yet. Add your first one above.
+            {clients.length === 0
+              ? "No clients yet. Add your first one above."
+              : "No clients match your search."}
           </p>
         ) : (
           <table className="w-full text-sm">
@@ -278,14 +358,17 @@ export function ClientsPanel({
                 <th className="px-4 py-3 font-semibold">Contact</th>
                 <th className="px-4 py-3 font-semibold">Location</th>
                 <th className="px-4 py-3 font-semibold">Status</th>
+                <th className="px-4 py-3" />
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {clients.map((c) => (
+              {visible.map((c) => (
                 <tr key={c.id}>
                   <td className="px-4 py-3">
                     <span className="font-medium">{c.displayName}</span>
-                    <span className="ml-2 text-xs text-gray-400">{c.type}</span>
+                    <span className="ml-2 text-xs text-gray-400">
+                      {c.type}
+                    </span>
                   </td>
                   <td className="px-4 py-3 text-gray-500">
                     {c.email ?? c.phone ?? "—"}
@@ -299,6 +382,23 @@ export function ClientsPanel({
                     >
                       {c.status}
                     </span>
+                  </td>
+                  <td className="px-4 py-3 text-right whitespace-nowrap">
+                    <button
+                      type="button"
+                      onClick={() => startEdit(c)}
+                      className="text-xs font-semibold text-indigo-600 transition hover:text-indigo-700"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      type="button"
+                      disabled={pending}
+                      onClick={() => remove(c)}
+                      className="ml-3 text-xs font-semibold text-rose-600 transition hover:text-rose-700 disabled:opacity-40"
+                    >
+                      Delete
+                    </button>
                   </td>
                 </tr>
               ))}
