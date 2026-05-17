@@ -10,6 +10,7 @@ import {
   acknowledgeAlertAction,
   refreshStrategyAction,
 } from "@/app/(shell)/m/strategy/actions";
+import { StrategyAssistantPanel } from "@/components/strategy-assistant-panel";
 import {
   emptySpec,
   type ReportSpec,
@@ -75,12 +76,13 @@ const TREND_COMPARATORS: { value: string; label: string }[] = [
   { value: "rise", label: "rises by" },
 ];
 
-type TabKey = "dashboard" | "metrics" | "rules";
+type TabKey = "dashboard" | "metrics" | "rules" | "assistant";
 
 const TABS: { key: TabKey; label: string }[] = [
   { key: "dashboard", label: "Dashboard" },
   { key: "metrics", label: "Metrics" },
   { key: "rules", label: "Rules" },
+  { key: "assistant", label: "AI assistant" },
 ];
 
 /** Format a metric value by its format. */
@@ -183,6 +185,7 @@ export function StrategyDashboard({
         <MetricsTab model={model} metrics={metrics} />
       ) : null}
       {tab === "rules" ? <RulesTab metrics={metrics} rules={rules} /> : null}
+      {tab === "assistant" ? <StrategyAssistantPanel /> : null}
     </div>
   );
 }
