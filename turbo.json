@@ -3,7 +3,14 @@
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
-      "outputs": [".next/**", "!.next/cache/**", "dist/**"]
+      "outputs": [".next/**", "!.next/cache/**", "dist/**"],
+      "env": [
+        "DATABASE_URL",
+        "DATABASE_URL_APP",
+        "CLERK_SECRET_KEY",
+        "PRISMCORE_ENCRYPTION_KEY",
+        "CRON_SECRET"
+      ]
     },
     "dev": {
       "cache": false,

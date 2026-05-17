@@ -7,6 +7,8 @@ const isPublicRoute = createRouteMatcher([
   "/sign-up(.*)",
   // VoIP providers POST call events here — no user session.
   "/api/voip(.*)",
+  // Vercel Cron hits this — authenticated by CRON_SECRET, not a user session.
+  "/api/cron(.*)",
 ]);
 
 export default clerkMiddleware(async (auth, req) => {
