@@ -12,3 +12,8 @@ export * from "./certificates";
 export * from "./commissions";
 export * from "./documents";
 export * from "./tasks";
+export * from "./invoices";
+export * from "./opportunities";
+export * from "./acord";
+export * from "./intake";
+export * from "./esign";

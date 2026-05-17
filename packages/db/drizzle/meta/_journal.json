@@ -71,6 +71,13 @@
       "when": 1778992334115,
       "tag": "0009_orange_gorilla_man",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1778992939888,
+      "tag": "0010_unique_lester",
+      "breakpoints": true
     }
   ]
 }

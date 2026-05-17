@@ -28,8 +28,9 @@ await sql.query("DELETE FROM calls WHERE provider = 'rls-verify'");
 // 1. Module set (idempotent).
 const MODULES = [
   "clients", "policies", "documents", "tasks", "renewals", "carriers",
-  "claims", "certificates", "commissions", "accounting", "reports",
-  "telephony", "api_clearinghouse",
+  "claims", "certificates", "commissions", "accounting", "pipeline",
+  "acord_forms", "intake_forms", "esign", "reports", "telephony",
+  "api_clearinghouse",
 ];
 for (const moduleId of MODULES) {
   await sql.query(
@@ -248,6 +249,67 @@ if (taskSeedCount[0].n === 0) {
   console.log("✓ seeded claims, certificates, commissions, documents, tasks");
 } else {
   console.log("• insurance-core demo data already present — skipped");
+}
+
+// 10. Accounting / pipeline / ACORD / intake / eSign demo data.
+const invoiceSeedCount = await sql.query("SELECT count(*)::int AS n FROM invoices WHERE tenant_id = $1", [demo]);
+if (invoiceSeedCount[0].n === 0) {
+  const cls = await sql.query(
+    "SELECT id FROM clients WHERE tenant_id = $1 ORDER BY created_at LIMIT 3",
+    [demo],
+  );
+  if (cls.length >= 2) {
+    const c0 = cls[0].id;
+    const c1 = cls[1].id;
+    const c2 = cls[2]?.id ?? cls[1].id;
+    await sql.query(
+      "INSERT INTO invoices (tenant_id, client_id, invoice_number, description, amount_cents, status, due_date) VALUES ($1,$2,'INV-2026-0188','Agency fee — Q2 2026',45000,'sent','2026-06-15')",
+      [demo, c0],
+    );
+    await sql.query(
+      "INSERT INTO invoices (tenant_id, client_id, invoice_number, description, amount_cents, status, due_date) VALUES ($1,$2,'INV-2026-0189','Policy endorsement processing',12500,'paid','2026-05-01')",
+      [demo, c1],
+    );
+    await sql.query(
+      "INSERT INTO opportunities (tenant_id, client_id, name, stage, value_cents, notes, expected_close_date) VALUES ($1,$2,'Commercial package — new business','quoted',680000,'Quote out with Greenleaf; decision expected mid-June.','2026-06-15')",
+      [demo, c2],
+    );
+    await sql.query(
+      "INSERT INTO opportunities (tenant_id, client_id, name, stage, value_cents, notes, expected_close_date) VALUES ($1,$2,'Umbrella cross-sell','contacted',95000,'Suggested at the renewal review.','2026-07-01')",
+      [demo, c1],
+    );
+    await sql.query(
+      "INSERT INTO acord_forms (tenant_id, client_id, form_type, status, notes) VALUES ($1,$2,'ACORD 125 — Commercial Application','submitted','Submitted to Greenleaf Specialty.')",
+      [demo, c2],
+    );
+    await sql.query(
+      "INSERT INTO acord_forms (tenant_id, client_id, form_type, status, notes) VALUES ($1,$2,'ACORD 130 — Workers Compensation','draft','Awaiting payroll figures from the client.')",
+      [demo, c1],
+    );
+  }
+  for (const [name, email, phone, interest, status] of [
+    ["Alex Romero", "alex.romero@example.com", "+1 503-555-0211", "General liability for a new food truck", "new"],
+    ["Priya Shah", "priya.shah@example.com", "+1 206-555-0233", "Homeowners and auto bundle quote", "contacted"],
+    ["Devon Clarke", "", "+1 360-555-0244", "Workers comp for a six-person crew", "converted"],
+  ]) {
+    await sql.query(
+      "INSERT INTO intake_submissions (tenant_id, name, email, phone, interest, status) VALUES ($1,$2,$3,$4,$5,$6)",
+      [demo, name, email, phone, interest, status],
+    );
+  }
+  for (const [doc, signer, email, status, sent] of [
+    ["Broker-of-record letter — Becker Construction", "Tom Becker", "tom@beckerconstruction.example", "signed", "2026-04-18"],
+    ["Renewal acceptance — Wu homeowners", "Janet Wu", "janet.wu@example.com", "sent", "2026-05-10"],
+    ["Service agreement — Cascade Cannabis Co.", "Cascade Operations", "ops@cascadecannabis.example", "draft", null],
+  ]) {
+    await sql.query(
+      "INSERT INTO signature_requests (tenant_id, document_name, signer_name, signer_email, status, sent_date) VALUES ($1,$2,$3,$4,$5,$6)",
+      [demo, doc, signer, email, status, sent],
+    );
+  }
+  console.log("✓ seeded invoices, opportunities, ACORD forms, intake, eSign");
+} else {
+  console.log("• accounting/pipeline/etc. demo data already present — skipped");
 }
 
 console.log("✓ demo tenant seeded: modules, custom fields, 3 carrier connections, VoIP");
