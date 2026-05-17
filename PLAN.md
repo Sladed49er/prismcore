@@ -59,7 +59,7 @@ They adapt to the module-SDK contract and get poured in. Multi-tenancy (RLS,
 | 1–2  | Repo scaffold, module-SDK contract, `packages/db` (kernel schema) | ✅ 2026-05-16 |
 | 3–6  | Kernel: registry + runtime loader + new shell; composer onboarding skeleton | ✅ 2026-05-16 |
 | 7–10 | Pour in AMS modules onto the SDK; customization engine MVP (fields + forms) | ✅ 2026-05-16 — catalog, Neon/DB, guided onboarding, custom fields |
-| 11–14| API clearinghouse MVP + carrier marketplace stub; `apps/voice` screen-pop demo | todo |
+| 11–14| API clearinghouse MVP + carrier marketplace stub; `apps/voice` screen-pop demo | 🔄 clearinghouse done 2026-05-16; apps/voice next |
 | 15–17| Demo tenant — all 4 pillars working end-to-end; marketing capture | todo |
 | 18   | Dry run with Tony | todo |
 
@@ -204,6 +204,21 @@ module service/schema logic module by module behind the contract.
   browser handshake for non-browser clients (curl), so gated routes 404 under
   curl — they redirect correctly in a real browser. A Clerk production instance
   (needs a custom domain) removes that quirk — a later hardening step.
+
+### Days 11–14 (part 1) — 2026-05-16 ✅ API Clearinghouse
+
+- New schema: `clearinghouse_carriers` (a GLOBAL pool, not tenant-scoped — every
+  carrier joins the pool for everyone) + `tenant_carrier_connections`; migration 0002.
+- `/m/api_clearinghouse` is now a real page — a static route segment overriding the
+  `[module]` catch-all. This is the "pour in a module" pattern in practice: the
+  generic shell is replaced by a dedicated page, the kernel unchanged.
+- Searchable marketplace of 12 seeded carriers/MGAs (standard + specialty: cannabis,
+  trucking, flood, crop, E&S, marine, cyber…), line-of-business filter, per-tenant
+  connect/disconnect. Pitch: no SDK fees, no per-call charges.
+
+Pillar 3 (API clearinghouse / marketplace) is now live. Remaining in 11–14:
+`apps/voice` — the new-branded CallIntel app with the screen-pop demo, built
+alongside the live `voip-middleware-portal` so Mitchell Reed is never at risk.
 
 ## Reference
 
