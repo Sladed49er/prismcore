@@ -2,11 +2,13 @@ import Link from "next/link";
 import { loadCurrentTenant, requireModule } from "@/lib/kernel";
 import { listClaims } from "@/lib/claims";
 import { listPolicies } from "@/lib/policies";
+import { listAttachmentsByEntity } from "@/lib/document-attachments";
 import {
   ClaimsPanel,
   type ClaimDTO,
   type PolicyOption,
 } from "@/components/claims-panel";
+import type { AttachmentDTO } from "@/components/attachments";
 
 /** Claims register — every claim filed against the book. */
 export default async function ClaimsRegisterPage() {
@@ -31,6 +33,24 @@ export default async function ClaimsRegisterPage() {
     label: `${p.policyNumber} — ${p.clientName}`,
   }));
 
+  const attachmentRows = await listAttachmentsByEntity(
+    config.id,
+    "claim",
+    claims.map((c) => c.id),
+  );
+  const attachments: Record<string, AttachmentDTO[]> = {};
+  for (const [claimId, rows] of Object.entries(attachmentRows)) {
+    attachments[claimId] = rows.map((a) => ({
+      id: a.id,
+      documentId: a.documentId,
+      name: a.name,
+      caption: a.caption,
+      storageUrl: a.storageUrl,
+      fileSizeBytes: a.fileSizeBytes,
+      attachedByName: a.attachedByName,
+    }));
+  }
+
   return (
     <div className="mx-auto max-w-4xl px-8 py-10">
       <Link
@@ -44,7 +64,11 @@ export default async function ClaimsRegisterPage() {
         Every claim filed against the book — tracked from first notice of loss
         through settlement.
       </p>
-      <ClaimsPanel claims={claims} policies={policies} />
+      <ClaimsPanel
+        claims={claims}
+        policies={policies}
+        attachments={attachments}
+      />
     </div>
   );
 }

@@ -5,6 +5,7 @@ import {
   submitTicket,
   commentOnTicket,
 } from "@/app/(shell)/support/requests/actions";
+import { Attachments, type AttachmentDTO } from "@/components/attachments";
 
 export interface TicketDTO {
   id: string;
@@ -55,9 +56,12 @@ function fmtDate(iso: string): string {
 export function SupportPanel({
   tickets,
   comments,
+  attachments = {},
 }: {
   tickets: TicketDTO[];
   comments: CommentDTO[];
+  /** Files attached to each ticket, keyed by ticket id. */
+  attachments?: Record<string, AttachmentDTO[]>;
 }) {
   const [pending, startTransition] = useTransition();
   const [openId, setOpenId] = useState<string | null>(null);
@@ -231,6 +235,14 @@ export function SupportPanel({
                       >
                         Send
                       </button>
+                    </div>
+                    <div className="mt-4 border-t border-gray-100 pt-3">
+                      <Attachments
+                        entityType="ticket"
+                        entityId={t.id}
+                        attachments={attachments[t.id] ?? []}
+                        compact
+                      />
                     </div>
                   </div>
                 ) : null}

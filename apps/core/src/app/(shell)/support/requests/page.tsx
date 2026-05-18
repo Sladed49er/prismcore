@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { getCurrentTenant } from "@/lib/current-tenant";
 import { listTickets, listTicketComments } from "@/lib/tickets";
+import { listAttachmentsByEntity } from "@/lib/document-attachments";
+import type { AttachmentDTO } from "@/components/attachments";
 import {
   SupportPanel,
   type TicketDTO,
@@ -37,6 +39,24 @@ export default async function SupportRequestsPage() {
     createdAt: c.createdAt.toISOString(),
   }));
 
+  const attachmentRows = await listAttachmentsByEntity(
+    tenant.id,
+    "ticket",
+    tickets.map((t) => t.id),
+  );
+  const attachments: Record<string, AttachmentDTO[]> = {};
+  for (const [ticketId, rows] of Object.entries(attachmentRows)) {
+    attachments[ticketId] = rows.map((a) => ({
+      id: a.id,
+      documentId: a.documentId,
+      name: a.name,
+      caption: a.caption,
+      storageUrl: a.storageUrl,
+      fileSizeBytes: a.fileSizeBytes,
+      attachedByName: a.attachedByName,
+    }));
+  }
+
   return (
     <div className="mx-auto max-w-3xl px-8 py-10">
       <Link
@@ -50,7 +70,11 @@ export default async function SupportRequestsPage() {
         File a request or question for the Prism team. Everything here is
         private to {tenant.name} — your workspace, your tickets.
       </p>
-      <SupportPanel tickets={tickets} comments={comments} />
+      <SupportPanel
+        tickets={tickets}
+        comments={comments}
+        attachments={attachments}
+      />
     </div>
   );
 }
