@@ -260,6 +260,13 @@
       "when": 1779061844615,
       "tag": "0036_awesome_black_tarantula",
       "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "7",
+      "when": 1779065033731,
+      "tag": "0037_youthful_brother_voodoo",
+      "breakpoints": true
     }
   ]
 }

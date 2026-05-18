@@ -1,0 +1,1 @@
+ALTER TABLE "tenant_billing" ADD COLUMN "dunning_stage" integer DEFAULT 0 NOT NULL;

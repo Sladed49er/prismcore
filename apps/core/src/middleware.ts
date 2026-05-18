@@ -9,6 +9,8 @@ const isPublicRoute = createRouteMatcher([
   "/api/voip(.*)",
   // Vercel Cron hits this — authenticated by CRON_SECRET, not a user session.
   "/api/cron(.*)",
+  // Stripe posts webhook events here — authenticated by the Stripe signature.
+  "/api/stripe(.*)",
 ]);
 
 export default clerkMiddleware(async (auth, req) => {

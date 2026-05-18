@@ -1,5 +1,10 @@
 import { eq } from "drizzle-orm";
-import { withTenantContext, tenantBilling, type TenantBilling } from "@prismcore/db";
+import {
+  withTenantContext,
+  adminDb,
+  tenantBilling,
+  type TenantBilling,
+} from "@prismcore/db";
 import { stripe } from "@/lib/stripe";
 
 /**
@@ -16,8 +21,24 @@ export type BillingPatch = Partial<{
   planKey: string | null;
   currentPeriodEnd: Date | null;
   pastDueSince: Date | null;
+  dunningStage: number;
   suspendedAt: Date | null;
 }>;
+
+/**
+ * The tenant a Stripe customer belongs to — for the webhook, which is
+ * authenticated by Stripe's signature, not a tenant session, so it reads
+ * through `adminDb` to map an incoming event back to its tenant.
+ */
+export async function findTenantByStripeCustomer(
+  customerId: string,
+): Promise<string | null> {
+  const rows = await adminDb()
+    .select({ tenantId: tenantBilling.tenantId })
+    .from(tenantBilling)
+    .where(eq(tenantBilling.stripeCustomerId, customerId));
+  return rows[0]?.tenantId ?? null;
+}
 
 export async function getBilling(
   tenantId: string,

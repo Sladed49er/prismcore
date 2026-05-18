@@ -2,8 +2,10 @@ import type { ReactNode } from "react";
 import { loadCurrentTenant } from "@/lib/kernel";
 import { getViewer } from "@/lib/auth";
 import { getBranding } from "@/lib/customization";
+import { getBilling } from "@/lib/billing";
 import { loadTerms, moduleLabel } from "@/lib/terminology";
 import { Sidebar } from "@/components/sidebar";
+import { SuspendedScreen } from "@/components/suspended-screen";
 import type { NavItem } from "@/components/nav-links";
 
 /**
@@ -21,10 +23,19 @@ export default async function ShellLayout({
     loadCurrentTenant(),
     getViewer(),
   ]);
-  const [terms, branding] = await Promise.all([
+  const [terms, branding, billing] = await Promise.all([
     loadTerms(config.id),
     getBranding(config.id),
+    getBilling(config.id),
   ]);
+
+  // Suspension gate: a tenant 30 days past due is locked out of the whole
+  // shell. Platform admins bypass it so support can still investigate.
+  if (billing?.status === "suspended" && !viewer?.isAdmin) {
+    return (
+      <SuspendedScreen workspaceName={branding?.workspaceName || config.name} />
+    );
+  }
 
   // Map each module's nav href back to its module id, so a tenant's module
   // rename (`module:<id>`) lands on the right nav entry.

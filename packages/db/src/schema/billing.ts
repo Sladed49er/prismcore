@@ -11,6 +11,7 @@ import {
   pgTable,
   uuid,
   text,
+  integer,
   timestamp,
 } from "drizzle-orm/pg-core";
 import { tenants } from "./kernel";
@@ -37,6 +38,9 @@ export const tenantBilling = pgTable("tenant_billing", {
   currentPeriodEnd: timestamp("current_period_end", { withTimezone: true }),
   /** When the subscription first went past_due — the dunning clock starts. */
   pastDueSince: timestamp("past_due_since", { withTimezone: true }),
+  /** Dunning ladder progress: 0 none · 1 internal alert sent · 2 15-day
+   *  notice sent · 3 suspended. Reset to 0 when payment recovers. */
+  dunningStage: integer("dunning_stage").notNull().default(0),
   /** When Prism Core suspended the tenant for non-payment. */
   suspendedAt: timestamp("suspended_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true })
