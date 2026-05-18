@@ -421,6 +421,13 @@
       "when": 1779122573893,
       "tag": "0059_violet_junta",
       "breakpoints": true
+    },
+    {
+      "idx": 60,
+      "version": "7",
+      "when": 1779122929537,
+      "tag": "0060_smiling_patriot",
+      "breakpoints": true
     }
   ]
 }

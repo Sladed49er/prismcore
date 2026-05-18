@@ -5,6 +5,7 @@ import type { DocFinding } from "@prismcore/db";
 import {
   reviewDocument,
   compareDocuments,
+  auditClient,
   removeAnalysis,
 } from "@/app/(shell)/m/documents/intelligence/actions";
 
@@ -15,23 +16,49 @@ export interface DocOption {
   mimeType: string;
 }
 
+export interface ClientOption {
+  id: string;
+  name: string;
+}
+
 export interface AnalysisDTO {
   id: string;
   kind: string;
   status: string;
   title: string;
   summary: string;
+  score: number | null;
+  extractedData: Record<string, string> | null;
   findings: DocFinding[];
   errorMessage: string;
-  documentName: string;
+  documentName: string | null;
   generatedBy: string;
   createdAt: string;
+}
+
+export interface StatsDTO {
+  total: number;
+  reviews: number;
+  comparisons: number;
+  audits: number;
+  gapsLast30d: number;
+  averageScore: number | null;
 }
 
 const SEVERITY_STYLE: Record<string, string> = {
   info: "bg-gray-100 text-gray-600",
   watch: "bg-amber-50 text-amber-700",
   gap: "bg-rose-50 text-rose-700",
+};
+const KIND_STYLE: Record<string, string> = {
+  review: "bg-sky-50 text-sky-700",
+  compare: "bg-indigo-50 text-indigo-700",
+  audit: "bg-violet-50 text-violet-700",
+};
+const KIND_LABEL: Record<string, string> = {
+  review: "review",
+  compare: "comparison",
+  audit: "client audit",
 };
 
 function fmtDate(iso: string): string {
@@ -42,6 +69,12 @@ function fmtDate(iso: string): string {
   });
 }
 
+function scoreColor(score: number): string {
+  if (score >= 80) return "bg-green-50 text-green-700";
+  if (score >= 60) return "bg-amber-50 text-amber-700";
+  return "bg-rose-50 text-rose-700";
+}
+
 const selectClass =
   "mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-indigo-500";
 const labelClass =
@@ -49,15 +82,20 @@ const labelClass =
 
 export function DocumentIntelligencePanel({
   documents,
+  clients,
   analyses,
+  stats,
 }: {
   documents: DocOption[];
+  clients: ClientOption[];
   analyses: AnalysisDTO[];
+  stats: StatsDTO;
 }) {
   const [pending, startTransition] = useTransition();
   const [reviewId, setReviewId] = useState("");
   const [docA, setDocA] = useState("");
   const [docB, setDocB] = useState("");
+  const [auditId, setAuditId] = useState("");
   const [status, setStatus] = useState<
     { ok: boolean; message: string } | null
   >(null);
@@ -79,6 +117,14 @@ export function DocumentIntelligencePanel({
     });
   }
 
+  function audit(): void {
+    if (!auditId) return;
+    setStatus(null);
+    startTransition(async () => {
+      setStatus(await auditClient(auditId));
+    });
+  }
+
   function remove(id: string): void {
     startTransition(async () => {
       await removeAnalysis(id);
@@ -96,12 +142,43 @@ export function DocumentIntelligencePanel({
 
   return (
     <div className="mt-6 space-y-5">
-      <div className="grid gap-4 sm:grid-cols-2">
+      {/* Stats bar */}
+      {stats.total > 0 ? (
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          {[
+            { label: "Analyses", value: String(stats.total) },
+            {
+              label: "Avg. score",
+              value:
+                stats.averageScore !== null
+                  ? `${stats.averageScore}/100`
+                  : "—",
+            },
+            { label: "Gaps (30d)", value: String(stats.gapsLast30d) },
+            {
+              label: "Audits",
+              value: String(stats.audits),
+            },
+          ].map((s) => (
+            <div
+              key={s.label}
+              className="rounded-xl border border-gray-200 bg-white px-4 py-3"
+            >
+              <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">
+                {s.label}
+              </p>
+              <p className="mt-0.5 text-lg font-semibold">{s.value}</p>
+            </div>
+          ))}
+        </div>
+      ) : null}
+
+      <div className="grid gap-4 sm:grid-cols-3">
         {/* Single-document review */}
         <div className="rounded-xl border border-gray-200 bg-white p-5">
           <h2 className="font-semibold">Review a document</h2>
           <p className="mt-1 text-sm text-gray-600">
-            Coverage gaps, exclusions, limits, and dates on one policy or form.
+            Coverage gaps, a 0-100 score, and extracted policy data.
           </p>
           <label className={`${labelClass} mt-3 block`}>
             Document
@@ -132,10 +209,10 @@ export function DocumentIntelligencePanel({
         <div className="rounded-xl border border-gray-200 bg-white p-5">
           <h2 className="font-semibold">Compare two documents</h2>
           <p className="mt-1 text-sm text-gray-600">
-            What changed — e.g. an expiring policy against its renewal.
+            What changed — e.g. a policy against its renewal.
           </p>
           <label className={`${labelClass} mt-3 block`}>
-            Document A — prior / baseline
+            Document A — prior
             <select
               value={docA}
               onChange={(e) => setDocA(e.target.value)}
@@ -150,7 +227,7 @@ export function DocumentIntelligencePanel({
             </select>
           </label>
           <label className={`${labelClass} mt-2 block`}>
-            Document B — new / proposed
+            Document B — new
             <select
               value={docB}
               onChange={(e) => setDocB(e.target.value)}
@@ -171,6 +248,37 @@ export function DocumentIntelligencePanel({
             className="mt-4 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-700 disabled:opacity-40"
           >
             {pending ? "Analyzing…" : "Run comparison"}
+          </button>
+        </div>
+
+        {/* Client audit */}
+        <div className="rounded-xl border border-gray-200 bg-white p-5">
+          <h2 className="font-semibold">Audit a client</h2>
+          <p className="mt-1 text-sm text-gray-600">
+            Cross-policy coverage gaps across every document on a client.
+          </p>
+          <label className={`${labelClass} mt-3 block`}>
+            Client
+            <select
+              value={auditId}
+              onChange={(e) => setAuditId(e.target.value)}
+              className={selectClass}
+            >
+              <option value="">Select a client…</option>
+              {clients.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <button
+            type="button"
+            onClick={audit}
+            disabled={pending || !auditId}
+            className="mt-4 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-700 disabled:opacity-40"
+          >
+            {pending ? "Analyzing…" : "Run audit"}
           </button>
         </div>
       </div>
@@ -213,16 +321,21 @@ export function DocumentIntelligencePanel({
                     <span className="flex items-center gap-2">
                       <span
                         className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                          a.kind === "compare"
-                            ? "bg-indigo-50 text-indigo-700"
-                            : "bg-sky-50 text-sky-700"
+                          KIND_STYLE[a.kind] ?? "bg-gray-100 text-gray-600"
                         }`}
                       >
-                        {a.kind === "compare" ? "comparison" : "review"}
+                        {KIND_LABEL[a.kind] ?? a.kind}
                       </span>
                       <span className="font-medium">
-                        {a.title || a.documentName}
+                        {a.title || a.documentName || "Analysis"}
                       </span>
+                      {a.score !== null ? (
+                        <span
+                          className={`rounded-full px-2 py-0.5 text-xs font-medium ${scoreColor(a.score)}`}
+                        >
+                          {a.score}/100
+                        </span>
+                      ) : null}
                       {failed ? (
                         <span className="rounded-full bg-rose-50 px-2 py-0.5 text-xs font-medium text-rose-700">
                           failed
@@ -245,6 +358,23 @@ export function DocumentIntelligencePanel({
                             <p className="text-sm text-gray-600">
                               {a.summary}
                             </p>
+                          ) : null}
+                          {a.extractedData &&
+                          Object.keys(a.extractedData).length > 0 ? (
+                            <dl className="mt-3 grid gap-x-6 gap-y-1 rounded-lg border border-gray-100 bg-gray-50 px-3 py-2 text-sm sm:grid-cols-2">
+                              {Object.entries(a.extractedData).map(
+                                ([k, v]) => (
+                                  <div key={k}>
+                                    <dt className="inline text-gray-400">
+                                      {k}:{" "}
+                                    </dt>
+                                    <dd className="inline text-gray-700">
+                                      {v}
+                                    </dd>
+                                  </div>
+                                ),
+                              )}
+                            </dl>
                           ) : null}
                           <ul className="mt-3 space-y-2">
                             {a.findings.map((f, i) => (

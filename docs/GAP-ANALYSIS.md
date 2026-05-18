@@ -17,7 +17,7 @@ each to full completion** before the next begins.
 | 1 | **Detail pages** — per-record detail + drill-down (Client → Policy → Claim) | DONE |
 | 2 | **CallIntel intelligence merge** — caller intel, risk radar, revenue intel, compliance watchdog, digests into telephony | DONE |
 | 3 | **Carrier intelligence** — scorecard (loss ratio, commission variance) + NAICS appetite matching | DONE |
-| 4 | **Document intelligence depth-up** — auditClient cross-policy audit, policy scoring, extracted-data persistence | pending |
+| 4 | **Document intelligence depth-up** — auditClient cross-policy audit, policy scoring, extracted-data persistence | DONE |
 
 _Status: pending · IN PROGRESS · DONE. Update this table as work lands._
 
@@ -60,7 +60,28 @@ carriers module as a new `/m/carriers/intelligence` sub-page. New table
 - [x] NAICS appetite matching — `lib/carrier-appetite.ts` — appetite rules keyed by NAICS prefix; `matchCarriers` picks the most-specific prefix per carrier and ranks preferred → declined
 - [x] `/m/carriers/intelligence` page — scorecard table + appetite rule CRUD + a "find carriers for a risk" match tool; linked from the Carriers hub
 
+### Priority 4 detail — Document intelligence depth-up — DONE 2026-05-18
+Deepened the document store's AI layer to PrismAMS parity. `document_analyses`
+gained `score`, `extractedData`, `clientId`, and `documentId` is now nullable
+(migration 0060).
+
+- [x] Policy scoring — `runReview` now returns a 0-100 coverage-health score
+- [x] Extracted data — review pulls key policy fields (named insured, carrier, policy number, dates, premium, limits) into `extractedData`
+- [x] `runClientAudit` — cross-policy audit: gathers every document attached to a client and their policies, audits the account as a whole for account-level gaps, inconsistencies, and account-rounding opportunities
+- [x] `getAnalysisStats` — counts by kind, gap findings in the last 30 days, average review score
+- [x] `/m/documents/intelligence` — third "Audit a client" card, a stats bar, and score + extracted-data display on review analyses
+
 ---
+
+## STATUS — all four priorities complete (2026-05-18)
+
+The gap-analysis plan is fully worked. Prism Core kept its kernel and absorbed
+the proven depth: detail-page drill-down, CallIntel's intelligence layer,
+carrier scorecard + appetite, and PrismAMS-parity document intelligence.
+
+Remaining gap-map items (Tier 3 — the Thin modules: marketing send, ACORD
+prefill, intake form builder, eSign, memberships dues, custom objects,
+workflow runtime) are open for a future pass.
 
 ## Headline
 

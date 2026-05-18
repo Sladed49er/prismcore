@@ -4,13 +4,18 @@ import {
   withTenantContext,
   documentAnalyses,
   documents,
+  policies,
+  clients,
   type DocFinding,
   type DocumentAnalysis,
 } from "@prismcore/db";
 import { getDocument } from "@/lib/documents";
+import { clientDisplayName } from "@/lib/clients";
+import { listAttachmentsByEntity } from "@/lib/document-attachments";
 
 /**
- * Document intelligence — AI review and comparison of stored documents.
+ * Document intelligence — AI review, comparison, and cross-policy audit of
+ * stored documents.
  *
  * Claude reads the actual files natively (PDFs and images), so the model
  * sees the real document, not a lossy text extraction. It returns findings
@@ -36,7 +41,12 @@ Look for:
 - Missing or blank fields, unsigned forms, named-insured or address inconsistencies.
 - Anything notably well-structured worth reinforcing.
 
-Call record_analysis ONCE: a short title naming the document, a 2-4 sentence plain-language summary, and 3-8 findings. Each finding has a short category, a title, a one-to-two sentence detail, and a severity: info (neutral note), watch (worth attention), or gap (a coverage gap or material problem).`;
+Call record_analysis ONCE with:
+- a short title naming the document
+- a 2-4 sentence plain-language summary
+- score: a 0-100 coverage-health score (100 = clean, well-structured, no gaps; lower as gaps and problems mount)
+- extractedData: the key fields you can read off the document as a flat object of string values — include whichever apply: namedInsured, carrier, policyNumber, lineOfBusiness, effectiveDate, expirationDate, totalPremium, and notable limits
+- 3-8 findings, each with a short category, a title, a one-to-two sentence detail, and a severity: info (neutral note), watch (worth attention), or gap (a coverage gap or material problem).`;
 
 const COMPARE_SYSTEM = `You are a commercial and personal lines insurance document reviewer for Prism Core, a platform for independent insurance agencies.
 
@@ -50,7 +60,21 @@ Identify what changed from A to B:
 - Coverage gaps introduced by the change.
 - Named insured, location, or term differences.
 
-Call record_analysis ONCE: a short title naming the comparison, a 2-4 sentence plain-language summary of the net effect, and 3-10 findings. Each finding has a short category, a title, a one-to-two sentence detail with specific values where possible, and a severity: info (neutral change), watch (worth attention), or gap (a coverage gap or material downgrade).`;
+Call record_analysis ONCE: a short title naming the comparison, a 2-4 sentence plain-language summary of the net effect, and 3-10 findings. Each finding has a short category, a title, a one-to-two sentence detail with specific values where possible, and a severity: info (neutral change), watch (worth attention), or gap (a coverage gap or material downgrade). Leave score and extractedData empty for a comparison.`;
+
+const AUDIT_SYSTEM = `You are a commercial and personal lines insurance account reviewer for Prism Core, a platform for independent insurance agencies.
+
+You are given EVERY document on file for one client — their policies, forms, and certificates together. Audit the account as a whole.
+
+Look across the documents for:
+- Coverage gaps at the account level — an exposure no policy covers (e.g. no umbrella over the auto and home, no cyber, no flood, no EPLI).
+- Inconsistencies between documents — named insured, address, or entity name that does not match across policies.
+- Overlapping or duplicated coverage the client is paying for twice.
+- Policies that have lapsed or are about to expire.
+- Limits that are inconsistent with the rest of the account's exposure.
+- Account-rounding opportunities — lines a similar client would normally carry.
+
+Call record_analysis ONCE: a short title naming the client audit, a 3-5 sentence summary of the account's coverage posture, and 4-12 findings. Each finding has a short category, a title, a one-to-two sentence detail, and a severity: info (neutral note), watch (worth attention), or gap (a coverage gap or material problem). Leave score and extractedData empty for an audit.`;
 
 const TOOLS: Anthropic.Tool[] = [
   {
@@ -61,6 +85,15 @@ const TOOLS: Anthropic.Tool[] = [
       properties: {
         title: { type: "string" },
         summary: { type: "string" },
+        score: {
+          type: "number",
+          description: "0-100 coverage-health score — single-document review only",
+        },
+        extractedData: {
+          type: "object",
+          description: "Key fields read off the document — review only",
+          additionalProperties: { type: "string" },
+        },
         findings: {
           type: "array",
           items: {
@@ -138,6 +171,23 @@ function cleanFindings(raw: unknown): DocFinding[] {
     .filter((f) => f.title);
 }
 
+/** Validate the model's score into a 0-100 integer, or null. */
+function cleanScore(raw: unknown): number | null {
+  if (typeof raw !== "number" || Number.isNaN(raw)) return null;
+  return Math.max(0, Math.min(100, Math.round(raw)));
+}
+
+/** Validate the model's extracted data into a flat string map, or null. */
+function cleanExtracted(raw: unknown): Record<string, string> | null {
+  if (typeof raw !== "object" || raw === null) return null;
+  const out: Record<string, string> = {};
+  for (const [k, v] of Object.entries(raw as Record<string, unknown>)) {
+    if (v == null || v === "") continue;
+    out[k.slice(0, 60)] = String(v).slice(0, 300);
+  }
+  return Object.keys(out).length > 0 ? out : null;
+}
+
 /** Fetch a document and assert it has a readable file. */
 async function requireReadable(
   tenantId: string,
@@ -163,15 +213,26 @@ export interface AnalysisResult {
   message: string;
 }
 
+interface ModelOutput {
+  title: string;
+  summary: string;
+  findings: DocFinding[];
+  score: number | null;
+  extractedData: Record<string, string> | null;
+}
+
 /** Insert the finished (or failed) analysis row, RLS-scoped. */
 async function saveAnalysis(input: {
   tenantId: string;
-  kind: "review" | "compare";
-  documentId: string;
+  kind: "review" | "compare" | "audit";
+  documentId: string | null;
   compareDocumentId: string | null;
+  clientId: string | null;
   status: "complete" | "failed";
   title: string;
   summary: string;
+  score: number | null;
+  extractedData: Record<string, string> | null;
   findings: DocFinding[];
   errorMessage: string;
   generatedBy: string;
@@ -182,9 +243,12 @@ async function saveAnalysis(input: {
       kind: input.kind,
       documentId: input.documentId,
       compareDocumentId: input.compareDocumentId,
+      clientId: input.clientId,
       status: input.status,
       title: input.title,
       summary: input.summary,
+      score: input.score,
+      extractedData: input.extractedData,
       findings: input.findings,
       errorMessage: input.errorMessage,
       generatedBy: input.generatedBy,
@@ -198,7 +262,7 @@ async function callModel(
   apiKey: string,
   system: string,
   content: Anthropic.ContentBlockParam[],
-): Promise<{ title: string; summary: string; findings: DocFinding[] }> {
+): Promise<ModelOutput> {
   const client = new Anthropic({ apiKey });
   const response = await client.messages.create({
     model: MODEL,
@@ -216,10 +280,12 @@ async function callModel(
     title: String(raw.title ?? "").slice(0, 200),
     summary: String(raw.summary ?? "").slice(0, 2000),
     findings: cleanFindings(raw.findings),
+    score: cleanScore(raw.score),
+    extractedData: cleanExtracted(raw.extractedData),
   };
 }
 
-/** AI coverage review of a single document. */
+/** AI coverage review of a single document — with a score and extracted data. */
 export async function runReview(
   tenantId: string,
   documentId: string,
@@ -251,16 +317,21 @@ export async function runReview(
       kind: "review",
       documentId,
       compareDocumentId: null,
+      clientId: null,
       status: "complete",
       title: out.title || `Review — ${doc.name}`,
       summary: out.summary,
+      score: out.score,
+      extractedData: out.extractedData,
       findings: out.findings,
       errorMessage: "",
       generatedBy: actorName,
     });
     return {
       ok: true,
-      message: `Reviewed "${doc.name}" — ${out.findings.length} findings.`,
+      message: `Reviewed "${doc.name}" — ${out.findings.length} findings${
+        out.score !== null ? `, score ${out.score}/100` : ""
+      }.`,
     };
   } catch (error) {
     await saveAnalysis({
@@ -268,9 +339,12 @@ export async function runReview(
       kind: "review",
       documentId,
       compareDocumentId: null,
+      clientId: null,
       status: "failed",
       title: `Review — ${doc.name}`,
       summary: "",
+      score: null,
+      extractedData: null,
       findings: [],
       errorMessage: msg(error),
       generatedBy: actorName,
@@ -324,9 +398,12 @@ export async function runComparison(
       kind: "compare",
       documentId,
       compareDocumentId,
+      clientId: null,
       status: "complete",
       title: out.title || `${docA.name} vs ${docB.name}`,
       summary: out.summary,
+      score: null,
+      extractedData: null,
       findings: out.findings,
       errorMessage: "",
       generatedBy: actorName,
@@ -341,9 +418,137 @@ export async function runComparison(
       kind: "compare",
       documentId,
       compareDocumentId,
+      clientId: null,
       status: "failed",
       title: `${docA.name} vs ${docB.name}`,
       summary: "",
+      score: null,
+      extractedData: null,
+      findings: [],
+      errorMessage: msg(error),
+      generatedBy: actorName,
+    });
+    return { ok: false, message: msg(error) };
+  }
+}
+
+/** The most documents a client audit will read, to bound the request. */
+const AUDIT_DOC_LIMIT = 6;
+
+/** Gather the readable documents attached to a client and their policies. */
+async function gatherClientDocs(
+  tenantId: string,
+  clientId: string,
+): Promise<ReadableDoc[]> {
+  const policyIds = await withTenantContext(tenantId, async (tx) => {
+    const rows = await tx
+      .select({ id: policies.id })
+      .from(policies)
+      .where(eq(policies.clientId, clientId));
+    return rows.map((r) => r.id);
+  });
+
+  const [onClient, onPolicies] = await Promise.all([
+    listAttachmentsByEntity(tenantId, "client", [clientId]),
+    listAttachmentsByEntity(tenantId, "policy", policyIds),
+  ]);
+
+  const seen = new Set<string>();
+  const docs: ReadableDoc[] = [];
+  for (const group of [onClient, onPolicies]) {
+    for (const rows of Object.values(group)) {
+      for (const a of rows) {
+        if (seen.has(a.documentId) || !a.storageUrl) continue;
+        seen.add(a.documentId);
+        docs.push({
+          id: a.documentId,
+          name: a.name,
+          storageUrl: a.storageUrl,
+          mimeType: a.mimeType ?? "",
+        });
+      }
+    }
+  }
+  return docs.slice(0, AUDIT_DOC_LIMIT);
+}
+
+/** AI cross-policy audit of every document on one client. */
+export async function runClientAudit(
+  tenantId: string,
+  clientId: string,
+  actorName: string,
+): Promise<AnalysisResult> {
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) {
+    return {
+      ok: false,
+      message: "Document intelligence is not configured (no ANTHROPIC_API_KEY).",
+    };
+  }
+
+  const client = await withTenantContext(tenantId, async (tx) => {
+    const [row] = await tx
+      .select()
+      .from(clients)
+      .where(eq(clients.id, clientId));
+    return row ?? null;
+  });
+  if (!client) return { ok: false, message: "Client not found." };
+  const clientName = clientDisplayName(client);
+
+  const docs = await gatherClientDocs(tenantId, clientId);
+  if (docs.length === 0) {
+    return {
+      ok: false,
+      message: `No documents are attached to ${clientName} or their policies — attach files first.`,
+    };
+  }
+
+  try {
+    const content: Anthropic.ContentBlockParam[] = [
+      {
+        type: "text",
+        text: `Audit the insurance account for "${clientName}". Every document on file follows.`,
+      },
+    ];
+    for (const doc of docs) {
+      content.push({ type: "text", text: `--- DOCUMENT: ${doc.name} ---` });
+      content.push(...(await docBlocks(doc)));
+    }
+    const out = await callModel(apiKey, AUDIT_SYSTEM, content);
+    await saveAnalysis({
+      tenantId,
+      kind: "audit",
+      documentId: null,
+      compareDocumentId: null,
+      clientId,
+      status: "complete",
+      title: out.title || `Account audit — ${clientName}`,
+      summary: out.summary,
+      score: null,
+      extractedData: null,
+      findings: out.findings,
+      errorMessage: "",
+      generatedBy: actorName,
+    });
+    return {
+      ok: true,
+      message: `Audited ${clientName} across ${docs.length} document${
+        docs.length === 1 ? "" : "s"
+      } — ${out.findings.length} findings.`,
+    };
+  } catch (error) {
+    await saveAnalysis({
+      tenantId,
+      kind: "audit",
+      documentId: null,
+      compareDocumentId: null,
+      clientId,
+      status: "failed",
+      title: `Account audit — ${clientName}`,
+      summary: "",
+      score: null,
+      extractedData: null,
       findings: [],
       errorMessage: msg(error),
       generatedBy: actorName,
@@ -356,16 +561,18 @@ function msg(error: unknown): string {
   return error instanceof Error ? error.message : "Analysis failed.";
 }
 
-/** One stored analysis, joined to the names of its source documents. */
+/** One stored analysis, joined to the name of its source document if any. */
 export interface AnalysisRow {
   id: string;
   kind: string;
   status: string;
   title: string;
   summary: string;
+  score: number | null;
+  extractedData: Record<string, string> | null;
   findings: DocFinding[];
   errorMessage: string;
-  documentName: string;
+  documentName: string | null;
   generatedBy: string;
   createdAt: Date;
 }
@@ -380,6 +587,8 @@ export async function listAnalyses(tenantId: string): Promise<AnalysisRow[]> {
         status: documentAnalyses.status,
         title: documentAnalyses.title,
         summary: documentAnalyses.summary,
+        score: documentAnalyses.score,
+        extractedData: documentAnalyses.extractedData,
         findings: documentAnalyses.findings,
         errorMessage: documentAnalyses.errorMessage,
         documentName: documents.name,
@@ -387,11 +596,50 @@ export async function listAnalyses(tenantId: string): Promise<AnalysisRow[]> {
         createdAt: documentAnalyses.createdAt,
       })
       .from(documentAnalyses)
-      .innerJoin(documents, eq(documents.id, documentAnalyses.documentId))
+      .leftJoin(documents, eq(documents.id, documentAnalyses.documentId))
       .where(eq(documentAnalyses.tenantId, tenantId))
       .orderBy(desc(documentAnalyses.createdAt));
     return rows;
   });
+}
+
+export interface AnalysisStats {
+  total: number;
+  reviews: number;
+  comparisons: number;
+  audits: number;
+  /** Gap-severity findings raised in the last 30 days. */
+  gapsLast30d: number;
+  /** Average review score, or null when nothing has been scored. */
+  averageScore: number | null;
+}
+
+/** Roll up the tenant's document-intelligence activity. */
+export async function getAnalysisStats(
+  tenantId: string,
+): Promise<AnalysisStats> {
+  const rows = await listAnalyses(tenantId);
+  const cutoff = Date.now() - 30 * 86_400_000;
+  let gaps = 0;
+  let scoreSum = 0;
+  let scoreN = 0;
+  for (const r of rows) {
+    if (r.createdAt.getTime() >= cutoff) {
+      gaps += r.findings.filter((f) => f.severity === "gap").length;
+    }
+    if (r.kind === "review" && r.score !== null) {
+      scoreSum += r.score;
+      scoreN++;
+    }
+  }
+  return {
+    total: rows.length,
+    reviews: rows.filter((r) => r.kind === "review").length,
+    comparisons: rows.filter((r) => r.kind === "compare").length,
+    audits: rows.filter((r) => r.kind === "audit").length,
+    gapsLast30d: gaps,
+    averageScore: scoreN > 0 ? Math.round(scoreSum / scoreN) : null,
+  };
 }
 
 /** Delete an analysis. */

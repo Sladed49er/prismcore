@@ -1,7 +1,8 @@
 /**
  * Document analyses schema — the output of Prism Core's document
- * intelligence: an AI coverage review of one document, or a comparison of
- * two (e.g. an expiring policy against its renewal).
+ * intelligence: a coverage review of one document, a comparison of two (e.g.
+ * an expiring policy against its renewal), or a cross-policy audit of every
+ * document on a client.
  *
  * The model reads the actual files (Claude reads PDFs and images natively)
  * and returns a structured set of findings; trusted code validates and
@@ -11,12 +12,14 @@ import {
   pgTable,
   uuid,
   text,
+  integer,
   jsonb,
   timestamp,
   index,
 } from "drizzle-orm/pg-core";
 import { tenants } from "./kernel";
 import { documents } from "./documents";
+import { clients } from "./clients";
 
 /** One structured finding from an analysis. */
 export interface DocFinding {
@@ -34,19 +37,31 @@ export const documentAnalyses = pgTable(
     tenantId: uuid("tenant_id")
       .notNull()
       .references(() => tenants.id, { onDelete: "cascade" }),
-    /** "review" — one document · "compare" — document vs compareDocument. */
+    /**
+     * "review" — one document · "compare" — document vs compareDocument ·
+     * "audit" — every document on a client, checked together.
+     */
     kind: text("kind").notNull(),
-    documentId: uuid("document_id")
-      .notNull()
-      .references(() => documents.id, { onDelete: "cascade" }),
-    /** The second document for a comparison; null for a review. */
+    /** The document under review/comparison; null for a client audit. */
+    documentId: uuid("document_id").references(() => documents.id, {
+      onDelete: "cascade",
+    }),
+    /** The second document for a comparison; null otherwise. */
     compareDocumentId: uuid("compare_document_id").references(
       () => documents.id,
       { onDelete: "set null" },
     ),
+    /** The client a cross-policy audit is about; null otherwise. */
+    clientId: uuid("client_id").references(() => clients.id, {
+      onDelete: "cascade",
+    }),
     status: text("status").notNull().default("pending"),
     title: text("title").notNull().default(""),
     summary: text("summary").notNull().default(""),
+    /** A 0-100 coverage-health score on a single-document review. */
+    score: integer("score"),
+    /** Structured fields the model extracted from the document. */
+    extractedData: jsonb("extracted_data").$type<Record<string, string>>(),
     findings: jsonb("findings")
       .$type<DocFinding[]>()
       .notNull()

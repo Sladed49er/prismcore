@@ -6,6 +6,7 @@ import { currentActorName } from "@/lib/actor";
 import {
   runReview,
   runComparison,
+  runClientAudit,
   deleteAnalysis,
   type AnalysisResult,
 } from "@/lib/document-intelligence";
@@ -38,6 +39,19 @@ export async function compareDocuments(
     compareDocumentId,
     actor,
   );
+  revalidatePath("/m/documents/intelligence");
+  return result;
+}
+
+/** AI cross-policy audit of every document on a client. */
+export async function auditClient(
+  clientId: string,
+): Promise<AnalysisResult> {
+  const [tenant, actor] = await Promise.all([
+    getCurrentTenant(),
+    currentActorName(),
+  ]);
+  const result = await runClientAudit(tenant.id, clientId, actor);
   revalidatePath("/m/documents/intelligence");
   return result;
 }
