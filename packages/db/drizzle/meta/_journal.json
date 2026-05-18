@@ -435,6 +435,13 @@
       "when": 1779125114873,
       "tag": "0061_gorgeous_harrier",
       "breakpoints": true
+    },
+    {
+      "idx": 62,
+      "version": "7",
+      "when": 1779125671989,
+      "tag": "0062_lucky_outlaw_kid",
+      "breakpoints": true
     }
   ]
 }

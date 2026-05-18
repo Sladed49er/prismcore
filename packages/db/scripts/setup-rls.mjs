@@ -129,6 +129,8 @@ const TENANT_TABLES = [
   "marketing_sequences",
   "marketing_enrollments",
   "marketing_sends",
+  "intake_form_definitions",
+  "intake_form_submissions",
   "recurring_tasks",
   "task_workflows",
   "task_queues",

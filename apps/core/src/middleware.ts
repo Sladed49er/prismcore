@@ -15,6 +15,9 @@ const isPublicRoute = createRouteMatcher([
   "/portal(.*)",
   // Member-facing association portal — authenticated by a per-member token.
   "/member-portal(.*)",
+  // Public intake forms — reached by a per-form token, no user session.
+  "/intake(.*)",
+  "/api/intake(.*)",
 ]);
 
 export default clerkMiddleware(async (auth, req) => {

@@ -20,6 +20,7 @@ export * from "./invoices";
 export * from "./opportunities";
 export * from "./acord";
 export * from "./intake";
+export * from "./intake-forms";
 export * from "./esign";
 export * from "./gl";
 export * from "./ap";
