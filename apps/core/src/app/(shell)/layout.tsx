@@ -40,18 +40,33 @@ export default async function ShellLayout({
   // Map each module's nav href back to its module id, so a tenant's module
   // rename (`module:<id>`) lands on the right nav entry.
   const hrefToModuleId = new Map<string, string>();
+  const categoryById = new Map<string, string>();
   for (const m of modules) {
+    categoryById.set(m.id, m.category);
     for (const n of m.nav ?? []) hrefToModuleId.set(n.href, m.id);
   }
 
+  // Module category → sidebar section heading.
+  const CATEGORY_LABEL: Record<string, string> = {
+    core: "Core",
+    insurance: "Insurance",
+    accounting: "Accounting",
+    communications: "Communications",
+    wealth: "Wealth",
+    association: "Association",
+    integration: "Integrations",
+  };
+
   const items: NavItem[] = nav.map((entry) => {
     const moduleId = hrefToModuleId.get(entry.href);
+    const category = moduleId ? categoryById.get(moduleId) : undefined;
     return {
       label: moduleId
         ? moduleLabel(terms, moduleId, entry.label)
         : entry.label,
       href: entry.href,
       icon: entry.icon ?? "blocks",
+      group: category ? (CATEGORY_LABEL[category] ?? category) : undefined,
     };
   });
 

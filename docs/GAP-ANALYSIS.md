@@ -73,15 +73,29 @@ gained `score`, `extractedData`, `clientId`, and `documentId` is now nullable
 
 ---
 
-## STATUS — all four priorities complete (2026-05-18)
+## STATUS — Tiers 1-3 complete (2026-05-18)
 
 The gap-analysis plan is fully worked. Prism Core kept its kernel and absorbed
-the proven depth: detail-page drill-down, CallIntel's intelligence layer,
-carrier scorecard + appetite, and PrismAMS-parity document intelligence.
+the proven depth.
 
-Remaining gap-map items (Tier 3 — the Thin modules: marketing send, ACORD
-prefill, intake form builder, eSign, memberships dues, custom objects,
-workflow runtime) are open for a future pass.
+**Tiers 1-2 (the four priorities):** detail-page drill-down, CallIntel's
+intelligence layer, carrier scorecard + appetite, PrismAMS-parity document
+intelligence.
+
+**Tier 3 (the Thin modules, all deepened):**
+- Marketing — email templates, drip sequences, real Resend send + cron
+- Intake forms — public token form builder, submission capture, convert-to-lead
+- ACORD forms — six-form catalog, prefill from live client/policy/carrier data
+- eSign — self-hosted signing ceremony with a public token-authed sign page
+- Memberships — dues invoicing, annual billing run, payment tracking
+- Automations — a workflow rule engine that actually fires (leapfrogs both
+  PrismAMS and CallIntel, which store rules but never run them)
+- Custom objects — Salesforce-style user-defined record types
+- Dashboard & shell — PrismAMS-inspired visual polish: a time-aware greeting,
+  icon stat cards, quick-navigate grid, category-grouped sidebar nav
+
+Migrations 0055-0067; RLS on 140 tables. Future ideas (deferred): dark mode,
+event-triggered automations, accounting-sync, deeper leads/pipeline enrichment.
 
 ## Headline
 

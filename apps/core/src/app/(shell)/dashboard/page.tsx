@@ -9,6 +9,8 @@ import { listClaims } from "@/lib/claims";
 import { listRenewals } from "@/lib/renewals";
 import { listTickets } from "@/lib/tickets";
 import { listClientActivities } from "@/lib/client-activities";
+import { ModuleIcon } from "@/components/module-icon";
+import { DashboardGreeting } from "@/components/dashboard-greeting";
 
 function money(cents: number): string {
   return "$" + Math.round(cents / 100).toLocaleString();
@@ -20,6 +22,17 @@ const ACTIVITY_LABEL: Record<string, string> = {
   meeting: "Meeting",
   note: "Note",
   task: "Task",
+};
+
+/** Tint pairs for the stat-card icon chips. */
+const TINTS: Record<string, string> = {
+  indigo: "bg-indigo-50 text-indigo-600",
+  emerald: "bg-emerald-50 text-emerald-600",
+  amber: "bg-amber-50 text-amber-600",
+  sky: "bg-sky-50 text-sky-600",
+  rose: "bg-rose-50 text-rose-600",
+  violet: "bg-violet-50 text-violet-600",
+  slate: "bg-slate-100 text-slate-600",
 };
 
 export default async function DashboardPage() {
@@ -76,6 +89,8 @@ export default async function DashboardPage() {
     value: string;
     sub: string;
     href: string;
+    icon: string;
+    tint: string;
   }
   const stats: Stat[] = [
     {
@@ -83,6 +98,8 @@ export default async function DashboardPage() {
       value: String(clients.length),
       sub: `${activeClients} active`,
       href: "/m/clients/register",
+      icon: "users",
+      tint: "indigo",
     },
   ];
   if (has("pipeline")) {
@@ -91,6 +108,8 @@ export default async function DashboardPage() {
       value: String(openOpps.length),
       sub: `${money(pipelineValue)} in play`,
       href: "/m/pipeline/opportunities",
+      icon: "trending-up",
+      tint: "violet",
     });
   }
   if (has("accounting")) {
@@ -100,12 +119,16 @@ export default async function DashboardPage() {
         value: money(arOutstanding),
         sub: `${invoices.filter((i) => i.status === "sent").length} sent invoices`,
         href: "/m/accounting/invoices",
+        icon: "dollar-sign",
+        tint: "emerald",
       },
       {
         label: "A/P payable",
         value: money(apPayable),
         sub: `${bills.filter((b) => b.status !== "void" && b.status !== "paid").length} open bills`,
         href: "/m/accounting/bills",
+        icon: "file-text",
+        tint: "amber",
       },
     );
   }
@@ -115,6 +138,8 @@ export default async function DashboardPage() {
       value: String(activePolicies),
       sub: `${policies.length} on the book`,
       href: "/m/policies/register",
+      icon: "shield",
+      tint: "sky",
     });
   }
   if (has("claims")) {
@@ -123,6 +148,8 @@ export default async function DashboardPage() {
       value: String(openClaims),
       sub: `${claims.length} total`,
       href: "/m/claims/register",
+      icon: "alert-triangle",
+      tint: "rose",
     });
   }
   if (has("renewals")) {
@@ -131,6 +158,8 @@ export default async function DashboardPage() {
       value: String(openRenewals),
       sub: "in the pipeline",
       href: "/m/renewals/pipeline",
+      icon: "clock",
+      tint: "amber",
     });
   }
   stats.push({
@@ -138,6 +167,8 @@ export default async function DashboardPage() {
     value: String(openTickets),
     sub: "support tickets",
     href: "/support/requests",
+    icon: "life-buoy",
+    tint: "slate",
   });
 
   const recentActivity = activities.slice(0, 6);
@@ -148,34 +179,79 @@ export default async function DashboardPage() {
     .filter((b) => b.status !== "void" && b.status !== "paid")
     .slice(0, 5);
 
+  // Quick-navigate shortcuts — one per enabled module.
+  const quickNav = modules
+    .map((m) => ({
+      id: m.id,
+      name: m.name,
+      icon: m.icon,
+      href: m.nav?.[0]?.href ?? `/m/${m.id}`,
+    }))
+    .slice(0, 12);
+
+  // Action buttons, gated by enabled modules.
+  const actions: { label: string; href: string; icon: string }[] = [
+    { label: "New client", href: "/m/clients/register", icon: "user-plus" },
+  ];
+  if (has("policies")) {
+    actions.push({
+      label: "New policy",
+      href: "/m/policies/register",
+      icon: "file-text",
+    });
+  }
+  if (has("esign")) {
+    actions.push({ label: "Send eSign", href: "/m/esign", icon: "pen" });
+  }
+
   return (
     <div className="mx-auto max-w-5xl px-8 py-10">
-      <p className="text-xs font-semibold uppercase tracking-wide text-indigo-500">
-        Dashboard
-      </p>
-      <h1 className="mt-1 text-2xl font-semibold">{config.name}</h1>
-      <p className="mt-1 text-sm text-gray-500">
-        Today&rsquo;s snapshot — {modules.length} modules enabled.
-      </p>
+      {/* Header — greeting + actions */}
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <DashboardGreeting workspaceName={config.name} />
+        <div className="flex flex-wrap gap-2">
+          {actions.map((a, i) => (
+            <Link
+              key={a.href}
+              href={a.href}
+              className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-semibold transition ${
+                i === 0
+                  ? "bg-indigo-600 text-white hover:bg-indigo-700"
+                  : "border border-gray-300 text-gray-700 hover:bg-gray-50"
+              }`}
+            >
+              <ModuleIcon name={a.icon} className="h-4 w-4" />
+              {a.label}
+            </Link>
+          ))}
+        </div>
+      </div>
 
-      <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      {/* Stat cards */}
+      <div className="mt-7 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {stats.map((s) => (
           <Link
             key={s.label}
             href={s.href}
-            className="rounded-xl border border-gray-200 bg-white p-5 transition hover:border-indigo-300"
+            className="rounded-xl border border-gray-200 bg-white p-5 transition hover:border-indigo-300 hover:shadow-sm"
           >
+            <span
+              className={`flex h-9 w-9 items-center justify-center rounded-lg ${TINTS[s.tint] ?? TINTS.slate}`}
+            >
+              <ModuleIcon name={s.icon} className="h-4 w-4" />
+            </span>
+            <p className="mt-3 text-2xl font-semibold text-gray-900">
+              {s.value}
+            </p>
             <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
               {s.label}
-            </p>
-            <p className="mt-1 text-2xl font-semibold text-gray-900">
-              {s.value}
             </p>
             <p className="mt-0.5 text-xs text-gray-400">{s.sub}</p>
           </Link>
         ))}
       </div>
 
+      {/* Activity + open items */}
       <div className="mt-6 grid gap-4 lg:grid-cols-2">
         <section className="rounded-xl border border-gray-200 bg-white p-5">
           <div className="flex items-center justify-between">
@@ -280,10 +356,9 @@ export default async function DashboardPage() {
         </section>
       </div>
 
+      {/* Quick navigate */}
       <div className="mt-6 flex items-center justify-between">
-        <h2 className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-          Your modules
-        </h2>
+        <h2 className="text-sm font-semibold text-gray-700">Quick navigate</h2>
         <Link
           href="/compose"
           className="text-xs font-semibold text-indigo-600 transition hover:text-indigo-700"
@@ -291,14 +366,20 @@ export default async function DashboardPage() {
           Recompose workspace
         </Link>
       </div>
-      <div className="mt-3 flex flex-wrap gap-2">
-        {modules.map((m) => (
-          <span
+      <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+        {quickNav.map((m) => (
+          <Link
             key={m.id}
-            className="rounded-full border border-gray-200 bg-white px-3 py-1 text-sm text-gray-600"
+            href={m.href}
+            className="flex items-center gap-3 rounded-xl border border-gray-200 bg-white px-4 py-3 transition hover:border-indigo-300 hover:shadow-sm"
           >
-            {m.name}
-          </span>
+            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-gray-100 text-gray-600">
+              <ModuleIcon name={m.icon} className="h-4 w-4" />
+            </span>
+            <span className="text-sm font-medium text-gray-800">
+              {m.name}
+            </span>
+          </Link>
         ))}
       </div>
     </div>
