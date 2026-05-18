@@ -68,16 +68,40 @@ export async function upsertBilling(
   });
 }
 
+/** Whether a Stripe error means the referenced object does not exist. */
+function isMissingResource(error: unknown): boolean {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    (error as { code?: string }).code === "resource_missing"
+  );
+}
+
 /**
  * The tenant's Stripe customer id, creating the customer on first need. The
  * customer carries `tenantId` in metadata so webhook events map straight back.
+ *
+ * A stored id is verified against the current Stripe account before it is
+ * trusted: if it no longer exists — the Stripe account was switched, or the
+ * customer was deleted — a fresh customer is created and the row updated. This
+ * keeps billing self-healing across a Stripe account change.
  */
 export async function ensureStripeCustomer(
   tenantId: string,
   tenantName: string,
 ): Promise<string> {
   const existing = await getBilling(tenantId);
-  if (existing?.stripeCustomerId) return existing.stripeCustomerId;
+  if (existing?.stripeCustomerId) {
+    try {
+      const customer = await stripe().customers.retrieve(
+        existing.stripeCustomerId,
+      );
+      if (!("deleted" in customer)) return existing.stripeCustomerId;
+    } catch (error) {
+      if (!isMissingResource(error)) throw error;
+      // resource_missing — the stored customer is gone; recreate below.
+    }
+  }
 
   const customer = await stripe().customers.create({
     name: tenantName,
