@@ -133,6 +133,7 @@ const TENANT_TABLES = [
   "migration_jobs",
   "cross_sell_opportunities",
   "specialty_markets",
+  "bookscan_reports",
 ];
 
 const owner = neon(ownerUrl);
