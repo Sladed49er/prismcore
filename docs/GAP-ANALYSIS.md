@@ -15,7 +15,7 @@ each to full completion** before the next begins.
 | # | Priority | Status |
 |---|---|---|
 | 1 | **Detail pages** — per-record detail + drill-down (Client → Policy → Claim) | DONE |
-| 2 | **CallIntel intelligence merge** — caller intel, risk radar, revenue intel, compliance watchdog, digests into telephony | pending |
+| 2 | **CallIntel intelligence merge** — caller intel, risk radar, revenue intel, compliance watchdog, digests into telephony | DONE |
 | 3 | **Carrier intelligence** — scorecard (loss ratio, commission variance) + NAICS appetite matching | pending |
 | 4 | **Document intelligence depth-up** — auditClient cross-policy audit, policy scoring, extracted-data persistence | pending |
 
@@ -35,6 +35,21 @@ applied it across the insurance spine.
 
 The pattern (`components/detail.tsx` + a `lib/<entity>-detail.ts` loader) is now
 reusable for any future module's detail page.
+
+### Priority 2 detail — CallIntel intelligence merge — DONE 2026-05-18
+Ported CallIntel's intelligence layer into PrismVoice as a new
+`/m/telephony/intelligence` sub-page. New tables `call_insights`,
+`compliance_flags`, `call_digests` + `calls.intelAnalyzedAt` (migration 0058,
+RLS on 128 tables).
+
+- [x] Caller brief — `lib/voip-caller-brief.ts` — pre-call prep: call pattern, last interaction, AI sentiment + talking points
+- [x] Revenue insights + compliance watchdog — `lib/voip-intelligence.ts` — one Claude call per call-record, forced tool returns cross-sell / renewal-risk / follow-up insights and E&O flags; `scanRecentCalls` batches un-analysed calls
+- [x] Client risk radar — `lib/voip-risk.ts` — deterministic call-pattern scoring + AI sentiment on the top accounts
+- [x] Weekly digest — `lib/voip-digest.ts` — gathers the week's calls, AI narrative (headlines/coaching/staffing/week-over-week), stored in `call_digests`
+- [x] `/m/telephony/intelligence` page + panel; linked from the PrismVoice page
+
+Caller intelligence is on-demand (pick a client) rather than wired into the
+live screen-pop — Prism Core has no live screen-pop browser surface.
 
 ---
 

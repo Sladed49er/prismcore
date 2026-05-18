@@ -2,6 +2,7 @@ export * from "./kernel";
 export * from "./customization";
 export * from "./clearinghouse";
 export * from "./voip";
+export * from "./call-intelligence";
 export * from "./reports";
 export * from "./strategy";
 export * from "./billing";

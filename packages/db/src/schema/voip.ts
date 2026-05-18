@@ -110,6 +110,8 @@ export const calls = pgTable(
     recordingUrl: text("recording_url"),
     transcript: text("transcript"),
     endedAt: timestamp("ended_at", { withTimezone: true }),
+    /** When call intelligence (revenue + compliance) last analysed this call. */
+    intelAnalyzedAt: timestamp("intel_analyzed_at", { withTimezone: true }),
     /* ── AMS write-back ──────────────────────────────────────────────────
      * The call is logged into the tenant's AMS as an activity note by a
      * durable background worker, not inline in the webhook — so an AMS

@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { headers } from "next/headers";
 import { loadCurrentTenant, requireModule } from "@/lib/kernel";
 import { loadTerms, moduleLabel } from "@/lib/terminology";
@@ -92,6 +93,21 @@ export default async function PrismVoicePage() {
         the provider credentials and inbound calls screen-pop the caller, log
         themselves, and get an AI summary. No separate app, no separate login.
       </p>
+      <Link
+        href="/m/telephony/intelligence"
+        className="mt-5 flex items-center justify-between rounded-xl border border-indigo-200 bg-indigo-50/60 px-5 py-4 transition hover:border-indigo-300"
+      >
+        <span>
+          <span className="font-semibold text-indigo-900">
+            Call Intelligence
+          </span>
+          <span className="mt-0.5 block text-sm text-indigo-700">
+            Revenue insights, E&amp;O compliance flags, a client risk radar,
+            and a weekly digest — the AI layer over your calls.
+          </span>
+        </span>
+        <span className="text-sm font-semibold text-indigo-600">Open →</span>
+      </Link>
       <PrismVoicePanel
         providers={VOIP_PROVIDERS}
         connections={connections}
