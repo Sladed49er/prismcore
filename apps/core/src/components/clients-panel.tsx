@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { type ReactNode, useMemo, useState, useTransition } from "react";
 import {
   addClient,
@@ -136,7 +137,14 @@ export function ClientsPanel({
         key: "name",
         label: "Name",
         sortValue: (c) => c.displayName.toLowerCase(),
-        cell: (c) => <span className="font-medium">{c.displayName}</span>,
+        cell: (c) => (
+          <Link
+            href={`/m/clients/${c.id}`}
+            className="font-medium text-indigo-600 hover:underline"
+          >
+            {c.displayName}
+          </Link>
+        ),
       },
       {
         key: "type",

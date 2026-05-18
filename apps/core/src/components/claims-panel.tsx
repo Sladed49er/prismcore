@@ -1,8 +1,9 @@
 "use client";
 
-import { Fragment, useState, useTransition } from "react";
+import Link from "next/link";
+import { useState, useTransition } from "react";
 import { addClaim, advanceClaim } from "@/app/(shell)/m/claims/register/actions";
-import { Attachments, type AttachmentDTO } from "@/components/attachments";
+import type { AttachmentDTO } from "@/components/attachments";
 
 export interface ClaimDTO {
   id: string;
@@ -61,7 +62,6 @@ export function ClaimsPanel({
   const [pending, startTransition] = useTransition();
   const [showForm, setShowForm] = useState(false);
   const [policyId, setPolicyId] = useState("");
-  const [openId, setOpenId] = useState<string | null>(null);
   const [form, setForm] = useState({ ...EMPTY });
 
   function set(key: keyof typeof EMPTY, value: string): void {
@@ -226,68 +226,49 @@ export function ClaimsPanel({
             <tbody className="divide-y divide-gray-100">
               {claims.map((c) => {
                 const files = attachments[c.id] ?? [];
-                const isOpen = openId === c.id;
                 return (
-                  <Fragment key={c.id}>
-                    <tr>
-                      <td className="px-4 py-3 font-medium">
-                        <button
-                          type="button"
-                          onClick={() => setOpenId(isOpen ? null : c.id)}
-                          className="text-indigo-600 hover:underline"
-                        >
-                          {c.claimNumber}
-                        </button>
-                        {files.length > 0 ? (
-                          <span className="ml-1.5 rounded-full bg-gray-100 px-1.5 py-0.5 text-xs text-gray-500">
-                            📎 {files.length}
-                          </span>
-                        ) : null}
-                      </td>
-                      <td className="px-4 py-3 text-gray-500">
-                        {c.policyNumber}
-                      </td>
-                      <td className="px-4 py-3 text-gray-600">
-                        {c.clientName}
-                      </td>
-                      <td className="px-4 py-3 text-gray-500">
-                        {c.dateOfLoss ?? "—"}
-                      </td>
-                      <td className="px-4 py-3 text-gray-600">
-                        {money(c.reserveCents)}
-                      </td>
-                      <td className="px-4 py-3">
-                        <select
-                          value={c.status}
-                          onChange={(e) =>
-                            changeStatus(c.id, e.target.value as Status)
-                          }
-                          disabled={pending}
-                          aria-label="Claim status"
-                          className={`rounded-full border-0 px-2 py-0.5 text-xs font-medium outline-none ${STYLE[c.status] ?? "bg-gray-100 text-gray-500"}`}
-                        >
-                          {STATUSES.map((s) => (
-                            <option key={s} value={s}>
-                              {s}
-                            </option>
-                          ))}
-                        </select>
-                      </td>
-                    </tr>
-                    {isOpen ? (
-                      <tr>
-                        <td colSpan={6} className="bg-gray-50 px-4 py-3">
-                          <Attachments
-                            entityType="claim"
-                            entityId={c.id}
-                            attachments={files}
-                            category="Claim file"
-                            compact
-                          />
-                        </td>
-                      </tr>
-                    ) : null}
-                  </Fragment>
+                  <tr key={c.id}>
+                    <td className="px-4 py-3 font-medium">
+                      <Link
+                        href={`/m/claims/${c.id}`}
+                        className="text-indigo-600 hover:underline"
+                      >
+                        {c.claimNumber}
+                      </Link>
+                      {files.length > 0 ? (
+                        <span className="ml-1.5 rounded-full bg-gray-100 px-1.5 py-0.5 text-xs text-gray-500">
+                          📎 {files.length}
+                        </span>
+                      ) : null}
+                    </td>
+                    <td className="px-4 py-3 text-gray-500">
+                      {c.policyNumber}
+                    </td>
+                    <td className="px-4 py-3 text-gray-600">{c.clientName}</td>
+                    <td className="px-4 py-3 text-gray-500">
+                      {c.dateOfLoss ?? "—"}
+                    </td>
+                    <td className="px-4 py-3 text-gray-600">
+                      {money(c.reserveCents)}
+                    </td>
+                    <td className="px-4 py-3">
+                      <select
+                        value={c.status}
+                        onChange={(e) =>
+                          changeStatus(c.id, e.target.value as Status)
+                        }
+                        disabled={pending}
+                        aria-label="Claim status"
+                        className={`rounded-full border-0 px-2 py-0.5 text-xs font-medium outline-none ${STYLE[c.status] ?? "bg-gray-100 text-gray-500"}`}
+                      >
+                        {STATUSES.map((s) => (
+                          <option key={s} value={s}>
+                            {s}
+                          </option>
+                        ))}
+                      </select>
+                    </td>
+                  </tr>
                 );
               })}
             </tbody>

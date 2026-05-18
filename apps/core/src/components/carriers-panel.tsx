@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState, useTransition } from "react";
 import { addCarrier } from "@/app/(shell)/m/carriers/directory/actions";
 
@@ -194,7 +195,14 @@ export function CarriersPanel({ carriers }: { carriers: CarrierDTO[] }) {
             <tbody className="divide-y divide-gray-100">
               {carriers.map((c) => (
                 <tr key={c.id}>
-                  <td className="px-4 py-3 font-medium">{c.name}</td>
+                  <td className="px-4 py-3 font-medium">
+                    <Link
+                      href={`/m/carriers/${c.id}`}
+                      className="text-indigo-600 hover:underline"
+                    >
+                      {c.name}
+                    </Link>
+                  </td>
                   <td className="px-4 py-3 text-gray-500">
                     {c.naicCode || "—"}
                   </td>

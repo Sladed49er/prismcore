@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState, useTransition } from "react";
 import { addPolicy } from "@/app/(shell)/m/policies/register/actions";
 
@@ -283,7 +284,14 @@ export function PoliciesPanel({
             <tbody className="divide-y divide-gray-100">
               {policies.map((p) => (
                 <tr key={p.id}>
-                  <td className="px-4 py-3 font-medium">{p.policyNumber}</td>
+                  <td className="px-4 py-3 font-medium">
+                    <Link
+                      href={`/m/policies/${p.id}`}
+                      className="text-indigo-600 hover:underline"
+                    >
+                      {p.policyNumber}
+                    </Link>
+                  </td>
                   <td className="px-4 py-3 text-gray-600">{p.clientName}</td>
                   <td className="px-4 py-3 text-gray-500">
                     {p.lineOfBusiness}
