@@ -22,6 +22,7 @@ export async function newLeadSource(input: {
     description: input.description.trim(),
   });
   revalidatePath("/m/pipeline/sources");
+  revalidatePath("/m/leads");
 }
 
 export async function toggleLeadSource(input: {
@@ -35,4 +36,5 @@ export async function toggleLeadSource(input: {
     isActive: input.isActive,
   });
   revalidatePath("/m/pipeline/sources");
+  revalidatePath("/m/leads");
 }

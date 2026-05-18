@@ -30,6 +30,7 @@ export async function newCampaign(input: {
     notes: input.notes.trim(),
   });
   revalidatePath("/m/pipeline/campaigns");
+  revalidatePath("/m/marketing");
 }
 
 export async function updateCampaignStatus(input: {
@@ -43,4 +44,5 @@ export async function updateCampaignStatus(input: {
     status: input.status,
   });
   revalidatePath("/m/pipeline/campaigns");
+  revalidatePath("/m/marketing");
 }

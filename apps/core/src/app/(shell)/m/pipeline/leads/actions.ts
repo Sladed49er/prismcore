@@ -30,6 +30,7 @@ export async function newLead(input: {
     notes: input.notes.trim(),
   });
   revalidatePath("/m/pipeline/leads");
+  revalidatePath("/m/leads");
 }
 
 export async function updateLeadStatus(input: {
@@ -39,4 +40,5 @@ export async function updateLeadStatus(input: {
   const tenant = await getCurrentTenant();
   await setLeadStatus({ tenantId: tenant.id, id: input.id, status: input.status });
   revalidatePath("/m/pipeline/leads");
+  revalidatePath("/m/leads");
 }

@@ -32,6 +32,7 @@ export async function addTrustEntry(input: {
     entryDate: input.entryDate || null,
   });
   revalidatePath("/m/accounting/trust");
+  revalidatePath("/m/trust_accounting");
 }
 
 export async function editTrustEntry(input: {
@@ -60,6 +61,7 @@ export async function editTrustEntry(input: {
     entryDate: input.entryDate || null,
   });
   revalidatePath("/m/accounting/trust");
+  revalidatePath("/m/trust_accounting");
 }
 
 export async function removeTrustEntry(id: string): Promise<void> {
@@ -67,4 +69,5 @@ export async function removeTrustEntry(id: string): Promise<void> {
   const tenant = await getCurrentTenant();
   await deleteTrustEntry(tenant.id, id);
   revalidatePath("/m/accounting/trust");
+  revalidatePath("/m/trust_accounting");
 }
