@@ -73,3 +73,4 @@ export * from "./carrier-appointments";
 export * from "./carrier-contacts";
 export * from "./underwriting-guidelines";
 export * from "./platform-announcements";
+export * from "./vault";

@@ -128,6 +128,7 @@ const TENANT_TABLES = [
   "carrier_appointments",
   "carrier_contacts",
   "underwriting_guidelines",
+  "vault_credentials",
 ];
 
 const owner = neon(ownerUrl);
