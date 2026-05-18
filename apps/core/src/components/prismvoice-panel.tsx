@@ -54,6 +54,67 @@ const EMPTY_CREDS: VoipCredentials = {
   webhookSecret: "",
 };
 
+/**
+ * Per-provider credential labelling. Every VoIP provider stores the same four
+ * slots (accountId / apiKey / apiSecret / webhookSecret), but each phone
+ * system means something different by them and uses a different subset — so
+ * the connect form relabels itself to the chosen provider. A `null` label
+ * hides that field for the provider.
+ */
+interface VoipFields {
+  accountIdLabel: string | null;
+  apiKeyLabel: string;
+  apiSecretLabel: string | null;
+  webhookSecretLabel: string | null;
+  hint: string;
+}
+
+const VOIP_PROVIDER_FIELDS: Record<string, VoipFields> = {
+  dialpad: {
+    accountIdLabel: null,
+    apiKeyLabel: "API key",
+    apiSecretLabel: null,
+    webhookSecretLabel: "Webhook signing secret",
+    hint: "Dialpad API key (Company settings → API keys) plus the signing secret for the call-event webhook.",
+  },
+  ringcentral: {
+    accountIdLabel: null,
+    apiKeyLabel: "Client ID",
+    apiSecretLabel: "Client secret",
+    webhookSecretLabel: "Webhook verification token",
+    hint: "RingCentral app Client ID and Client Secret from the RingCentral Developer console.",
+  },
+  zoom: {
+    accountIdLabel: "Account ID",
+    apiKeyLabel: "Client ID",
+    apiSecretLabel: "Client secret",
+    webhookSecretLabel: "Webhook secret token",
+    hint: "Zoom Server-to-Server OAuth app — Account ID, Client ID, Client Secret, and the webhook secret token.",
+  },
+  goto: {
+    accountIdLabel: null,
+    apiKeyLabel: "Client ID",
+    apiSecretLabel: "Client secret",
+    webhookSecretLabel: "Webhook secret",
+    hint: "GoTo Connect OAuth client — Client ID and Client Secret from the GoTo Developer Center.",
+  },
+  vonage: {
+    accountIdLabel: "Application ID",
+    apiKeyLabel: "API key",
+    apiSecretLabel: "API secret",
+    webhookSecretLabel: "Signature secret",
+    hint: "Vonage API key and secret, the Application ID, and the signature secret used to validate webhooks.",
+  },
+};
+
+const DEFAULT_VOIP_FIELDS: VoipFields = {
+  accountIdLabel: "Account ID",
+  apiKeyLabel: "API key / client ID",
+  apiSecretLabel: "API secret / token",
+  webhookSecretLabel: "Webhook signing secret",
+  hint: "Provider API credentials and the webhook signing secret.",
+};
+
 function formatDuration(seconds: number): string {
   const m = Math.floor(seconds / 60);
   const s = seconds % 60;
@@ -200,44 +261,61 @@ export function PrismVoicePanel({
               {editingProvider.name} credentials
             </p>
             <p className="mt-1 text-xs text-gray-500">
-              Stored against this tenant only, RLS-isolated. Used to
-              authenticate the screen-pop webhook and provider API calls.
+              {(VOIP_PROVIDER_FIELDS[editingProvider.id] ?? DEFAULT_VOIP_FIELDS)
+                .hint}
             </p>
             <div className="mt-3 grid gap-3 sm:grid-cols-2">
-              <label className={labelClass}>
-                Account ID
-                <input
-                  value={form.accountId}
-                  onChange={(e) => set("accountId", e.target.value)}
-                  className={inputClass}
-                />
-              </label>
-              <label className={labelClass}>
-                API key / client ID
-                <input
-                  value={form.apiKey}
-                  onChange={(e) => set("apiKey", e.target.value)}
-                  className={inputClass}
-                />
-              </label>
-              <label className={labelClass}>
-                API secret / token
-                <input
-                  type="password"
-                  value={form.apiSecret}
-                  onChange={(e) => set("apiSecret", e.target.value)}
-                  className={inputClass}
-                />
-              </label>
-              <label className={labelClass}>
-                Webhook signing secret
-                <input
-                  type="password"
-                  value={form.webhookSecret}
-                  onChange={(e) => set("webhookSecret", e.target.value)}
-                  className={inputClass}
-                />
-              </label>
+              {(() => {
+                const vf =
+                  VOIP_PROVIDER_FIELDS[editingProvider.id] ??
+                  DEFAULT_VOIP_FIELDS;
+                return (
+                  <>
+                    {vf.accountIdLabel ? (
+                      <label className={labelClass}>
+                        {vf.accountIdLabel}
+                        <input
+                          value={form.accountId}
+                          onChange={(e) => set("accountId", e.target.value)}
+                          className={inputClass}
+                        />
+                      </label>
+                    ) : null}
+                    <label className={labelClass}>
+                      {vf.apiKeyLabel}
+                      <input
+                        value={form.apiKey}
+                        onChange={(e) => set("apiKey", e.target.value)}
+                        className={inputClass}
+                      />
+                    </label>
+                    {vf.apiSecretLabel ? (
+                      <label className={labelClass}>
+                        {vf.apiSecretLabel}
+                        <input
+                          type="password"
+                          value={form.apiSecret}
+                          onChange={(e) => set("apiSecret", e.target.value)}
+                          className={inputClass}
+                        />
+                      </label>
+                    ) : null}
+                    {vf.webhookSecretLabel ? (
+                      <label className={labelClass}>
+                        {vf.webhookSecretLabel}
+                        <input
+                          type="password"
+                          value={form.webhookSecret}
+                          onChange={(e) =>
+                            set("webhookSecret", e.target.value)
+                          }
+                          className={inputClass}
+                        />
+                      </label>
+                    ) : null}
+                  </>
+                );
+              })()}
             </div>
             <div className="mt-4 flex gap-2">
               <button
