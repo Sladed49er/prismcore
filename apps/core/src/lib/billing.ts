@@ -65,3 +65,52 @@ export async function ensureStripeCustomer(
   await upsertBilling(tenantId, { stripeCustomerId: customer.id });
   return customer.id;
 }
+
+/** The base-plan recurring price, resolved by its stable lookup key — so the
+ *  same code works against test and live (each has its own price id). */
+export async function getBasePriceId(): Promise<string> {
+  const prices = await stripe().prices.list({
+    lookup_keys: ["prismcore_base_monthly"],
+    limit: 1,
+  });
+  const id = prices.data[0]?.id;
+  if (!id) throw new Error("Base plan price not found in Stripe");
+  return id;
+}
+
+/** Start a subscription checkout for the tenant's base plan; returns the URL. */
+export async function createCheckoutSession(input: {
+  tenantId: string;
+  tenantName: string;
+  successUrl: string;
+  cancelUrl: string;
+}): Promise<string> {
+  const customer = await ensureStripeCustomer(input.tenantId, input.tenantName);
+  const price = await getBasePriceId();
+  const session = await stripe().checkout.sessions.create({
+    mode: "subscription",
+    customer,
+    line_items: [{ price, quantity: 1 }],
+    success_url: input.successUrl,
+    cancel_url: input.cancelUrl,
+    subscription_data: { metadata: { tenantId: input.tenantId } },
+  });
+  if (!session.url) throw new Error("Stripe did not return a checkout URL");
+  return session.url;
+}
+
+/** Open the Stripe customer portal (manage payment method, cancel). */
+export async function createPortalSession(input: {
+  tenantId: string;
+  returnUrl: string;
+}): Promise<string> {
+  const billing = await getBilling(input.tenantId);
+  if (!billing?.stripeCustomerId) {
+    throw new Error("This workspace has no Stripe customer yet");
+  }
+  const session = await stripe().billingPortal.sessions.create({
+    customer: billing.stripeCustomerId,
+    return_url: input.returnUrl,
+  });
+  return session.url;
+}

@@ -84,6 +84,12 @@ export function Sidebar({
           Customize
         </Link>
         <Link
+          href="/settings/billing"
+          className="block rounded-lg px-3 py-2 text-sm font-medium text-gray-600 transition hover:bg-gray-50"
+        >
+          Billing
+        </Link>
+        <Link
           href="/compose"
           className="block rounded-lg px-3 py-2 text-sm font-medium text-gray-600 transition hover:bg-gray-50"
         >
