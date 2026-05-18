@@ -24,6 +24,8 @@ export const membershipPayments = pgTable(
     membershipId: uuid("membership_id")
       .notNull()
       .references(() => memberships.id, { onDelete: "cascade" }),
+    /** The dues invoice this payment was applied to, when applicable. */
+    invoiceId: uuid("invoice_id"),
     amountCents: integer("amount_cents").notNull().default(0),
     paymentDate: date("payment_date"),
     /** check · card · ach · cash · other. */

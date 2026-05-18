@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { loadCurrentTenant, requireModule } from "@/lib/kernel";
 import { listMemberships, listMembershipPayments } from "@/lib/memberships";
 import {
@@ -60,6 +61,20 @@ export default async function MembershipsPage() {
       <p className="mt-2 max-w-2xl text-gray-600">
         The member directory and the dues collected against it.
       </p>
+
+      <Link
+        href="/m/memberships/dues"
+        className="mt-5 flex items-center justify-between rounded-xl border border-indigo-200 bg-indigo-50/60 px-5 py-4 transition hover:border-indigo-300"
+      >
+        <span>
+          <span className="font-semibold text-indigo-900">Dues Invoicing</span>
+          <span className="mt-0.5 block text-sm text-indigo-700">
+            Raise dues invoices, run annual billing, record payments, and
+            track overdue balances.
+          </span>
+        </span>
+        <span className="text-sm font-semibold text-indigo-600">Open →</span>
+      </Link>
 
       <h2 className="mt-8 text-lg font-semibold">Members</h2>
       <MembershipsPanel members={members} />

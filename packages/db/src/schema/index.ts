@@ -100,6 +100,7 @@ export * from "./household-members";
 export * from "./tax-timesheets";
 export * from "./ams-phone-index";
 export * from "./membership-payments";
+export * from "./membership-dues";
 export * from "./chapter-officers";
 export * from "./event-registrations";
 export * from "./communication-list-members";
