@@ -130,6 +130,7 @@ const TENANT_TABLES = [
   "underwriting_guidelines",
   "vault_credentials",
   "vendor_contracts",
+  "migration_jobs",
 ];
 
 const owner = neon(ownerUrl);
