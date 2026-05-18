@@ -83,3 +83,6 @@ export * from "./client-portal";
 export * from "./bank-feed";
 export * from "./households";
 export * from "./tax-practice";
+export * from "./memberships";
+export * from "./chapters";
+export * from "./events";

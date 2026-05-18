@@ -330,6 +330,13 @@
       "when": 1779076971617,
       "tag": "0046_open_zuras",
       "breakpoints": true
+    },
+    {
+      "idx": 47,
+      "version": "7",
+      "when": 1779077322751,
+      "tag": "0047_lame_roland_deschain",
+      "breakpoints": true
     }
   ]
 }

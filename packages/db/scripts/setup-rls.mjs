@@ -139,6 +139,9 @@ const TENANT_TABLES = [
   "bank_feed_transactions",
   "households",
   "tax_engagements",
+  "memberships",
+  "chapters",
+  "association_events",
 ];
 
 const owner = neon(ownerUrl);
