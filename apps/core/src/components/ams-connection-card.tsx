@@ -28,9 +28,68 @@ export interface AmsConnectionDTO {
 }
 
 /**
+ * Per-provider field labelling. Every AMS stores the same four credential
+ * slots (endpoint / username / password / employeeCode) plus webTenantId, but
+ * each system means something different by them — so the form relabels itself
+ * to the selected provider rather than asking for "WSAPI login id" of EZLynx.
+ */
+interface ProviderFields {
+  endpointLabel: string;
+  endpointPlaceholder: string;
+  usernameLabel: string;
+  passwordLabel: string;
+  showEmployeeCode: boolean;
+  employeeCodeLabel: string;
+  showWebTenantId: boolean;
+  hint: string;
+}
+
+const PROVIDER_FIELDS: Record<string, ProviderFields> = {
+  ams360: {
+    endpointLabel: "Agency number (AgencyNo)",
+    endpointPlaceholder: "AMS360 AgencyNo",
+    usernameLabel: "WSAPI login ID",
+    passwordLabel: "WSAPI password",
+    showEmployeeCode: true,
+    employeeCodeLabel: "Employee code (optional)",
+    showWebTenantId: true,
+    hint: "Vertafore AMS360 WSAPI v3 credentials. Real-time caller lookup and activity notes.",
+  },
+  hawksoft: {
+    endpointLabel: "HawkSoft Agency ID",
+    endpointPlaceholder: "Agency ID",
+    usernameLabel: "API username",
+    passwordLabel: "API password",
+    showEmployeeCode: false,
+    employeeCodeLabel: "",
+    showWebTenantId: false,
+    hint: "HawkSoft Partner API credentials — enable the integration in the HawkSoft Marketplace. Caller matching uses a client index that refreshes daily.",
+  },
+  applied_epic: {
+    endpointLabel: "API base URL",
+    endpointPlaceholder: "https://api.myappliedproducts.com",
+    usernameLabel: "OAuth client ID",
+    passwordLabel: "OAuth client secret",
+    showEmployeeCode: true,
+    employeeCodeLabel: "Owner / employee ID (optional)",
+    showWebTenantId: false,
+    hint: "Applied Epic API Suite — OAuth2 client-credentials from the Applied Developer Portal. Real-time lookup and activity notes.",
+  },
+  ezlynx: {
+    endpointLabel: "API base URL (optional)",
+    endpointPlaceholder: "defaults to EZLynx production",
+    usernameLabel: "EZUser",
+    passwordLabel: "EZPassword",
+    showEmployeeCode: true,
+    employeeCodeLabel: "EZAppSecret",
+    showWebTenantId: false,
+    hint: "EZLynx API credentials. Screen-pop matching uses a synced applicant index; EZLynx has no activity-note API, so call notes stay in Prism Core.",
+  },
+};
+
+/**
  * Connect the tenant's agency-management system — the AMS that PrismVoice
- * looks callers up in (screen pop) and writes call notes back into. AMS360
- * via Vertafore WSAPI today.
+ * looks callers up in (screen pop) and writes call notes back into.
  */
 export function AmsConnectionCard({
   providers,
@@ -91,6 +150,11 @@ export function AmsConnectionCard({
   const labelClass =
     "text-xs font-semibold uppercase tracking-wide text-gray-500";
 
+  const fields = PROVIDER_FIELDS[form.provider] ?? PROVIDER_FIELDS.ams360!;
+  const providerName =
+    providers.find((p) => p.id === form.provider)?.name ??
+    form.provider;
+
   return (
     <section>
       <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-500">
@@ -104,7 +168,7 @@ export function AmsConnectionCard({
       <div className="mt-4 rounded-xl border border-gray-200 bg-white p-5">
         {connection.connected ? (
           <p className="mb-4 inline-flex items-center gap-1.5 rounded-full bg-green-50 px-2.5 py-0.5 text-xs font-medium text-green-700">
-            {form.provider.toUpperCase()} connected
+            {providerName} connected
           </p>
         ) : null}
 
@@ -123,26 +187,33 @@ export function AmsConnectionCard({
               ))}
             </select>
           </label>
+
+          <p className="-mt-1 text-xs text-gray-500 sm:col-span-2">
+            {fields.hint}
+          </p>
+
           <label className={labelClass}>
-            Agency number (AgencyNo)
+            {fields.endpointLabel}
             <input
               value={form.endpoint}
               onChange={(e) => set("endpoint", e.target.value)}
               className={inputClass}
-              placeholder="AMS360 AgencyNo"
+              placeholder={fields.endpointPlaceholder}
             />
           </label>
+          {fields.showWebTenantId ? (
+            <label className={labelClass}>
+              Web portal tenant id
+              <input
+                value={form.webTenantId}
+                onChange={(e) => set("webTenantId", e.target.value)}
+                className={inputClass}
+                placeholder="for the screen-pop URL (defaults to AgencyNo)"
+              />
+            </label>
+          ) : null}
           <label className={labelClass}>
-            Web portal tenant id
-            <input
-              value={form.webTenantId}
-              onChange={(e) => set("webTenantId", e.target.value)}
-              className={inputClass}
-              placeholder="for the screen-pop URL (defaults to AgencyNo)"
-            />
-          </label>
-          <label className={labelClass}>
-            WSAPI login id
+            {fields.usernameLabel}
             <input
               value={form.username}
               onChange={(e) => set("username", e.target.value)}
@@ -150,7 +221,7 @@ export function AmsConnectionCard({
             />
           </label>
           <label className={labelClass}>
-            WSAPI password
+            {fields.passwordLabel}
             <input
               type="password"
               value={form.password}
@@ -161,14 +232,16 @@ export function AmsConnectionCard({
               }
             />
           </label>
-          <label className={labelClass}>
-            Employee code (optional)
-            <input
-              value={form.employeeCode}
-              onChange={(e) => set("employeeCode", e.target.value)}
-              className={inputClass}
-            />
-          </label>
+          {fields.showEmployeeCode ? (
+            <label className={labelClass}>
+              {fields.employeeCodeLabel}
+              <input
+                value={form.employeeCode}
+                onChange={(e) => set("employeeCode", e.target.value)}
+                className={inputClass}
+              />
+            </label>
+          ) : null}
         </div>
 
         <div className="mt-4 flex flex-col gap-2">
@@ -190,6 +263,12 @@ export function AmsConnectionCard({
             />
             Sync a call activity note back to the AMS contact when a call ends
           </label>
+          {form.provider === "ezlynx" ? (
+            <p className="pl-6 text-xs text-gray-400">
+              EZLynx has no activity-note API — call notes are kept in Prism
+              Core regardless of this setting.
+            </p>
+          ) : null}
         </div>
 
         {result ? (
