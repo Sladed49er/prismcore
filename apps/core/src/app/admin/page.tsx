@@ -42,6 +42,12 @@ export default async function AdminConsolePage() {
       stat: `${allModules.length} module assignments`,
     },
     {
+      href: "/admin/billing",
+      name: "Billing",
+      desc: "Per-client billing — custom rates, complimentary accounts, terms.",
+      stat: "Special conditions",
+    },
+    {
       href: "/admin/announcements",
       name: "Announcements",
       desc: "Broadcast maintenance notices and security advisories.",

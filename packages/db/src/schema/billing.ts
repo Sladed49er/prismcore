@@ -12,6 +12,7 @@ import {
   uuid,
   text,
   integer,
+  boolean,
   timestamp,
 } from "drizzle-orm/pg-core";
 import { tenants } from "./kernel";
@@ -43,6 +44,14 @@ export const tenantBilling = pgTable("tenant_billing", {
   dunningStage: integer("dunning_stage").notNull().default(0),
   /** When Prism Core suspended the tenant for non-payment. */
   suspendedAt: timestamp("suspended_at", { withTimezone: true }),
+  /* ── Per-client overrides (set by a platform admin) ──────────────── */
+  /** A negotiated monthly price in cents that overrides the standard plan.
+   *  Null means the tenant pays standard pricing. Honored at checkout. */
+  customPriceCents: integer("custom_price_cents"),
+  /** A complimentary (free) account — never charged, never dunned. */
+  comp: boolean("comp").notNull().default(false),
+  /** Special-conditions notes for this tenant's billing — admin only. */
+  billingNotes: text("billing_notes").notNull().default(""),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),

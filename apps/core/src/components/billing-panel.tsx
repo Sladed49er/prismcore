@@ -9,6 +9,12 @@ import {
 export interface BillingDTO {
   status: string;
   currentPeriodEnd: string | null;
+  comp: boolean;
+  customPriceCents: number | null;
+}
+
+function money(cents: number): string {
+  return "$" + (cents / 100).toLocaleString();
 }
 
 const STATUS_BADGE: Record<string, { label: string; className: string }> = {
@@ -46,6 +52,26 @@ export function BillingPanel({ billing }: { billing: BillingDTO }) {
     });
   }
 
+  // A complimentary account is free — no checkout, no portal, no dunning.
+  if (billing.comp) {
+    return (
+      <div className="mt-6 rounded-xl border border-gray-200 bg-white p-6">
+        <div className="flex items-center gap-3">
+          <span className="text-sm font-semibold text-gray-700">
+            Subscription
+          </span>
+          <span className="rounded-full bg-violet-50 px-2.5 py-0.5 text-xs font-medium text-violet-700">
+            Complimentary
+          </span>
+        </div>
+        <p className="mt-2 text-sm text-gray-600">
+          This is a complimentary Prism Core workspace — there&rsquo;s nothing
+          to pay. Reach us at billing@prismams.com with any questions.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="mt-6 rounded-xl border border-gray-200 bg-white p-6">
       <div className="flex items-center gap-3">
@@ -58,6 +84,15 @@ export function BillingPanel({ billing }: { billing: BillingDTO }) {
           {badge.label}
         </span>
       </div>
+
+      {billing.customPriceCents != null ? (
+        <p className="mt-2 text-sm text-gray-600">
+          Your negotiated rate:{" "}
+          <span className="font-semibold">
+            {money(billing.customPriceCents)}/month
+          </span>
+        </p>
+      ) : null}
 
       {billing.currentPeriodEnd ? (
         <p className="mt-2 text-sm text-gray-500">

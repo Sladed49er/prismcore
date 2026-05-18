@@ -3,6 +3,7 @@ import {
   withTenantContext,
   adminDb,
   tenantBilling,
+  tenants,
   type TenantBilling,
 } from "@prismcore/db";
 import { stripe } from "@/lib/stripe";
@@ -23,6 +24,9 @@ export type BillingPatch = Partial<{
   pastDueSince: Date | null;
   dunningStage: number;
   suspendedAt: Date | null;
+  customPriceCents: number | null;
+  comp: boolean;
+  billingNotes: string;
 }>;
 
 /**
@@ -123,7 +127,13 @@ export async function getBasePriceId(): Promise<string> {
   return id;
 }
 
-/** Start a subscription checkout for the tenant's base plan; returns the URL. */
+/**
+ * Start a subscription checkout for the tenant; returns the URL.
+ *
+ * If a platform admin has set a custom monthly price for this tenant, the
+ * checkout bills that negotiated amount via an inline `price_data` line item
+ * instead of the standard base-plan price.
+ */
 export async function createCheckoutSession(input: {
   tenantId: string;
   tenantName: string;
@@ -131,17 +141,98 @@ export async function createCheckoutSession(input: {
   cancelUrl: string;
 }): Promise<string> {
   const customer = await ensureStripeCustomer(input.tenantId, input.tenantName);
-  const price = await getBasePriceId();
+  const billing = await getBilling(input.tenantId);
+
+  const lineItem:
+    | { price: string; quantity: number }
+    | {
+        price_data: {
+          currency: string;
+          unit_amount: number;
+          recurring: { interval: "month" };
+          product_data: { name: string };
+        };
+        quantity: number;
+      } =
+    billing?.customPriceCents != null
+      ? {
+          price_data: {
+            currency: "usd",
+            unit_amount: billing.customPriceCents,
+            recurring: { interval: "month" },
+            product_data: { name: "Prism Core — Base (custom rate)" },
+          },
+          quantity: 1,
+        }
+      : { price: await getBasePriceId(), quantity: 1 };
+
   const session = await stripe().checkout.sessions.create({
     mode: "subscription",
     customer,
-    line_items: [{ price, quantity: 1 }],
+    line_items: [lineItem],
     success_url: input.successUrl,
     cancel_url: input.cancelUrl,
     subscription_data: { metadata: { tenantId: input.tenantId } },
   });
   if (!session.url) throw new Error("Stripe did not return a checkout URL");
   return session.url;
+}
+
+/**
+ * Per-tenant billing customization — read and written by a platform admin
+ * through `adminDb` (cross-tenant), not a tenant session.
+ */
+export interface TenantBillingRow {
+  tenantId: string;
+  tenantName: string;
+  status: TenantBilling["status"];
+  customPriceCents: number | null;
+  comp: boolean;
+  billingNotes: string;
+  currentPeriodEnd: Date | null;
+}
+
+/** Every tenant with its billing state — for the admin billing page. */
+export async function listAllBilling(): Promise<TenantBillingRow[]> {
+  const rows = await adminDb()
+    .select({ tenant: tenants, billing: tenantBilling })
+    .from(tenants)
+    .leftJoin(tenantBilling, eq(tenantBilling.tenantId, tenants.id));
+  return rows.map((r) => ({
+    tenantId: r.tenant.id,
+    tenantName: r.tenant.name,
+    status: r.billing?.status ?? "none",
+    customPriceCents: r.billing?.customPriceCents ?? null,
+    comp: r.billing?.comp ?? false,
+    billingNotes: r.billing?.billingNotes ?? "",
+    currentPeriodEnd: r.billing?.currentPeriodEnd ?? null,
+  }));
+}
+
+/** Set a tenant's billing overrides — platform admin, runs cross-tenant. */
+export async function setBillingOverride(input: {
+  tenantId: string;
+  customPriceCents: number | null;
+  comp: boolean;
+  billingNotes: string;
+}): Promise<void> {
+  await adminDb()
+    .insert(tenantBilling)
+    .values({
+      tenantId: input.tenantId,
+      customPriceCents: input.customPriceCents,
+      comp: input.comp,
+      billingNotes: input.billingNotes,
+    })
+    .onConflictDoUpdate({
+      target: tenantBilling.tenantId,
+      set: {
+        customPriceCents: input.customPriceCents,
+        comp: input.comp,
+        billingNotes: input.billingNotes,
+        updatedAt: new Date(),
+      },
+    });
 }
 
 /** Open the Stripe customer portal (manage payment method, cancel). */

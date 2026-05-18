@@ -13,7 +13,7 @@
  * that pays mid-ladder drops off it. The suspension itself (status
  * `suspended`) is enforced at the shell by the login gate.
  */
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { adminDb, tenants, tenantBilling, users } from "@prismcore/db";
 import { upsertBilling } from "@/lib/billing";
 import { sendEmail, escapeHtml } from "@/lib/email";
@@ -73,7 +73,13 @@ export async function runDunning(): Promise<DunningResult> {
     })
     .from(tenantBilling)
     .innerJoin(tenants, eq(tenantBilling.tenantId, tenants.id))
-    .where(eq(tenantBilling.status, "past_due"));
+    // Comped accounts are never dunned, even if a stray past_due slips in.
+    .where(
+      and(
+        eq(tenantBilling.status, "past_due"),
+        eq(tenantBilling.comp, false),
+      ),
+    );
 
   for (const row of rows) {
     if (!row.pastDueSince) continue;

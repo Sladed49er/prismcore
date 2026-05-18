@@ -15,6 +15,8 @@ export default async function BillingPage() {
     currentPeriodEnd: billing?.currentPeriodEnd
       ? billing.currentPeriodEnd.toISOString()
       : null,
+    comp: billing?.comp ?? false,
+    customPriceCents: billing?.customPriceCents ?? null,
   };
 
   return (
