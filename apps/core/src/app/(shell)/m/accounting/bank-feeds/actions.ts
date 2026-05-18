@@ -13,10 +13,42 @@ import {
 
 const PATH = "/m/accounting/bank-feeds";
 
-/** Begin a Financial Connections link session; returns the client secret. */
-export async function startBankLink(): Promise<string> {
+/**
+ * A safe, meaningful message for a failed Stripe call. Stripe's own error
+ * messages are user-facing and contain no secrets, so they are surfaced
+ * directly — unlike an uncaught throw, which Next.js redacts in production to
+ * an unhelpful "an error occurred" string.
+ */
+function stripeErrorMessage(error: unknown): string {
+  const e = error as { type?: unknown; message?: unknown } | null;
+  if (
+    e &&
+    typeof e.type === "string" &&
+    e.type.startsWith("Stripe") &&
+    typeof e.message === "string"
+  ) {
+    return e.message;
+  }
+  return "Couldn't start bank linking — please try again.";
+}
+
+export type StartBankLinkResult =
+  | { ok: true; clientSecret: string }
+  | { ok: false; error: string };
+
+/**
+ * Begin a Financial Connections link session. Returns a result object rather
+ * than throwing, so the panel can show the real reason (e.g. Financial
+ * Connections not yet registered) instead of a redacted error.
+ */
+export async function startBankLink(): Promise<StartBankLinkResult> {
   const tenant = await getCurrentTenant();
-  return createBankLinkSession(tenant.id, tenant.name);
+  try {
+    const clientSecret = await createBankLinkSession(tenant.id, tenant.name);
+    return { ok: true, clientSecret };
+  } catch (error) {
+    return { ok: false, error: stripeErrorMessage(error) };
+  }
 }
 
 /** Persist the accounts the browser linked. */

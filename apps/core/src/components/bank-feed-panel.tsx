@@ -66,14 +66,18 @@ export function BankFeedPanel({
     }
     startTransition(async () => {
       try {
-        const clientSecret = await startBankLink();
+        const session = await startBankLink();
+        if (!session.ok) {
+          setError(session.error);
+          return;
+        }
         const stripe = await loadStripe(publishableKey);
         if (!stripe) {
           setError("Stripe.js failed to load.");
           return;
         }
         const result = await stripe.collectFinancialConnectionsAccounts({
-          clientSecret,
+          clientSecret: session.clientSecret,
         });
         if (result.error) {
           setError(result.error.message ?? "Bank linking was cancelled.");
