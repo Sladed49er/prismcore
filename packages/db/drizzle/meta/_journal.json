@@ -295,6 +295,13 @@
       "when": 1779066767942,
       "tag": "0041_fluffy_nekra",
       "breakpoints": true
+    },
+    {
+      "idx": 42,
+      "version": "7",
+      "when": 1779066965528,
+      "tag": "0042_spooky_giant_girl",
+      "breakpoints": true
     }
   ]
 }

@@ -77,3 +77,4 @@ export * from "./vault";
 export * from "./contracts";
 export * from "./migration";
 export * from "./cross-sell";
+export * from "./specialty-markets";
