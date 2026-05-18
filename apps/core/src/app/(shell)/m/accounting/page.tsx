@@ -45,6 +45,11 @@ const BUILT = [
     desc: "Pay runs — gross, tax, and net per employee.",
   },
   {
+    href: "/m/accounting/bank-feeds",
+    name: "Bank Feeds",
+    desc: "Link bank accounts via Stripe — live balances and transactions.",
+  },
+  {
     href: "/m/accounting/bank-reconciliation",
     name: "Bank Reconciliation",
     desc: "Reconcile each statement against the books.",
@@ -148,7 +153,7 @@ export default async function AccountingHub() {
         </>
       ) : (
         <p className="mt-8 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
-          ✓ Accounting is fully built out — all 18 sub-modules are live.
+          ✓ Accounting is fully built out — all 19 sub-modules are live.
         </p>
       )}
     </div>

@@ -316,6 +316,13 @@
       "when": 1779067417814,
       "tag": "0044_woozy_nightshade",
       "breakpoints": true
+    },
+    {
+      "idx": 45,
+      "version": "7",
+      "when": 1779068201549,
+      "tag": "0045_tough_peter_quill",
+      "breakpoints": true
     }
   ]
 }

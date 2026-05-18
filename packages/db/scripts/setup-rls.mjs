@@ -135,6 +135,8 @@ const TENANT_TABLES = [
   "specialty_markets",
   "bookscan_reports",
   "portal_invitations",
+  "bank_feed_accounts",
+  "bank_feed_transactions",
 ];
 
 const owner = neon(ownerUrl);
