@@ -18,6 +18,9 @@ const isPublicRoute = createRouteMatcher([
   // Public intake forms — reached by a per-form token, no user session.
   "/intake(.*)",
   "/api/intake(.*)",
+  // Public eSign ceremony — reached by a per-request token, no user session.
+  "/sign(.*)",
+  "/api/sign(.*)",
 ]);
 
 export default clerkMiddleware(async (auth, req) => {

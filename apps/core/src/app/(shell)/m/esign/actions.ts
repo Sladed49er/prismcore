@@ -1,19 +1,25 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { headers } from "next/headers";
 import { getCurrentTenant } from "@/lib/current-tenant";
 import {
   createSignatureRequest,
-  setEsignStatus,
-  type EsignStatus,
+  updateSignatureRequest,
+  markSent,
+  deleteSignatureRequest,
 } from "@/lib/esign";
+import { sendEmail, escapeHtml } from "@/lib/email";
+import type { SignField } from "@prismcore/db";
 
-export async function addSignatureRequest(input: {
+const PATH = "/m/esign";
+
+export async function createRequest(input: {
   documentName: string;
   signerName: string;
   signerEmail: string;
-  status: EsignStatus;
-  sentDate: string;
+  body: string;
+  fields: SignField[];
 }): Promise<void> {
   if (!input.documentName.trim() || !input.signerName.trim()) return;
   const tenant = await getCurrentTenant();
@@ -22,17 +28,60 @@ export async function addSignatureRequest(input: {
     documentName: input.documentName.trim(),
     signerName: input.signerName.trim(),
     signerEmail: input.signerEmail.trim(),
-    status: input.status,
-    sentDate: input.sentDate || null,
+    body: input.body,
+    fields: input.fields,
   });
-  revalidatePath("/m/esign");
+  revalidatePath(PATH);
 }
 
-export async function advanceEsign(
-  requestId: string,
-  status: EsignStatus,
-): Promise<void> {
+export async function updateRequest(input: {
+  id: string;
+  documentName: string;
+  signerName: string;
+  signerEmail: string;
+  body: string;
+  fields: SignField[];
+}): Promise<void> {
+  if (!input.documentName.trim() || !input.signerName.trim()) return;
   const tenant = await getCurrentTenant();
-  await setEsignStatus(tenant.id, requestId, status);
-  revalidatePath("/m/esign");
+  await updateSignatureRequest({ tenantId: tenant.id, ...input });
+  revalidatePath(PATH);
+}
+
+/** Mark a request sent and email the signer their signing link. */
+export async function sendRequest(
+  id: string,
+): Promise<{ ok: boolean; message: string }> {
+  const tenant = await getCurrentTenant();
+  const sent = await markSent(tenant.id, id);
+  revalidatePath(PATH);
+  if (!sent) return { ok: false, message: "Request not found." };
+
+  const hdrs = await headers();
+  const host = hdrs.get("x-forwarded-host") ?? hdrs.get("host") ?? "";
+  const proto = hdrs.get("x-forwarded-proto") ?? "https";
+  const link = host ? `${proto}://${host}/sign/${sent.token}` : "";
+
+  if (sent.signerEmail && link) {
+    await sendEmail({
+      to: sent.signerEmail,
+      subject: "A document is ready for your signature",
+      html: `<div style="font-family:system-ui,sans-serif;color:#111">
+        <p>A document has been sent to you for electronic signature.</p>
+        <p><a href="${escapeHtml(link)}">Review and sign the document</a></p>
+      </div>`,
+    });
+  }
+  return {
+    ok: true,
+    message: sent.signerEmail
+      ? `Marked sent — signing link emailed to ${sent.signerEmail}.`
+      : "Marked sent. Add a signer email to deliver the link by mail.",
+  };
+}
+
+export async function removeRequest(id: string): Promise<void> {
+  const tenant = await getCurrentTenant();
+  await deleteSignatureRequest(tenant.id, id);
+  revalidatePath(PATH);
 }
