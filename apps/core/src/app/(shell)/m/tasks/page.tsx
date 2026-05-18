@@ -24,6 +24,11 @@ const BUILT = [
     name: "Queues",
     desc: "The work queues tasks are grouped and routed into.",
   },
+  {
+    href: "/m/tasks/automations",
+    name: "Automations",
+    desc: "When/then rules that fire on their own — expiring policies, aging claims, overdue tasks.",
+  },
 ];
 
 /** The remaining tasks sub-modules, ported in over the coming turns. */

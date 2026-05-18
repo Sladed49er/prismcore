@@ -132,6 +132,8 @@ const TENANT_TABLES = [
   "intake_form_definitions",
   "intake_form_submissions",
   "membership_dues_invoices",
+  "automation_rules",
+  "automation_runs",
   "recurring_tasks",
   "task_workflows",
   "task_queues",

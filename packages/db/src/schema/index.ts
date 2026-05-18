@@ -3,6 +3,7 @@ export * from "./customization";
 export * from "./clearinghouse";
 export * from "./voip";
 export * from "./call-intelligence";
+export * from "./automations";
 export * from "./reports";
 export * from "./strategy";
 export * from "./billing";
