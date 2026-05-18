@@ -42,6 +42,7 @@ const CATALOG: CatalogRow[] = [
   { id: "contracts", name: "Contracts", description: "Vendor contract tracking and renewals.", category: "core", icon: "file-check", price: 600 },
   { id: "leads", name: "PrismLeads", description: "Lead finder and email verification.", category: "core", icon: "crosshair", price: 1800 },
   { id: "migration", name: "Migration", description: "Data migration tools for moving off legacy systems.", category: "core", icon: "arrow-right-left", price: 0, unit: "per_tenant" },
+  { id: "website", name: "Website Manager", description: "Manage the agency website — a page inventory and a change-request workflow.", category: "core", icon: "globe", price: 1200, unit: "per_tenant" },
 
   // ── Accounting (financial backbone) ────────────────────────────
   { id: "accounting", name: "Accounting", description: "General ledger, invoices, and payments.", category: "accounting", icon: "calculator", price: 14900, unit: "per_tenant" },
