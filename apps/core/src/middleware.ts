@@ -11,6 +11,8 @@ const isPublicRoute = createRouteMatcher([
   "/api/cron(.*)",
   // Stripe posts webhook events here — authenticated by the Stripe signature.
   "/api/stripe(.*)",
+  // Insured-facing client portal — authenticated by a per-client access token.
+  "/portal(.*)",
 ]);
 
 export default clerkMiddleware(async (auth, req) => {

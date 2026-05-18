@@ -79,3 +79,4 @@ export * from "./migration";
 export * from "./cross-sell";
 export * from "./specialty-markets";
 export * from "./bookscan";
+export * from "./client-portal";

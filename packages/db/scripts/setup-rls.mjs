@@ -134,6 +134,7 @@ const TENANT_TABLES = [
   "cross_sell_opportunities",
   "specialty_markets",
   "bookscan_reports",
+  "portal_invitations",
 ];
 
 const owner = neon(ownerUrl);
