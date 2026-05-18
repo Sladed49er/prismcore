@@ -24,6 +24,11 @@ const BUILT = [
     name: "Underwriting Guidelines",
     desc: "Each carrier's appetite and underwriting rules by line.",
   },
+  {
+    href: "/m/carriers/intelligence",
+    name: "Carrier Intelligence",
+    desc: "Performance scorecards — loss ratio, commission variance — and NAICS appetite matching.",
+  },
 ];
 
 /** The remaining carriers sub-modules, ported in over the coming turns. */

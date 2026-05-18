@@ -124,6 +124,7 @@ const TENANT_TABLES = [
   "call_insights",
   "compliance_flags",
   "call_digests",
+  "carrier_appetite_rules",
   "recurring_tasks",
   "task_workflows",
   "task_queues",

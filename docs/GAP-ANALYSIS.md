@@ -16,7 +16,7 @@ each to full completion** before the next begins.
 |---|---|---|
 | 1 | **Detail pages** — per-record detail + drill-down (Client → Policy → Claim) | DONE |
 | 2 | **CallIntel intelligence merge** — caller intel, risk radar, revenue intel, compliance watchdog, digests into telephony | DONE |
-| 3 | **Carrier intelligence** — scorecard (loss ratio, commission variance) + NAICS appetite matching | pending |
+| 3 | **Carrier intelligence** — scorecard (loss ratio, commission variance) + NAICS appetite matching | DONE |
 | 4 | **Document intelligence depth-up** — auditClient cross-policy audit, policy scoring, extracted-data persistence | pending |
 
 _Status: pending · IN PROGRESS · DONE. Update this table as work lands._
@@ -50,6 +50,15 @@ RLS on 128 tables).
 
 Caller intelligence is on-demand (pick a client) rather than wired into the
 live screen-pop — Prism Core has no live screen-pop browser surface.
+
+### Priority 3 detail — Carrier intelligence — DONE 2026-05-18
+Ported PrismAMS's carrier scorecard and NAICS appetite matching into the
+carriers module as a new `/m/carriers/intelligence` sub-page. New table
+`carrier_appetite_rules` (migration 0059, RLS on 129 tables).
+
+- [x] Carrier scorecard — `lib/carrier-scorecard.ts` — deterministic per-carrier rollup: policy/premium counts, claim activity, incurred loss ratio (paid + reserved over in-force premium), commission expected/received/variance, line-of-business breakdown
+- [x] NAICS appetite matching — `lib/carrier-appetite.ts` — appetite rules keyed by NAICS prefix; `matchCarriers` picks the most-specific prefix per carrier and ranks preferred → declined
+- [x] `/m/carriers/intelligence` page — scorecard table + appetite rule CRUD + a "find carriers for a risk" match tool; linked from the Carriers hub
 
 ---
 

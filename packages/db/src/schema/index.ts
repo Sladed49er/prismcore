@@ -74,6 +74,7 @@ export * from "./certificate-templates";
 export * from "./certificate-requests";
 export * from "./carrier-appointments";
 export * from "./carrier-contacts";
+export * from "./carrier-appetite";
 export * from "./underwriting-guidelines";
 export * from "./platform-announcements";
 export * from "./vault";
