@@ -2,15 +2,17 @@ import { desc, eq } from "drizzle-orm";
 import {
   withTenantContext,
   communicationLists,
+  communicationListMembers,
   type CommunicationList,
+  type CommunicationListMember,
 } from "@prismcore/db";
 
 /**
  * Communication lists data layer — association committees and distribution
- * lists. RLS-scoped through `withTenantContext`.
+ * lists, and the people on them. RLS-scoped through `withTenantContext`.
  */
 
-export type { CommunicationList };
+export type { CommunicationList, CommunicationListMember };
 
 export type CommunicationListType =
   | "committee"
@@ -84,5 +86,57 @@ export async function deleteCommunicationList(
     await tx
       .delete(communicationLists)
       .where(eq(communicationLists.id, id));
+  });
+}
+
+/* ── List members ─────────────────────────────────────────────────── */
+
+export interface CommunicationListMemberRow extends CommunicationListMember {
+  listName: string;
+}
+
+export async function listCommunicationListMembers(
+  tenantId: string,
+): Promise<CommunicationListMemberRow[]> {
+  return withTenantContext(tenantId, async (tx) => {
+    const rows = await tx
+      .select({
+        member: communicationListMembers,
+        list: communicationLists,
+      })
+      .from(communicationListMembers)
+      .leftJoin(
+        communicationLists,
+        eq(communicationListMembers.listId, communicationLists.id),
+      )
+      .where(eq(communicationListMembers.tenantId, tenantId))
+      .orderBy(desc(communicationListMembers.createdAt));
+    return rows.map((r) => ({
+      ...r.member,
+      listName: r.list?.name ?? "—",
+    }));
+  });
+}
+
+export async function createCommunicationListMember(input: {
+  tenantId: string;
+  listId: string;
+  name: string;
+  email: string;
+  role: string;
+}): Promise<void> {
+  await withTenantContext(input.tenantId, async (tx) => {
+    await tx.insert(communicationListMembers).values(input);
+  });
+}
+
+export async function deleteCommunicationListMember(
+  tenantId: string,
+  id: string,
+): Promise<void> {
+  await withTenantContext(tenantId, async (tx) => {
+    await tx
+      .delete(communicationListMembers)
+      .where(eq(communicationListMembers.id, id));
   });
 }

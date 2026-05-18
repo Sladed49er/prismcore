@@ -150,6 +150,11 @@ const TENANT_TABLES = [
   "household_members",
   "tax_timesheets",
   "ams_phone_index",
+  "membership_payments",
+  "chapter_officers",
+  "event_registrations",
+  "communication_list_members",
+  "benefit_redemptions",
 ];
 
 const owner = neon(ownerUrl);

@@ -1,12 +1,18 @@
 import { desc, eq } from "drizzle-orm";
-import { withTenantContext, chapters, type Chapter } from "@prismcore/db";
+import {
+  withTenantContext,
+  chapters,
+  chapterOfficers,
+  type Chapter,
+  type ChapterOfficer,
+} from "@prismcore/db";
 
 /**
- * Chapters data layer — association chapters.
+ * Chapters data layer — association chapters and their officers.
  * RLS-scoped through `withTenantContext`.
  */
 
-export type { Chapter };
+export type { Chapter, ChapterOfficer };
 
 export type ChapterType = "geographic" | "functional" | "student";
 export type ChapterStatus = "active" | "forming" | "inactive";
@@ -75,5 +81,51 @@ export async function deleteChapter(
 ): Promise<void> {
   await withTenantContext(tenantId, async (tx) => {
     await tx.delete(chapters).where(eq(chapters.id, id));
+  });
+}
+
+/* ── Officers ─────────────────────────────────────────────────────── */
+
+export interface ChapterOfficerRow extends ChapterOfficer {
+  chapterName: string;
+}
+
+export async function listChapterOfficers(
+  tenantId: string,
+): Promise<ChapterOfficerRow[]> {
+  return withTenantContext(tenantId, async (tx) => {
+    const rows = await tx
+      .select({ officer: chapterOfficers, chapter: chapters })
+      .from(chapterOfficers)
+      .leftJoin(chapters, eq(chapterOfficers.chapterId, chapters.id))
+      .where(eq(chapterOfficers.tenantId, tenantId))
+      .orderBy(desc(chapterOfficers.createdAt));
+    return rows.map((r) => ({
+      ...r.officer,
+      chapterName: r.chapter?.name ?? "—",
+    }));
+  });
+}
+
+export async function createChapterOfficer(input: {
+  tenantId: string;
+  chapterId: string;
+  name: string;
+  role: string;
+  email: string;
+  phone: string;
+  termEnd: string | null;
+}): Promise<void> {
+  await withTenantContext(input.tenantId, async (tx) => {
+    await tx.insert(chapterOfficers).values(input);
+  });
+}
+
+export async function deleteChapterOfficer(
+  tenantId: string,
+  id: string,
+): Promise<void> {
+  await withTenantContext(tenantId, async (tx) => {
+    await tx.delete(chapterOfficers).where(eq(chapterOfficers.id, id));
   });
 }

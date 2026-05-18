@@ -7,6 +7,8 @@ import {
   updateMemberBenefit,
   setMemberBenefitActive,
   deleteMemberBenefit,
+  createBenefitRedemption,
+  deleteBenefitRedemption,
   type MemberBenefitCategory,
 } from "@/lib/member-benefits";
 
@@ -81,5 +83,39 @@ export async function toggleMemberBenefitActive(input: {
 export async function removeMemberBenefit(id: string): Promise<void> {
   const tenant = await getCurrentTenant();
   await deleteMemberBenefit(tenant.id, id);
+  revalidatePath("/m/member_benefits");
+}
+
+/* ── Redemptions ──────────────────────────────────────────────────── */
+
+export interface BenefitRedemptionForm {
+  benefitId: string;
+  memberName: string;
+  redeemedOn: string;
+  estimatedValueDollars: string;
+  notes: string;
+}
+
+export async function newRedemption(
+  form: BenefitRedemptionForm,
+): Promise<void> {
+  if (!form.benefitId || !form.memberName.trim()) return;
+  const tenant = await getCurrentTenant();
+  await createBenefitRedemption({
+    tenantId: tenant.id,
+    benefitId: form.benefitId,
+    memberName: form.memberName.trim(),
+    redeemedOn: form.redeemedOn || null,
+    estimatedValueCents: Math.round(
+      (Number.parseFloat(form.estimatedValueDollars) || 0) * 100,
+    ),
+    notes: form.notes.trim(),
+  });
+  revalidatePath("/m/member_benefits");
+}
+
+export async function removeRedemption(id: string): Promise<void> {
+  const tenant = await getCurrentTenant();
+  await deleteBenefitRedemption(tenant.id, id);
   revalidatePath("/m/member_benefits");
 }

@@ -93,3 +93,8 @@ export * from "./website";
 export * from "./household-members";
 export * from "./tax-timesheets";
 export * from "./ams-phone-index";
+export * from "./membership-payments";
+export * from "./chapter-officers";
+export * from "./event-registrations";
+export * from "./communication-list-members";
+export * from "./benefit-redemptions";

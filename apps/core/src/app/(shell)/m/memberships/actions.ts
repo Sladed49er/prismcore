@@ -7,6 +7,8 @@ import {
   updateMembership,
   setMembershipStatus,
   deleteMembership,
+  createMembershipPayment,
+  deleteMembershipPayment,
   type MembershipTier,
   type MembershipStatus,
 } from "@/lib/memberships";
@@ -93,5 +95,39 @@ export async function updateMembershipStatus(input: {
 export async function removeMembership(id: string): Promise<void> {
   const tenant = await getCurrentTenant();
   await deleteMembership(tenant.id, id);
+  revalidatePath("/m/memberships");
+}
+
+/* ── Dues payments ────────────────────────────────────────────────── */
+
+export interface MembershipPaymentForm {
+  membershipId: string;
+  amountDollars: string;
+  paymentDate: string;
+  method: string;
+  period: string;
+  notes: string;
+}
+
+export async function newPayment(form: MembershipPaymentForm): Promise<void> {
+  if (!form.membershipId) return;
+  const tenant = await getCurrentTenant();
+  await createMembershipPayment({
+    tenantId: tenant.id,
+    membershipId: form.membershipId,
+    amountCents: Math.round(
+      (Number.parseFloat(form.amountDollars) || 0) * 100,
+    ),
+    paymentDate: form.paymentDate || null,
+    method: form.method.trim(),
+    period: form.period.trim(),
+    notes: form.notes.trim(),
+  });
+  revalidatePath("/m/memberships");
+}
+
+export async function removePayment(id: string): Promise<void> {
+  const tenant = await getCurrentTenant();
+  await deleteMembershipPayment(tenant.id, id);
   revalidatePath("/m/memberships");
 }

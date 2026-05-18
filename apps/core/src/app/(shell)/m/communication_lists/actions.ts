@@ -7,6 +7,8 @@ import {
   updateCommunicationList,
   setCommunicationListActive,
   deleteCommunicationList,
+  createCommunicationListMember,
+  deleteCommunicationListMember,
   type CommunicationListType,
 } from "@/lib/communication-lists";
 
@@ -80,5 +82,33 @@ export async function toggleCommunicationListActive(input: {
 export async function removeCommunicationList(id: string): Promise<void> {
   const tenant = await getCurrentTenant();
   await deleteCommunicationList(tenant.id, id);
+  revalidatePath("/m/communication_lists");
+}
+
+/* ── List members ─────────────────────────────────────────────────── */
+
+export interface ListMemberForm {
+  listId: string;
+  name: string;
+  email: string;
+  role: string;
+}
+
+export async function newListMember(form: ListMemberForm): Promise<void> {
+  if (!form.listId || !form.name.trim()) return;
+  const tenant = await getCurrentTenant();
+  await createCommunicationListMember({
+    tenantId: tenant.id,
+    listId: form.listId,
+    name: form.name.trim(),
+    email: form.email.trim(),
+    role: form.role.trim() || "member",
+  });
+  revalidatePath("/m/communication_lists");
+}
+
+export async function removeListMember(id: string): Promise<void> {
+  const tenant = await getCurrentTenant();
+  await deleteCommunicationListMember(tenant.id, id);
   revalidatePath("/m/communication_lists");
 }

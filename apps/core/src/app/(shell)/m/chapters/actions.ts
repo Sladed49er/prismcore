@@ -7,6 +7,8 @@ import {
   updateChapter,
   setChapterStatus,
   deleteChapter,
+  createChapterOfficer,
+  deleteChapterOfficer,
   type ChapterType,
   type ChapterStatus,
 } from "@/lib/chapters";
@@ -79,5 +81,37 @@ export async function updateChapterStatus(input: {
 export async function removeChapter(id: string): Promise<void> {
   const tenant = await getCurrentTenant();
   await deleteChapter(tenant.id, id);
+  revalidatePath("/m/chapters");
+}
+
+/* ── Officers ─────────────────────────────────────────────────────── */
+
+export interface ChapterOfficerForm {
+  chapterId: string;
+  name: string;
+  role: string;
+  email: string;
+  phone: string;
+  termEnd: string;
+}
+
+export async function newOfficer(form: ChapterOfficerForm): Promise<void> {
+  if (!form.chapterId || !form.name.trim()) return;
+  const tenant = await getCurrentTenant();
+  await createChapterOfficer({
+    tenantId: tenant.id,
+    chapterId: form.chapterId,
+    name: form.name.trim(),
+    role: form.role.trim(),
+    email: form.email.trim(),
+    phone: form.phone.trim(),
+    termEnd: form.termEnd || null,
+  });
+  revalidatePath("/m/chapters");
+}
+
+export async function removeOfficer(id: string): Promise<void> {
+  const tenant = await getCurrentTenant();
+  await deleteChapterOfficer(tenant.id, id);
   revalidatePath("/m/chapters");
 }

@@ -2,15 +2,17 @@ import { desc, eq } from "drizzle-orm";
 import {
   withTenantContext,
   memberBenefits,
+  benefitRedemptions,
   type MemberBenefit,
+  type BenefitRedemption,
 } from "@prismcore/db";
 
 /**
- * Member benefits data layer — the association's catalog of partner perks.
- * RLS-scoped through `withTenantContext`.
+ * Member benefits data layer — the association's catalog of partner perks
+ * and the record of each redemption. RLS-scoped through `withTenantContext`.
  */
 
-export type { MemberBenefit };
+export type { MemberBenefit, BenefitRedemption };
 
 export type MemberBenefitCategory =
   | "discount"
@@ -86,5 +88,55 @@ export async function deleteMemberBenefit(
 ): Promise<void> {
   await withTenantContext(tenantId, async (tx) => {
     await tx.delete(memberBenefits).where(eq(memberBenefits.id, id));
+  });
+}
+
+/* ── Redemptions ──────────────────────────────────────────────────── */
+
+export interface BenefitRedemptionRow extends BenefitRedemption {
+  benefitName: string;
+}
+
+export async function listBenefitRedemptions(
+  tenantId: string,
+): Promise<BenefitRedemptionRow[]> {
+  return withTenantContext(tenantId, async (tx) => {
+    const rows = await tx
+      .select({ redemption: benefitRedemptions, benefit: memberBenefits })
+      .from(benefitRedemptions)
+      .leftJoin(
+        memberBenefits,
+        eq(benefitRedemptions.benefitId, memberBenefits.id),
+      )
+      .where(eq(benefitRedemptions.tenantId, tenantId))
+      .orderBy(desc(benefitRedemptions.redeemedOn));
+    return rows.map((r) => ({
+      ...r.redemption,
+      benefitName: r.benefit?.name ?? "—",
+    }));
+  });
+}
+
+export async function createBenefitRedemption(input: {
+  tenantId: string;
+  benefitId: string;
+  memberName: string;
+  redeemedOn: string | null;
+  estimatedValueCents: number;
+  notes: string;
+}): Promise<void> {
+  await withTenantContext(input.tenantId, async (tx) => {
+    await tx.insert(benefitRedemptions).values(input);
+  });
+}
+
+export async function deleteBenefitRedemption(
+  tenantId: string,
+  id: string,
+): Promise<void> {
+  await withTenantContext(tenantId, async (tx) => {
+    await tx
+      .delete(benefitRedemptions)
+      .where(eq(benefitRedemptions.id, id));
   });
 }
