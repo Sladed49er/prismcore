@@ -13,6 +13,8 @@ const isPublicRoute = createRouteMatcher([
   "/api/stripe(.*)",
   // Insured-facing client portal — authenticated by a per-client access token.
   "/portal(.*)",
+  // Member-facing association portal — authenticated by a per-member token.
+  "/member-portal(.*)",
 ]);
 
 export default clerkMiddleware(async (auth, req) => {

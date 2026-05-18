@@ -86,3 +86,6 @@ export * from "./tax-practice";
 export * from "./memberships";
 export * from "./chapters";
 export * from "./events";
+export * from "./communication-lists";
+export * from "./member-benefits";
+export * from "./member-portal";
