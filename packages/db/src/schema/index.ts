@@ -81,3 +81,5 @@ export * from "./specialty-markets";
 export * from "./bookscan";
 export * from "./client-portal";
 export * from "./bank-feed";
+export * from "./households";
+export * from "./tax-practice";

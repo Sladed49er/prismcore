@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="800" height="800">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="44%" r="66%">
+      <stop offset="0%" stop-color="#141e3c"/>
+      <stop offset="100%" stop-color="#070b1a"/>
+    </radialGradient>
+    <linearGradient id="glass" x1="100" y1="50" x2="100" y2="135" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#f1f4ff" stop-opacity="0.97"/>
+      <stop offset="52%" stop-color="#c4cde8" stop-opacity="0.9"/>
+      <stop offset="100%" stop-color="#828fb4" stop-opacity="0.82"/>
+    </linearGradient>
+    <filter id="soft" x="-60%" y="-60%" width="220%" height="220%">
+      <feGaussianBlur stdDeviation="3.4"/>
+    </filter>
+  </defs>
+
+  <rect width="200" height="200" fill="url(#bg)"/>
+
+  <!-- refracted spectrum — soft glow underlay -->
+  <g filter="url(#soft)" opacity="0.5" stroke-width="6.6" stroke-linecap="round" fill="none">
+    <line x1="124" y1="94" x2="187.6" y2="100.7" stroke="#ff6b6b"/>
+    <line x1="124" y1="94" x2="186.4" y2="108.2" stroke="#ffa94d"/>
+    <line x1="124" y1="94" x2="184.3" y2="115.5" stroke="#ffe066"/>
+    <line x1="124" y1="94" x2="181.3" y2="122.4" stroke="#51cf66"/>
+    <line x1="124" y1="94" x2="177.6" y2="129.0" stroke="#38bdf8"/>
+    <line x1="124" y1="94" x2="173.0" y2="135.2" stroke="#b197fc"/>
+  </g>
+  <!-- refracted spectrum -->
+  <g stroke-width="6.6" stroke-linecap="round" fill="none">
+    <line x1="124" y1="94" x2="187.6" y2="100.7" stroke="#ff6b6b"/>
+    <line x1="124" y1="94" x2="186.4" y2="108.2" stroke="#ffa94d"/>
+    <line x1="124" y1="94" x2="184.3" y2="115.5" stroke="#ffe066"/>
+    <line x1="124" y1="94" x2="181.3" y2="122.4" stroke="#51cf66"/>
+    <line x1="124" y1="94" x2="177.6" y2="129.0" stroke="#38bdf8"/>
+    <line x1="124" y1="94" x2="173.0" y2="135.2" stroke="#b197fc"/>
+  </g>
+
+  <!-- incoming light beam -->
+  <line x1="20" y1="93" x2="80" y2="93.5" stroke="#ffffff" stroke-width="7" stroke-linecap="round" filter="url(#soft)" opacity="0.55"/>
+  <line x1="20" y1="93" x2="80" y2="93.5" stroke="#f8fafc" stroke-width="5" stroke-linecap="round"/>
+
+  <!-- prism — glassy triangle -->
+  <path d="M100 50 L148 135 L52 135 Z" fill="url(#glass)" filter="url(#soft)" opacity="0.45"/>
+  <path d="M100 50 L148 135 L52 135 Z" fill="url(#glass)" stroke="#eef2ff" stroke-width="2.4" stroke-linejoin="round"/>
+  <line x1="100" y1="50" x2="52" y2="135" stroke="#ffffff" stroke-width="1.6" opacity="0.85" stroke-linecap="round"/>
+</svg>
