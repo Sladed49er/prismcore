@@ -2,15 +2,18 @@ import { desc, eq } from "drizzle-orm";
 import {
   withTenantContext,
   vendorContracts,
+  contractDocuments,
   type VendorContract,
+  type ContractDocument,
 } from "@prismcore/db";
 
 /**
- * Vendor contracts data layer — the agency's vendor agreements and their
- * renewal dates. RLS-scoped through `withTenantContext`.
+ * Vendor contracts data layer — the agency's vendor agreements, their renewal
+ * dates, and the documents attached to each. RLS-scoped through
+ * `withTenantContext`.
  */
 
-export type { VendorContract };
+export type { VendorContract, ContractDocument };
 
 export type ContractCategory =
   | "software"
@@ -96,5 +99,59 @@ export async function deleteContract(
 ): Promise<void> {
   await withTenantContext(tenantId, async (tx) => {
     await tx.delete(vendorContracts).where(eq(vendorContracts.id, id));
+  });
+}
+
+/* ── Documents ────────────────────────────────────────────────────── */
+
+export interface ContractDocumentRow extends ContractDocument {
+  contractLabel: string;
+}
+
+export async function listContractDocuments(
+  tenantId: string,
+): Promise<ContractDocumentRow[]> {
+  return withTenantContext(tenantId, async (tx) => {
+    const rows = await tx
+      .select({ doc: contractDocuments, contract: vendorContracts })
+      .from(contractDocuments)
+      .leftJoin(
+        vendorContracts,
+        eq(contractDocuments.contractId, vendorContracts.id),
+      )
+      .where(eq(contractDocuments.tenantId, tenantId))
+      .orderBy(desc(contractDocuments.createdAt));
+    return rows.map((r) => ({
+      ...r.doc,
+      contractLabel: r.contract
+        ? [r.contract.vendorName, r.contract.title]
+            .filter(Boolean)
+            .join(" — ")
+        : "—",
+    }));
+  });
+}
+
+export async function createContractDocument(input: {
+  tenantId: string;
+  contractId: string;
+  name: string;
+  docType: string;
+  url: string;
+  notes: string;
+}): Promise<void> {
+  await withTenantContext(input.tenantId, async (tx) => {
+    await tx.insert(contractDocuments).values(input);
+  });
+}
+
+export async function deleteContractDocument(
+  tenantId: string,
+  id: string,
+): Promise<void> {
+  await withTenantContext(tenantId, async (tx) => {
+    await tx
+      .delete(contractDocuments)
+      .where(eq(contractDocuments.id, id));
   });
 }

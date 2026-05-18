@@ -98,3 +98,6 @@ export * from "./chapter-officers";
 export * from "./event-registrations";
 export * from "./communication-list-members";
 export * from "./benefit-redemptions";
+export * from "./contract-documents";
+export * from "./migration-field-mappings";
+export * from "./website-request-comments";

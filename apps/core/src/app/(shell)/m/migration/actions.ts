@@ -7,7 +7,11 @@ import {
   updateMigrationJob,
   setMigrationStatus,
   deleteMigrationJob,
+  createFieldMapping,
+  setFieldMappingStatus,
+  deleteFieldMapping,
   type MigrationStatus,
+  type FieldMappingStatus,
 } from "@/lib/migration";
 
 const STATUSES: MigrationStatus[] = [
@@ -84,5 +88,57 @@ export async function updateMigrationJobStatus(input: {
 export async function removeMigrationJob(id: string): Promise<void> {
   const tenant = await getCurrentTenant();
   await deleteMigrationJob(tenant.id, id);
+  revalidatePath("/m/migration");
+}
+
+/* ── Field mappings ───────────────────────────────────────────────── */
+
+const MAPPING_STATUSES: FieldMappingStatus[] = [
+  "mapped",
+  "needs_review",
+  "skipped",
+];
+
+export interface FieldMappingForm {
+  jobId: string;
+  sourceField: string;
+  targetField: string;
+  transform: string;
+  status: string;
+}
+
+export async function newMapping(form: FieldMappingForm): Promise<void> {
+  if (!form.jobId || !form.sourceField.trim()) return;
+  const tenant = await getCurrentTenant();
+  await createFieldMapping({
+    tenantId: tenant.id,
+    jobId: form.jobId,
+    sourceField: form.sourceField.trim(),
+    targetField: form.targetField.trim(),
+    transform: form.transform.trim(),
+    status: MAPPING_STATUSES.includes(form.status as FieldMappingStatus)
+      ? (form.status as FieldMappingStatus)
+      : "mapped",
+  });
+  revalidatePath("/m/migration");
+}
+
+export async function updateMappingStatus(input: {
+  id: string;
+  status: FieldMappingStatus;
+}): Promise<void> {
+  if (!MAPPING_STATUSES.includes(input.status)) return;
+  const tenant = await getCurrentTenant();
+  await setFieldMappingStatus({
+    tenantId: tenant.id,
+    id: input.id,
+    status: input.status,
+  });
+  revalidatePath("/m/migration");
+}
+
+export async function removeMapping(id: string): Promise<void> {
+  const tenant = await getCurrentTenant();
+  await deleteFieldMapping(tenant.id, id);
   revalidatePath("/m/migration");
 }

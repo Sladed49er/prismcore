@@ -2,15 +2,19 @@ import { desc, eq } from "drizzle-orm";
 import {
   withTenantContext,
   migrationJobs,
+  migrationFieldMappings,
   type MigrationJob,
+  type MigrationFieldMapping,
 } from "@prismcore/db";
 
 /**
- * Migration data layer — legacy-AMS data-import jobs tracked during agency
- * onboarding. RLS-scoped through `withTenantContext`.
+ * Migration data layer — legacy-AMS data-import jobs and their field maps.
+ * RLS-scoped through `withTenantContext`.
  */
 
-export type { MigrationJob };
+export type { MigrationJob, MigrationFieldMapping };
+
+export type FieldMappingStatus = "mapped" | "needs_review" | "skipped";
 
 export type MigrationStatus =
   | "pending"
@@ -104,5 +108,68 @@ export async function deleteMigrationJob(
 ): Promise<void> {
   await withTenantContext(tenantId, async (tx) => {
     await tx.delete(migrationJobs).where(eq(migrationJobs.id, id));
+  });
+}
+
+/* ── Field mappings ───────────────────────────────────────────────── */
+
+export interface MigrationFieldMappingRow extends MigrationFieldMapping {
+  jobName: string;
+}
+
+export async function listFieldMappings(
+  tenantId: string,
+): Promise<MigrationFieldMappingRow[]> {
+  return withTenantContext(tenantId, async (tx) => {
+    const rows = await tx
+      .select({ mapping: migrationFieldMappings, job: migrationJobs })
+      .from(migrationFieldMappings)
+      .leftJoin(
+        migrationJobs,
+        eq(migrationFieldMappings.jobId, migrationJobs.id),
+      )
+      .where(eq(migrationFieldMappings.tenantId, tenantId))
+      .orderBy(desc(migrationFieldMappings.createdAt));
+    return rows.map((r) => ({
+      ...r.mapping,
+      jobName: r.job?.name ?? "—",
+    }));
+  });
+}
+
+export async function createFieldMapping(input: {
+  tenantId: string;
+  jobId: string;
+  sourceField: string;
+  targetField: string;
+  transform: string;
+  status: FieldMappingStatus;
+}): Promise<void> {
+  await withTenantContext(input.tenantId, async (tx) => {
+    await tx.insert(migrationFieldMappings).values(input);
+  });
+}
+
+export async function setFieldMappingStatus(input: {
+  tenantId: string;
+  id: string;
+  status: FieldMappingStatus;
+}): Promise<void> {
+  await withTenantContext(input.tenantId, async (tx) => {
+    await tx
+      .update(migrationFieldMappings)
+      .set({ status: input.status })
+      .where(eq(migrationFieldMappings.id, input.id));
+  });
+}
+
+export async function deleteFieldMapping(
+  tenantId: string,
+  id: string,
+): Promise<void> {
+  await withTenantContext(tenantId, async (tx) => {
+    await tx
+      .delete(migrationFieldMappings)
+      .where(eq(migrationFieldMappings.id, id));
   });
 }

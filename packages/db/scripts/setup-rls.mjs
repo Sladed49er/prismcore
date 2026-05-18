@@ -155,6 +155,9 @@ const TENANT_TABLES = [
   "event_registrations",
   "communication_list_members",
   "benefit_redemptions",
+  "contract_documents",
+  "migration_field_mappings",
+  "website_request_comments",
 ];
 
 const owner = neon(ownerUrl);

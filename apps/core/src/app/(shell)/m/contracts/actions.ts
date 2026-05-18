@@ -7,6 +7,8 @@ import {
   updateContract,
   setContractStatus,
   deleteContract,
+  createContractDocument,
+  deleteContractDocument,
   type ContractCategory,
   type ContractStatus,
 } from "@/lib/contracts";
@@ -108,5 +110,37 @@ export async function updateContractStatus(input: {
 export async function removeContract(id: string): Promise<void> {
   const tenant = await getCurrentTenant();
   await deleteContract(tenant.id, id);
+  revalidatePath("/m/contracts");
+}
+
+/* ── Documents ────────────────────────────────────────────────────── */
+
+export interface ContractDocumentForm {
+  contractId: string;
+  name: string;
+  docType: string;
+  url: string;
+  notes: string;
+}
+
+export async function newDocument(
+  form: ContractDocumentForm,
+): Promise<void> {
+  if (!form.contractId || !form.name.trim()) return;
+  const tenant = await getCurrentTenant();
+  await createContractDocument({
+    tenantId: tenant.id,
+    contractId: form.contractId,
+    name: form.name.trim(),
+    docType: form.docType.trim() || "agreement",
+    url: form.url.trim(),
+    notes: form.notes.trim(),
+  });
+  revalidatePath("/m/contracts");
+}
+
+export async function removeDocument(id: string): Promise<void> {
+  const tenant = await getCurrentTenant();
+  await deleteContractDocument(tenant.id, id);
   revalidatePath("/m/contracts");
 }

@@ -1,18 +1,21 @@
-import { desc, eq } from "drizzle-orm";
+import { asc, desc, eq } from "drizzle-orm";
 import {
   withTenantContext,
   websitePages,
   websiteRequests,
+  websiteRequestComments,
   type WebsitePage,
   type WebsiteRequest,
+  type WebsiteRequestComment,
 } from "@prismcore/db";
 
 /**
- * Website data layer — the agency's page inventory and website change-request
- * queue. RLS-scoped through `withTenantContext`.
+ * Website data layer — the agency's page inventory, website change-request
+ * queue, and the comment thread on each request. RLS-scoped through
+ * `withTenantContext`.
  */
 
-export type { WebsitePage, WebsiteRequest };
+export type { WebsitePage, WebsiteRequest, WebsiteRequestComment };
 
 export type WebsitePageStatus = "draft" | "published" | "archived";
 
@@ -172,5 +175,56 @@ export async function deleteWebsiteRequest(
 ): Promise<void> {
   await withTenantContext(tenantId, async (tx) => {
     await tx.delete(websiteRequests).where(eq(websiteRequests.id, id));
+  });
+}
+
+/* ── Request comments ─────────────────────────────────────────────── */
+
+export interface WebsiteRequestCommentRow extends WebsiteRequestComment {
+  requestTitle: string;
+}
+
+export async function listWebsiteRequestComments(
+  tenantId: string,
+): Promise<WebsiteRequestCommentRow[]> {
+  return withTenantContext(tenantId, async (tx) => {
+    const rows = await tx
+      .select({
+        comment: websiteRequestComments,
+        request: websiteRequests,
+      })
+      .from(websiteRequestComments)
+      .leftJoin(
+        websiteRequests,
+        eq(websiteRequestComments.requestId, websiteRequests.id),
+      )
+      .where(eq(websiteRequestComments.tenantId, tenantId))
+      .orderBy(asc(websiteRequestComments.createdAt));
+    return rows.map((r) => ({
+      ...r.comment,
+      requestTitle: r.request?.title ?? "—",
+    }));
+  });
+}
+
+export async function createWebsiteRequestComment(input: {
+  tenantId: string;
+  requestId: string;
+  authorName: string;
+  body: string;
+}): Promise<void> {
+  await withTenantContext(input.tenantId, async (tx) => {
+    await tx.insert(websiteRequestComments).values(input);
+  });
+}
+
+export async function deleteWebsiteRequestComment(
+  tenantId: string,
+  id: string,
+): Promise<void> {
+  await withTenantContext(tenantId, async (tx) => {
+    await tx
+      .delete(websiteRequestComments)
+      .where(eq(websiteRequestComments.id, id));
   });
 }

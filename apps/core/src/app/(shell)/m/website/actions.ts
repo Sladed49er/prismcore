@@ -11,6 +11,8 @@ import {
   updateWebsiteRequest,
   setWebsiteRequestStatus,
   deleteWebsiteRequest,
+  createWebsiteRequestComment,
+  deleteWebsiteRequestComment,
   type WebsitePageStatus,
   type WebsiteRequestType,
   type WebsiteRequestPriority,
@@ -182,5 +184,31 @@ export async function updateRequestStatus(input: {
 export async function removeRequest(id: string): Promise<void> {
   const tenant = await getCurrentTenant();
   await deleteWebsiteRequest(tenant.id, id);
+  revalidatePath(PATH);
+}
+
+/* ── Request comments ─────────────────────────────────────────────── */
+
+export interface RequestCommentForm {
+  requestId: string;
+  authorName: string;
+  body: string;
+}
+
+export async function newComment(form: RequestCommentForm): Promise<void> {
+  if (!form.requestId || !form.body.trim()) return;
+  const tenant = await getCurrentTenant();
+  await createWebsiteRequestComment({
+    tenantId: tenant.id,
+    requestId: form.requestId,
+    authorName: form.authorName.trim(),
+    body: form.body.trim(),
+  });
+  revalidatePath(PATH);
+}
+
+export async function removeComment(id: string): Promise<void> {
+  const tenant = await getCurrentTenant();
+  await deleteWebsiteRequestComment(tenant.id, id);
   revalidatePath(PATH);
 }
