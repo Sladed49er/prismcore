@@ -10,10 +10,16 @@ import { adminDb, tenantAmsConnections } from "@prismcore/db";
 import { eq } from "drizzle-orm";
 import { decryptSecret } from "@/lib/crypto";
 import { AMS360Adapter } from "./ams360";
+import { HawkSoftAdapter } from "./hawksoft";
+import { AppliedEpicAdapter } from "./applied-epic";
+import { EZLynxAdapter } from "./ezlynx";
 import type { AMSAdapter, AMSCredentials } from "./types";
 
 export type { AMSAdapter, AMSContact, AMSActivityNote, AMSCredentials } from "./types";
 export { AMS360Adapter } from "./ams360";
+export { HawkSoftAdapter } from "./hawksoft";
+export { AppliedEpicAdapter } from "./applied-epic";
+export { EZLynxAdapter } from "./ezlynx";
 
 /** The AMS systems Prism Core can sync calls into. */
 export interface AmsProvider {
@@ -27,6 +33,24 @@ export const AMS_PROVIDERS: AmsProvider[] = [
     id: "ams360",
     name: "AMS360",
     description: "Vertafore AMS360 — WSAPI v3. Screen pop + activity notes.",
+  },
+  {
+    id: "hawksoft",
+    name: "HawkSoft",
+    description:
+      "HawkSoft Partner API. Screen pop via synced client index + log notes.",
+  },
+  {
+    id: "applied_epic",
+    name: "Applied Epic",
+    description:
+      "Applied Epic API Suite. Real-time screen pop + activity notes.",
+  },
+  {
+    id: "ezlynx",
+    name: "EZLynx",
+    description:
+      "EZLynx API. Screen pop via synced applicant index. No note API.",
   },
 ];
 
@@ -85,9 +109,63 @@ export async function getAmsAdapter(
   switch (conn.provider) {
     case "ams360":
       return new AMS360Adapter(credentials);
+    case "hawksoft":
+      return new HawkSoftAdapter(credentials, tenantId);
+    case "applied_epic":
+      return new AppliedEpicAdapter(credentials);
+    case "ezlynx":
+      return new EZLynxAdapter(credentials, tenantId);
     default:
       return null;
   }
+}
+
+/**
+ * Refresh the local phone index for an AMS that has no phone-search API
+ * (HawkSoft). EZLynx is indexed incrementally from its applicant webhooks,
+ * so there is nothing to bulk-sync here. Returns null when not applicable.
+ */
+export async function syncAmsPhoneIndex(
+  tenantId: string,
+): Promise<{ synced: number; errors: number } | null> {
+  const adapter = await getAmsAdapter(tenantId);
+  if (adapter instanceof HawkSoftAdapter) {
+    return adapter.syncPhoneIndex();
+  }
+  return null;
+}
+
+/**
+ * Refresh every HawkSoft tenant's phone index — the daily worker behind
+ * `/api/cron/ams-index`. Runs as the platform worker (`adminDb`).
+ */
+export async function runAllPhoneIndexSync(): Promise<{
+  tenants: number;
+  synced: number;
+  errors: number;
+}> {
+  const conns = await adminDb()
+    .select({ tenantId: tenantAmsConnections.tenantId })
+    .from(tenantAmsConnections)
+    .where(eq(tenantAmsConnections.provider, "hawksoft"));
+
+  const result = { tenants: conns.length, synced: 0, errors: 0 };
+  for (const conn of conns) {
+    try {
+      const r = await syncAmsPhoneIndex(conn.tenantId);
+      if (r) {
+        result.synced += r.synced;
+        result.errors += r.errors;
+      }
+    } catch (error) {
+      result.errors++;
+      console.error(
+        `[ams-index] tenant ${conn.tenantId} sync failed:`,
+        error,
+      );
+    }
+  }
+  return result;
 }
 
 /**
