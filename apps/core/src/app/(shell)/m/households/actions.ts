@@ -7,6 +7,9 @@ import {
   updateHousehold,
   setHouseholdStatus,
   deleteHousehold,
+  createHouseholdMember,
+  updateHouseholdMember,
+  deleteHouseholdMember,
   type HouseholdType,
   type HouseholdRiskProfile,
   type HouseholdStatus,
@@ -86,5 +89,57 @@ export async function updateHouseholdStatus(input: {
 export async function removeHousehold(id: string): Promise<void> {
   const tenant = await getCurrentTenant();
   await deleteHousehold(tenant.id, id);
+  revalidatePath("/m/households");
+}
+
+/* ── Household members ────────────────────────────────────────────── */
+
+export interface HouseholdMemberForm {
+  householdId: string;
+  name: string;
+  relationship: string;
+  email: string;
+  phone: string;
+  dateOfBirth: string;
+  isPrimary: boolean;
+  notes: string;
+}
+
+function normalizeMember(form: HouseholdMemberForm) {
+  return {
+    householdId: form.householdId,
+    name: form.name.trim(),
+    relationship: form.relationship.trim(),
+    email: form.email.trim(),
+    phone: form.phone.trim(),
+    dateOfBirth: form.dateOfBirth || null,
+    isPrimary: form.isPrimary,
+    notes: form.notes.trim(),
+  };
+}
+
+export async function newMember(form: HouseholdMemberForm): Promise<void> {
+  if (!form.householdId || !form.name.trim()) return;
+  const tenant = await getCurrentTenant();
+  await createHouseholdMember({ tenantId: tenant.id, ...normalizeMember(form) });
+  revalidatePath("/m/households");
+}
+
+export async function editMember(
+  input: { id: string } & HouseholdMemberForm,
+): Promise<void> {
+  if (!input.householdId || !input.name.trim()) return;
+  const tenant = await getCurrentTenant();
+  await updateHouseholdMember({
+    tenantId: tenant.id,
+    id: input.id,
+    ...normalizeMember(input),
+  });
+  revalidatePath("/m/households");
+}
+
+export async function removeMember(id: string): Promise<void> {
+  const tenant = await getCurrentTenant();
+  await deleteHouseholdMember(tenant.id, id);
   revalidatePath("/m/households");
 }

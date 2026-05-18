@@ -7,6 +7,8 @@ import {
   updateTaxEngagement,
   setTaxEngagementStatus,
   deleteTaxEngagement,
+  createTaxTimesheet,
+  deleteTaxTimesheet,
   type TaxEngagementType,
   type TaxEngagementStatus,
 } from "@/lib/tax-practice";
@@ -94,5 +96,38 @@ export async function updateTaxEngagementStatus(input: {
 export async function removeTaxEngagement(id: string): Promise<void> {
   const tenant = await getCurrentTenant();
   await deleteTaxEngagement(tenant.id, id);
+  revalidatePath("/m/tax_practice");
+}
+
+/* ── Timesheets ───────────────────────────────────────────────────── */
+
+export interface TaxTimesheetForm {
+  engagementId: string;
+  workDate: string;
+  hours: string;
+  description: string;
+  preparerName: string;
+  billable: boolean;
+}
+
+export async function newTimesheet(form: TaxTimesheetForm): Promise<void> {
+  if (!form.engagementId) return;
+  const tenant = await getCurrentTenant();
+  const hours = Number.parseFloat(form.hours) || 0;
+  await createTaxTimesheet({
+    tenantId: tenant.id,
+    engagementId: form.engagementId,
+    workDate: form.workDate || null,
+    minutes: Math.max(0, Math.round(hours * 60)),
+    description: form.description.trim(),
+    preparerName: form.preparerName.trim(),
+    billable: form.billable,
+  });
+  revalidatePath("/m/tax_practice");
+}
+
+export async function removeTimesheet(id: string): Promise<void> {
+  const tenant = await getCurrentTenant();
+  await deleteTaxTimesheet(tenant.id, id);
   revalidatePath("/m/tax_practice");
 }

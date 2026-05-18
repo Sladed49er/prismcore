@@ -90,3 +90,5 @@ export * from "./communication-lists";
 export * from "./member-benefits";
 export * from "./member-portal";
 export * from "./website";
+export * from "./household-members";
+export * from "./tax-timesheets";

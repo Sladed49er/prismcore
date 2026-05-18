@@ -1,20 +1,28 @@
 import { loadCurrentTenant, requireModule } from "@/lib/kernel";
-import { listHouseholds } from "@/lib/households";
+import { listHouseholds, listHouseholdMembers } from "@/lib/households";
 import {
   HouseholdsPanel,
   type HouseholdDTO,
 } from "@/components/households-panel";
+import {
+  HouseholdMembersPanel,
+  type HouseholdMemberDTO,
+  type HouseholdOption,
+} from "@/components/household-members-panel";
 
 /**
  * Households module — the wealth-management household: the family or entity
- * unit a financial practice advises, with assets under management and risk.
+ * unit a financial practice advises, plus the individual members within it.
  */
 export default async function HouseholdsPage() {
   await requireModule("households");
   const { config } = await loadCurrentTenant();
-  const rows = await listHouseholds(config.id);
+  const [householdRows, memberRows] = await Promise.all([
+    listHouseholds(config.id),
+    listHouseholdMembers(config.id),
+  ]);
 
-  const households: HouseholdDTO[] = rows.map((h) => ({
+  const households: HouseholdDTO[] = householdRows.map((h) => ({
     id: h.id,
     name: h.name,
     primaryContactName: h.primaryContactName,
@@ -24,6 +32,24 @@ export default async function HouseholdsPage() {
     riskProfile: h.riskProfile,
     status: h.status,
     notes: h.notes,
+  }));
+
+  const members: HouseholdMemberDTO[] = memberRows.map((m) => ({
+    id: m.id,
+    householdId: m.householdId,
+    householdName: m.householdName,
+    name: m.name,
+    relationship: m.relationship,
+    email: m.email,
+    phone: m.phone,
+    dateOfBirth: m.dateOfBirth,
+    isPrimary: m.isPrimary,
+    notes: m.notes,
+  }));
+
+  const householdOptions: HouseholdOption[] = householdRows.map((h) => ({
+    id: h.id,
+    name: h.name,
   }));
 
   return (
@@ -36,7 +62,15 @@ export default async function HouseholdsPage() {
         The household is the unit of wealth management — a family, individual,
         trust, or business, with its advisor, assets, and risk profile.
       </p>
+
+      <h2 className="mt-8 text-lg font-semibold">Households</h2>
       <HouseholdsPanel households={households} />
+
+      <h2 className="mt-10 text-lg font-semibold">Members</h2>
+      <p className="mt-1 text-sm text-gray-500">
+        The individual people who make up each household.
+      </p>
+      <HouseholdMembersPanel members={members} households={householdOptions} />
     </div>
   );
 }

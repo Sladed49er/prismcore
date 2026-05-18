@@ -1,12 +1,18 @@
 import { desc, eq } from "drizzle-orm";
-import { withTenantContext, households, type Household } from "@prismcore/db";
+import {
+  withTenantContext,
+  households,
+  householdMembers,
+  type Household,
+  type HouseholdMember,
+} from "@prismcore/db";
 
 /**
- * Households data layer — wealth-management household records.
- * RLS-scoped through `withTenantContext`.
+ * Households data layer — wealth-management household records and the
+ * individual members within each. RLS-scoped through `withTenantContext`.
  */
 
-export type { Household };
+export type { Household, HouseholdMember };
 
 export type HouseholdType = "family" | "individual" | "trust" | "business";
 export type HouseholdRiskProfile =
@@ -83,5 +89,75 @@ export async function deleteHousehold(
 ): Promise<void> {
   await withTenantContext(tenantId, async (tx) => {
     await tx.delete(households).where(eq(households.id, id));
+  });
+}
+
+/* ── Household members ────────────────────────────────────────────── */
+
+export interface HouseholdMemberRow extends HouseholdMember {
+  householdName: string;
+}
+
+/** Every household member for a tenant, with the household's name. */
+export async function listHouseholdMembers(
+  tenantId: string,
+): Promise<HouseholdMemberRow[]> {
+  return withTenantContext(tenantId, async (tx) => {
+    const rows = await tx
+      .select({ member: householdMembers, household: households })
+      .from(householdMembers)
+      .leftJoin(households, eq(householdMembers.householdId, households.id))
+      .where(eq(householdMembers.tenantId, tenantId))
+      .orderBy(desc(householdMembers.isPrimary));
+    return rows.map((r) => ({
+      ...r.member,
+      householdName: r.household?.name ?? "—",
+    }));
+  });
+}
+
+export async function createHouseholdMember(input: {
+  tenantId: string;
+  householdId: string;
+  name: string;
+  relationship: string;
+  email: string;
+  phone: string;
+  dateOfBirth: string | null;
+  isPrimary: boolean;
+  notes: string;
+}): Promise<void> {
+  await withTenantContext(input.tenantId, async (tx) => {
+    await tx.insert(householdMembers).values(input);
+  });
+}
+
+export async function updateHouseholdMember(input: {
+  tenantId: string;
+  id: string;
+  householdId: string;
+  name: string;
+  relationship: string;
+  email: string;
+  phone: string;
+  dateOfBirth: string | null;
+  isPrimary: boolean;
+  notes: string;
+}): Promise<void> {
+  const { tenantId, id, ...rest } = input;
+  await withTenantContext(tenantId, async (tx) => {
+    await tx
+      .update(householdMembers)
+      .set({ ...rest, updatedAt: new Date() })
+      .where(eq(householdMembers.id, id));
+  });
+}
+
+export async function deleteHouseholdMember(
+  tenantId: string,
+  id: string,
+): Promise<void> {
+  await withTenantContext(tenantId, async (tx) => {
+    await tx.delete(householdMembers).where(eq(householdMembers.id, id));
   });
 }
