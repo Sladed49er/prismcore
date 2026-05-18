@@ -120,6 +120,7 @@ const TENANT_TABLES = [
   "document_folders",
   "document_shares",
   "document_attachments",
+  "document_analyses",
   "recurring_tasks",
   "task_workflows",
   "task_queues",

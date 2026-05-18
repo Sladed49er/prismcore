@@ -24,6 +24,11 @@ const BUILT = [
     name: "Shared Links",
     desc: "Shareable links to documents — with expiry and revocation.",
   },
+  {
+    href: "/m/documents/intelligence",
+    name: "Document Intelligence",
+    desc: "AI coverage review of a document, or a comparison of two — gaps, limits, and what changed.",
+  },
 ];
 
 /** The remaining documents sub-modules, ported in over the coming turns. */

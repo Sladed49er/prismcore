@@ -64,6 +64,7 @@ export * from "./document-templates";
 export * from "./document-folders";
 export * from "./document-shares";
 export * from "./document-attachments";
+export * from "./document-analyses";
 export * from "./recurring-tasks";
 export * from "./task-workflows";
 export * from "./task-queues";
