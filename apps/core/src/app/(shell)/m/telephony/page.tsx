@@ -96,6 +96,8 @@ export default async function PrismVoicePage() {
         providers={VOIP_PROVIDERS}
         connections={connections}
         calls={calls}
+        tenantId={config.id}
+        baseUrl={host ? `${proto}://${host}` : ""}
       />
       <div className="mt-10 space-y-10">
         <DialpadWebhookCard

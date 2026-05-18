@@ -134,10 +134,14 @@ export function PrismVoicePanel({
   providers,
   connections,
   calls,
+  tenantId,
+  baseUrl,
 }: {
   providers: VoipProviderDTO[];
   connections: ConnectionDTO[];
   calls: CallDTO[];
+  tenantId: string;
+  baseUrl: string;
 }) {
   const [pending, startTransition] = useTransition();
   const [editing, setEditing] = useState<string | null>(null);
@@ -317,6 +321,23 @@ export function PrismVoicePanel({
                 );
               })()}
             </div>
+
+            <div className="mt-4 rounded-lg bg-gray-50 px-3 py-2">
+              <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                Webhook URL
+              </p>
+              <p className="mt-1 text-xs text-gray-500">
+                Point {editingProvider.name}&rsquo;s call-event webhook here so
+                calls screen-pop and log automatically:
+              </p>
+              <code className="mt-1 block break-all rounded bg-white px-2 py-1 text-xs text-gray-700">
+                {`${baseUrl}/api/voip/webhook/${editingProvider.id}?tenant=${tenantId}`}
+                {form.webhookSecret
+                  ? `&secret=${form.webhookSecret}`
+                  : "&secret=<your webhook secret>"}
+              </code>
+            </div>
+
             <div className="mt-4 flex gap-2">
               <button
                 type="button"

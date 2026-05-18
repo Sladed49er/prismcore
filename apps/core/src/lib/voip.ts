@@ -256,6 +256,30 @@ export async function getDialpadWebhookContext(
   };
 }
 
+/**
+ * A tenant's webhook signing secret for a given VoIP provider, decrypted.
+ * `adminDb` — the webhook is being authenticated, not yet a trusted session.
+ * Returns null when the provider is not connected for this tenant.
+ */
+export async function getVoipWebhookSecret(
+  tenantId: string,
+  providerId: string,
+): Promise<string | null> {
+  const rows = await adminDb()
+    .select({ config: tenantVoipConnections.config })
+    .from(tenantVoipConnections)
+    .where(
+      and(
+        eq(tenantVoipConnections.tenantId, tenantId),
+        eq(tenantVoipConnections.providerId, providerId),
+      ),
+    );
+  const row = rows[0];
+  if (!row) return null;
+  const cfg = (row.config ?? {}) as Record<string, string>;
+  return decryptSecret(cfg.webhookSecret ?? "");
+}
+
 /** A call as a provider webhook records it. `providerCallId` is the dedup key. */
 export interface ProviderCallInput {
   tenantId: string;
