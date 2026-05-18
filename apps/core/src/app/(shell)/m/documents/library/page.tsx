@@ -22,6 +22,10 @@ export default async function DocumentLibraryPage() {
     name: d.name,
     category: d.category,
     notes: d.notes,
+    storageUrl: d.storageUrl,
+    fileName: d.fileName,
+    fileSizeBytes: d.fileSizeBytes,
+    mimeType: d.mimeType,
   }));
   const customFields: CustomFieldDTO[] = fieldRows
     .filter((f) => f.entityKey === "document")

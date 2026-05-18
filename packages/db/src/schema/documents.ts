@@ -1,12 +1,16 @@
 /**
- * Documents schema — a document register. Tenant-scoped, RLS-isolated.
- * `customValues` carries per-tenant custom-field values for the "document" entity.
- * (Real file storage via Vercel Blob is a follow-on; this is the register.)
+ * Documents schema — the document store. Tenant-scoped, RLS-isolated.
+ *
+ * A row is metadata plus, when a file has been uploaded, a pointer to the
+ * file in Vercel Blob (`storageUrl` + `fileName`/`fileSizeBytes`/`mimeType`).
+ * A row with no `storageUrl` is a register-only entry. `customValues` carries
+ * per-tenant custom-field values for the "document" entity.
  */
 import {
   pgTable,
   uuid,
   text,
+  integer,
   jsonb,
   timestamp,
   index,
@@ -23,6 +27,11 @@ export const documents = pgTable(
     name: text("name").notNull(),
     category: text("category").notNull().default("General"),
     notes: text("notes").notNull().default(""),
+    /** Vercel Blob URL of the uploaded file — null for register-only rows. */
+    storageUrl: text("storage_url"),
+    fileName: text("file_name"),
+    fileSizeBytes: integer("file_size_bytes"),
+    mimeType: text("mime_type"),
     customValues: jsonb("custom_values")
       .$type<Record<string, string>>()
       .notNull()
