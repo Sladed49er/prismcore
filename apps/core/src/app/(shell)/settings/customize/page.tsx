@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { loadCurrentTenant } from "@/lib/kernel";
 import {
   listAllCustomFields,
@@ -119,6 +120,21 @@ export default async function CustomizePage() {
         Reshape this workspace to fit how you work — no code. Every change
         stays inside your tenant.
       </p>
+      <Link
+        href="/settings/customize/objects"
+        className="mt-5 flex items-center justify-between rounded-xl border border-indigo-200 bg-indigo-50/60 px-5 py-4 transition hover:border-indigo-300"
+      >
+        <span>
+          <span className="font-semibold text-indigo-900">
+            Custom Objects
+          </span>
+          <span className="mt-0.5 block text-sm text-indigo-700">
+            Define your own record types with typed fields — for anything the
+            built-in modules don&rsquo;t cover.
+          </span>
+        </span>
+        <span className="text-sm font-semibold text-indigo-600">Open →</span>
+      </Link>
       <CustomizeHub
         entities={entities}
         fields={fields}

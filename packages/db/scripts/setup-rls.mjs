@@ -134,6 +134,8 @@ const TENANT_TABLES = [
   "membership_dues_invoices",
   "automation_rules",
   "automation_runs",
+  "custom_object_definitions",
+  "custom_object_records",
   "recurring_tasks",
   "task_workflows",
   "task_queues",
