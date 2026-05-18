@@ -16,6 +16,10 @@
     {
       "path": "/api/cron/ams-index",
       "schedule": "30 4 * * *"
+    },
+    {
+      "path": "/api/cron/marketing",
+      "schedule": "0 7 * * *"
     }
   ]
 }
