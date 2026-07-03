@@ -177,19 +177,19 @@ export function SeoSiteAuditPanel({
       {report && !report.error && (
         <div className="mt-6 space-y-6">
           {report.fromCache && (
-            <div className="flex flex-wrap items-center gap-2 rounded-lg border border-emerald-100 bg-emerald-50 px-3 py-2 text-sm text-emerald-900">
-              <span>
-                Saved report from{" "}
+            <div className="flex flex-wrap items-center gap-3 rounded-lg border border-emerald-100 bg-emerald-50 px-3 py-2.5 text-sm text-emerald-900">
+              <span className="min-w-0 flex-1">
+                This is a saved report from{" "}
                 {report.generatedAt
                   ? new Date(report.generatedAt).toLocaleString()
-                  : "earlier"}{" "}
-                — served instantly, no crawl needed.
+                  : "earlier"}
+                . Changed your site since then? Re-run to see the new score.
               </span>
               <button
                 onClick={() => run(true, report.root)}
-                className="font-semibold text-emerald-700 underline hover:text-emerald-600"
+                className="whitespace-nowrap rounded-lg bg-emerald-600 px-3 py-1.5 font-semibold text-white hover:bg-emerald-500"
               >
-                Run a fresh analysis
+                Re-run analysis
               </button>
             </div>
           )}
@@ -221,12 +221,23 @@ export function SeoSiteAuditPanel({
                 {report.truncated ? " (capped)" : ""}
               </div>
               <div>{Math.round(report.durationMs / 1000)}s</div>
-              <button
-                onClick={downloadPdf}
-                className="mt-1 font-semibold text-indigo-600 hover:text-indigo-500"
-              >
-                Download PDF report
-              </button>
+              <div className="mt-1 flex flex-col items-end gap-1">
+                <button
+                  onClick={downloadPdf}
+                  className="font-semibold text-indigo-600 hover:text-indigo-500"
+                >
+                  Download PDF report
+                </button>
+                {/* Always offer a fresh crawl from the report itself — the
+                    cache banner only shows for saved reports, and members
+                    re-run right after shipping fixes. */}
+                <button
+                  onClick={() => run(true, report.root)}
+                  className="font-semibold text-indigo-600 hover:text-indigo-500"
+                >
+                  Re-run analysis
+                </button>
+              </div>
             </div>
           </div>
 
