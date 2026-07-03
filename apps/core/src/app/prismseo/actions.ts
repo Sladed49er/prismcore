@@ -6,6 +6,8 @@ import {
   type SiteAuditReport,
 } from "@/lib/seo-site-audit";
 import { getPrismOptimizeMembership } from "@/lib/prismoptimize-membership";
+import { addMonitor, removeMonitor } from "@/lib/seo-monitoring";
+import { revalidatePath } from "next/cache";
 
 /**
  * PrismOptimize audit — members only. Membership is checked server-side on
@@ -59,6 +61,29 @@ export async function deepAudit(url: string): Promise<SiteAuditReport> {
       error instanceof Error ? error.message : "The site analysis failed.",
     );
   }
+}
+
+export async function addSiteMonitor(url: string): Promise<string> {
+  const membership = await getPrismOptimizeMembership();
+  if (!membership.entitled) return "Members only.";
+  try {
+    await addMonitor({
+      clerkUserId: membership.userId,
+      email: membership.email,
+      siteUrl: url,
+    });
+    revalidatePath("/prismseo");
+    return "";
+  } catch (error) {
+    return error instanceof Error ? error.message : "Could not add the site.";
+  }
+}
+
+export async function removeSiteMonitor(id: string): Promise<void> {
+  const membership = await getPrismOptimizeMembership();
+  if (!membership.entitled) return;
+  await removeMonitor(membership.userId, id);
+  revalidatePath("/prismseo");
 }
 
 function failedSiteAudit(url: string, error: string): SiteAuditReport {

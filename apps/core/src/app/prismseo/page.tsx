@@ -1,8 +1,18 @@
 import type { Metadata } from "next";
 import { SeoAuditPanel } from "@/components/seo-audit-panel";
 import { SeoSiteAuditPanel } from "@/components/seo-site-audit-panel";
-import { publicAudit, deepAudit } from "./actions";
+import {
+  SeoMonitorPanel,
+  type MonitorDTO,
+} from "@/components/seo-monitor-panel";
+import {
+  publicAudit,
+  deepAudit,
+  addSiteMonitor,
+  removeSiteMonitor,
+} from "./actions";
 import { getPrismOptimizeMembership } from "@/lib/prismoptimize-membership";
+import { listMonitors } from "@/lib/seo-monitoring";
 
 /** The deep site crawl runs minutes — give the server action headroom. */
 export const maxDuration = 300;
@@ -31,6 +41,14 @@ const SIGN_UP_URL = `${APP_ORIGIN}/sign-up?redirect_url=${encodeURIComponent(TOO
 
 export default async function PrismSeoPage() {
   const membership = await getPrismOptimizeMembership();
+  const monitors: MonitorDTO[] = membership.entitled
+    ? (await listMonitors(membership.userId)).map((m) => ({
+        id: m.id,
+        siteUrl: m.siteUrl,
+        lastScore: m.lastScore,
+        lastRunAt: m.lastRunAt?.toISOString() ?? null,
+      }))
+    : [];
 
   return (
     <main className="min-h-screen bg-gray-50">
@@ -53,6 +71,11 @@ export default async function PrismSeoPage() {
           {membership.entitled ? (
             <div className="space-y-6">
               <SeoSiteAuditPanel action={deepAudit} />
+              <SeoMonitorPanel
+                monitors={monitors}
+                add={addSiteMonitor}
+                remove={removeSiteMonitor}
+              />
               <SeoAuditPanel
                 action={publicAudit}
                 heading="Quick single-page check"

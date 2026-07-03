@@ -13,13 +13,14 @@ import { currentUser } from "@clerk/nextjs/server";
 
 export interface PrismOptimizeMembership {
   signedIn: boolean;
+  userId: string;
   email: string;
   entitled: boolean;
 }
 
 export async function getPrismOptimizeMembership(): Promise<PrismOptimizeMembership> {
   const user = await currentUser().catch(() => null);
-  if (!user) return { signedIn: false, email: "", entitled: false };
+  if (!user) return { signedIn: false, userId: "", email: "", entitled: false };
 
   const emails = user.emailAddresses.map((e) => e.emailAddress.toLowerCase());
   const allowlist = (process.env.PRISMOPTIMIZE_MEMBER_EMAILS ?? "")
@@ -35,6 +36,7 @@ export async function getPrismOptimizeMembership(): Promise<PrismOptimizeMembers
 
   return {
     signedIn: true,
+    userId: user.id,
     email:
       user.primaryEmailAddress?.emailAddress.toLowerCase() ?? emails[0] ?? "",
     entitled,

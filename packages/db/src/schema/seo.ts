@@ -205,6 +205,29 @@ export const seoSettings = pgTable(
   (t) => [uniqueIndex("seo_settings_tenant_uq").on(t.tenantId)],
 );
 
+/**
+ * PrismOptimize weekly site monitors. NOT tenant-scoped — the public tool's
+ * members are Clerk users, not platform tenants; rows are keyed and queried
+ * by clerk_user_id in the data layer (adminDb).
+ */
+export const seoMonitors = pgTable(
+  "seo_monitors",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    clerkUserId: text("clerk_user_id").notNull(),
+    /** Where the weekly report is sent — the member's sign-in email. */
+    email: text("email").notNull(),
+    siteUrl: text("site_url").notNull(),
+    lastScore: integer("last_score"),
+    lastRunAt: timestamp("last_run_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [uniqueIndex("seo_monitors_user_site_uq").on(t.clerkUserId, t.siteUrl)],
+);
+
+export type SeoMonitor = typeof seoMonitors.$inferSelect;
 export type SeoKeyword = typeof seoKeywords.$inferSelect;
 export type NewSeoKeyword = typeof seoKeywords.$inferInsert;
 export type SeoRanking = typeof seoRankings.$inferSelect;
