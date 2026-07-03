@@ -17,6 +17,7 @@ import {
   type SeoPublishFormat,
 } from "@/lib/seo";
 import { generateArticleDraft } from "@/lib/seo-content-engine";
+import { runTenantVisibilityChecks } from "@/lib/seo-visibility";
 import { publishDraft } from "@/lib/seo-publisher";
 import {
   runSeoAudit,
@@ -226,6 +227,30 @@ export async function deepAuditSite(
   const report = await runDeepSiteAudit(origin);
   if (!report.error) await saveSiteAudit(ownerKey, report);
   return report;
+}
+
+export async function runVisibilityChecks(): Promise<GenerateResult> {
+  const tenant = await getCurrentTenant();
+  try {
+    const run = await runTenantVisibilityChecks({
+      tenantId: tenant.id,
+      tenantName: tenant.name,
+    });
+    revalidatePath(PATH);
+    return {
+      ok: true,
+      message:
+        run.checked === 0
+          ? "No tracked keywords to check — add keywords first."
+          : `Checked ${run.checked} queries — you were mentioned in ${run.mentions}.`,
+    };
+  } catch (error) {
+    return {
+      ok: false,
+      message:
+        error instanceof Error ? error.message : "Visibility check failed.",
+    };
+  }
 }
 
 export async function loadSavedTenantAudit(

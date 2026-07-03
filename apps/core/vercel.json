@@ -28,6 +28,10 @@
     {
       "path": "/api/cron/seo-monitor",
       "schedule": "0 14 * * *"
+    },
+    {
+      "path": "/api/cron/seo-visibility",
+      "schedule": "0 15 * * 1"
     }
   ]
 }

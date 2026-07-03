@@ -3,6 +3,7 @@ import {
   listSeoKeywords,
   listSeoDrafts,
   getSeoSettings,
+  listSeoVisibilityChecks,
 } from "@/lib/seo";
 import {
   SeoKeywordsPanel,
@@ -18,7 +19,16 @@ import {
 } from "@/components/seo-settings-panel";
 import { SeoAuditPanel } from "@/components/seo-audit-panel";
 import { SeoSiteAuditPanel } from "@/components/seo-site-audit-panel";
-import { auditUrl, deepAuditSite, loadSavedTenantAudit } from "./actions";
+import {
+  SeoVisibilityPanel,
+  type VisibilityCheckDTO,
+} from "@/components/seo-visibility-panel";
+import {
+  auditUrl,
+  deepAuditSite,
+  loadSavedTenantAudit,
+  runVisibilityChecks,
+} from "./actions";
 import { listSiteAudits } from "@/lib/seo-audit-store";
 
 /** The deep site crawl runs minutes — give the server actions headroom. */
@@ -31,12 +41,28 @@ export const maxDuration = 300;
 export default async function SeoEnginePage() {
   await requireModule("seo_engine");
   const { config } = await loadCurrentTenant();
-  const [keywordRows, draftRows, settingsRow, savedAudits] = await Promise.all([
-    listSeoKeywords(config.id),
-    listSeoDrafts(config.id),
-    getSeoSettings(config.id),
-    listSiteAudits(`tenant:${config.id}`),
-  ]);
+  const [keywordRows, draftRows, settingsRow, savedAudits, visibilityRows] =
+    await Promise.all([
+      listSeoKeywords(config.id),
+      listSeoDrafts(config.id),
+      getSeoSettings(config.id),
+      listSiteAudits(`tenant:${config.id}`),
+      listSeoVisibilityChecks(config.id),
+    ]);
+
+  // Latest check per query — the rows arrive newest-first.
+  const latestChecks: VisibilityCheckDTO[] = [];
+  const seenQueries = new Set<string>();
+  for (const check of visibilityRows) {
+    if (seenQueries.has(check.query)) continue;
+    seenQueries.add(check.query);
+    latestChecks.push({
+      query: check.query,
+      mentioned: check.mentioned,
+      excerpt: check.excerpt,
+      checkedAt: check.checkedAt.toISOString(),
+    });
+  }
 
   const keywords: SeoKeywordDTO[] = keywordRows.map((k) => ({
     id: k.id,
@@ -83,6 +109,7 @@ export default async function SeoEnginePage() {
       </header>
       <SeoDraftsPanel drafts={drafts} />
       <SeoKeywordsPanel keywords={keywords} />
+      <SeoVisibilityPanel checks={latestChecks} run={runVisibilityChecks} />
       <SeoSiteAuditPanel
         action={deepAuditSite}
         saved={savedAudits}

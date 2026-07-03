@@ -5,12 +5,14 @@ import {
   SeoMonitorPanel,
   type MonitorDTO,
 } from "@/components/seo-monitor-panel";
+import { AiVisibilityCheckPanel } from "@/components/ai-visibility-check-panel";
 import {
   publicAudit,
   deepAudit,
   loadSavedAudit,
   addSiteMonitor,
   removeSiteMonitor,
+  checkAiVisibility,
 } from "./actions";
 import { getPrismOptimizeMembership } from "@/lib/prismoptimize-membership";
 import { listMonitors } from "@/lib/seo-monitoring";
@@ -84,6 +86,7 @@ export default async function PrismSeoPage() {
                 saved={savedAudits}
                 load={loadSavedAudit}
               />
+              <AiVisibilityCheckPanel action={checkAiVisibility} />
               <SeoMonitorPanel
                 monitors={monitors}
                 add={addSiteMonitor}

@@ -6,6 +6,7 @@ import {
   type SiteAuditReport,
 } from "@/lib/seo-site-audit";
 import { validateAuditUrl } from "@/lib/seo-audit";
+import { checkOneQuery } from "@/lib/seo-visibility";
 import { getPrismOptimizeMembership } from "@/lib/prismoptimize-membership";
 import { addMonitor, removeMonitor } from "@/lib/seo-monitoring";
 import {
@@ -91,6 +92,43 @@ export async function loadSavedAudit(
   }
   const saved = await getSiteAudit(membership.userId, id);
   return saved ?? failedSiteAudit("", "That report is no longer available.");
+}
+
+export interface VisibilityCheckResult {
+  ok: boolean;
+  error?: string;
+  mentioned?: boolean;
+  excerpt?: string;
+}
+
+export async function checkAiVisibility(input: {
+  query: string;
+  orgName: string;
+  siteUrl: string;
+}): Promise<VisibilityCheckResult> {
+  const membership = await getPrismOptimizeMembership();
+  if (!membership.entitled) return { ok: false, error: "Members only." };
+  if (!input.query.trim() || !input.orgName.trim()) {
+    return { ok: false, error: "Enter a question and your business name." };
+  }
+  try {
+    let siteHost = "";
+    if (input.siteUrl.trim()) {
+      siteHost = validateAuditUrl(input.siteUrl).hostname;
+    }
+    const result = await checkOneQuery({
+      query: input.query.trim(),
+      orgName: input.orgName.trim(),
+      siteHost,
+    });
+    return { ok: true, mentioned: result.mentioned, excerpt: result.excerpt };
+  } catch (error) {
+    return {
+      ok: false,
+      error:
+        error instanceof Error ? error.message : "The visibility check failed.",
+    };
+  }
 }
 
 export async function addSiteMonitor(url: string): Promise<string> {
