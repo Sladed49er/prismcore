@@ -8,12 +8,17 @@ const nextConfig: NextConfig = {
   // Next transpiles them so there is no separate build step.
   transpilePackages: ["@prismcore/module-sdk", "@prismcore/db"],
   async rewrites() {
-    // prismoptimize.com serves the public audit tool at its root.
-    return PRISMOPTIMIZE_HOSTS.map((host) => ({
-      source: "/",
-      has: [{ type: "host" as const, value: host }],
-      destination: "/prismseo",
-    }));
+    // prismoptimize.com serves the audit tool at its root. beforeFiles so the
+    // host rewrite beats the prerendered "/" homepage in the filesystem phase.
+    return {
+      beforeFiles: PRISMOPTIMIZE_HOSTS.map((host) => ({
+        source: "/",
+        has: [{ type: "host" as const, value: host }],
+        destination: "/prismseo",
+      })),
+      afterFiles: [],
+      fallback: [],
+    };
   },
 };
 
