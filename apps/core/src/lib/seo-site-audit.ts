@@ -609,7 +609,10 @@ export async function runDeepSiteAudit(
       if (Date.now() > deadline) return;
       try {
         let res = await fetchWithTimeout(link, LINK_TIMEOUT_MS, { method: "HEAD" });
-        if (res.status === 405 || res.status === 501) {
+        if (res.status >= 400) {
+          // Some servers 404/405 HEAD but serve GET fine (GrowthZone's
+          // members portal, for one) — always confirm a failure with GET
+          // before calling the link broken.
           res = await fetchWithTimeout(link, LINK_TIMEOUT_MS);
         }
         if (res.status >= 400) {
