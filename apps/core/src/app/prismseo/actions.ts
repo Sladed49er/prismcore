@@ -1,6 +1,10 @@
 "use server";
 
 import { runSeoAudit, type AuditReport } from "@/lib/seo-audit";
+import {
+  runDeepSiteAudit,
+  type SiteAuditReport,
+} from "@/lib/seo-site-audit";
 import { getPrismOptimizeMembership } from "@/lib/prismoptimize-membership";
 
 /**
@@ -35,4 +39,53 @@ export async function publicAudit(url: string): Promise<AuditReport> {
       suggestions: [],
     };
   }
+}
+
+export async function deepAudit(url: string): Promise<SiteAuditReport> {
+  const membership = await getPrismOptimizeMembership();
+  if (!membership.entitled) {
+    return failedSiteAudit(
+      url,
+      membership.signedIn
+        ? "PrismOptimize memberships are opening soon — your account isn't active yet."
+        : "PrismOptimize is members-only — sign in to run audits.",
+    );
+  }
+  try {
+    return await runDeepSiteAudit(url);
+  } catch (error) {
+    return failedSiteAudit(
+      url,
+      error instanceof Error ? error.message : "The site analysis failed.",
+    );
+  }
+}
+
+function failedSiteAudit(url: string, error: string): SiteAuditReport {
+  return {
+    root: url,
+    error,
+    durationMs: 0,
+    pagesDiscovered: 0,
+    pagesCrawled: 0,
+    truncated: false,
+    score: 0,
+    categoryScores: [],
+    summary: "",
+    actions: [],
+    stats: {
+      missingTitle: 0, missingMeta: 0, missingH1: 0, thinPages: 0,
+      imagesTotal: 0, imagesMissingAlt: 0, noindexPages: 0,
+      missingCanonical: 0, missingOg: 0, missingStructuredData: 0,
+      missingLang: 0, fetchErrors: 0,
+    },
+    technical: {
+      sitemapFound: false, robotsFound: false,
+      httpRedirectsToHttps: null, wwwVariantRedirects: null,
+    },
+    duplicateTitles: [],
+    duplicateMetas: [],
+    brokenLinks: [],
+    pages: [],
+  };
 }

@@ -19,6 +19,10 @@ import {
 import { generateArticleDraft } from "@/lib/seo-content-engine";
 import { publishDraft } from "@/lib/seo-publisher";
 import { runSeoAudit, type AuditReport } from "@/lib/seo-audit";
+import {
+  runDeepSiteAudit,
+  type SiteAuditReport,
+} from "@/lib/seo-site-audit";
 
 const PATH = "/m/seo_engine";
 
@@ -197,6 +201,11 @@ export async function auditUrl(url: string): Promise<AuditReport> {
       suggestions: [],
     };
   }
+}
+
+export async function deepAuditSite(url: string): Promise<SiteAuditReport> {
+  await getCurrentTenant(); // authenticated module use; result is not persisted
+  return runDeepSiteAudit(url);
 }
 
 /* ── Settings ─────────────────────────────────────────────────────── */

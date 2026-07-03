@@ -34,7 +34,7 @@ export interface AuditReport {
 }
 
 /** Reject anything that is not a plain public http(s) URL (SSRF guard). */
-function validateAuditUrl(raw: string): URL {
+export function validateAuditUrl(raw: string): URL {
   let url: URL;
   try {
     url = new URL(raw.includes("://") ? raw : `https://${raw}`);
@@ -80,7 +80,7 @@ function stripTags(html: string): string {
     .trim();
 }
 
-interface PageSignals {
+export interface PageSignals {
   title: string;
   metaDescription: string;
   canonical: string;
@@ -96,7 +96,7 @@ interface PageSignals {
   textExcerpt: string;
 }
 
-function analyze(url: URL, html: string): PageSignals {
+export function analyze(url: URL, html: string): PageSignals {
   const h1s = [...html.matchAll(/<h1[^>]*>([\s\S]*?)<\/h1>/gi)].map((m) =>
     stripTags(m[1] ?? "").slice(0, 120),
   );
@@ -132,7 +132,7 @@ function analyze(url: URL, html: string): PageSignals {
   };
 }
 
-function buildChecks(signals: PageSignals): AuditCheck[] {
+export function buildChecks(signals: PageSignals): AuditCheck[] {
   const checks: AuditCheck[] = [];
   const push = (
     id: string,

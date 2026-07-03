@@ -17,7 +17,11 @@ import {
   type SeoSettingsDTO,
 } from "@/components/seo-settings-panel";
 import { SeoAuditPanel } from "@/components/seo-audit-panel";
-import { auditUrl } from "./actions";
+import { SeoSiteAuditPanel } from "@/components/seo-site-audit-panel";
+import { auditUrl, deepAuditSite } from "./actions";
+
+/** The deep site crawl runs minutes — give the server actions headroom. */
+export const maxDuration = 300;
 
 /**
  * SEO Engine module — tracked keywords drive AI article drafts; a human
@@ -77,6 +81,7 @@ export default async function SeoEnginePage() {
       </header>
       <SeoDraftsPanel drafts={drafts} />
       <SeoKeywordsPanel keywords={keywords} />
+      <SeoSiteAuditPanel action={deepAuditSite} />
       <SeoAuditPanel action={auditUrl} />
       <SeoSettingsPanel settings={settings} />
     </div>

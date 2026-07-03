@@ -1,7 +1,11 @@
 import type { Metadata } from "next";
 import { SeoAuditPanel } from "@/components/seo-audit-panel";
-import { publicAudit } from "./actions";
+import { SeoSiteAuditPanel } from "@/components/seo-site-audit-panel";
+import { publicAudit, deepAudit } from "./actions";
 import { getPrismOptimizeMembership } from "@/lib/prismoptimize-membership";
+
+/** The deep site crawl runs minutes — give the server action headroom. */
+export const maxDuration = 300;
 
 export const metadata: Metadata = {
   title: "PrismOptimize — Website SEO Audits",
@@ -47,11 +51,14 @@ export default async function PrismSeoPage() {
 
         <div className="mt-10">
           {membership.entitled ? (
-            <SeoAuditPanel
-              action={publicAudit}
-              heading="Audit a page"
-              subheading={`Signed in as ${membership.email} — unlimited audits.`}
-            />
+            <div className="space-y-6">
+              <SeoSiteAuditPanel action={deepAudit} />
+              <SeoAuditPanel
+                action={publicAudit}
+                heading="Quick single-page check"
+                subheading={`Signed in as ${membership.email} — unlimited audits.`}
+              />
+            </div>
           ) : membership.signedIn ? (
             <section className="rounded-xl border border-gray-200 bg-white p-8 text-center">
               <h2 className="text-lg font-semibold text-gray-900">
