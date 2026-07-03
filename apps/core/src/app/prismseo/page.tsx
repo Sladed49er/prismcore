@@ -107,10 +107,10 @@ export default async function PrismSeoPage() {
             into PrismAMS.
           </p>
           <a
-            href="https://prismams.com"
+            href="mailto:matt@prismams.com?subject=Prism%20SEO%20Engine%20demo"
             className="mt-4 inline-block rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-indigo-500"
           >
-            See the SEO Engine
+            Request a demo
           </a>
         </footer>
       </div>
