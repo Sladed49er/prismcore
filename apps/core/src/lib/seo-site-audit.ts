@@ -471,6 +471,8 @@ export async function runDeepSiteAudit(
   };
   const titleGroups = new Map<string, string[]>();
   const metaGroups = new Map<string, string[]>();
+  // URL -> its canonical target (absolute), for canonical-aware dup grouping.
+  const canonicalOf = new Map<string, string>();
 
   async function crawlPage(pageUrl: string): Promise<void> {
     if (Date.now() > deadline) {
@@ -526,6 +528,13 @@ export async function runDeepSiteAudit(
 
     crawledOk.add(pageUrl);
     const signals = analyze(new URL(pageUrl), html);
+    if (signals.canonical) {
+      try {
+        canonicalOf.set(pageUrl, new URL(signals.canonical, pageUrl).href);
+      } catch {
+        // Malformed canonical — fall back to the page URL itself.
+      }
+    }
     const checks = buildChecks(signals);
     const noindex = /<meta[^>]+name=["']robots["'][^>]*content=["'][^"']*noindex/i.test(html);
     const hasStructuredData = /<script[^>]+type=["']application\/ld\+json["']/i.test(html);
@@ -621,16 +630,28 @@ export async function runDeepSiteAudit(
     checkRedirect(`https://${sibling}/`, host),
   ]);
 
-  const duplicateTitles: SiteIssueGroup[] = [...titleGroups.entries()]
-    .filter(([, urls]) => urls.length > 1)
-    .map(([value, urls]) => ({ value, urls }))
-    .sort((a, b) => b.urls.length - a.urls.length)
-    .slice(0, 20);
-  const duplicateMetas: SiteIssueGroup[] = [...metaGroups.entries()]
-    .filter(([, urls]) => urls.length > 1)
-    .map(([value, urls]) => ({ value, urls }))
-    .sort((a, b) => b.urls.length - a.urls.length)
-    .slice(0, 20);
+  // Canonical-aware duplicate grouping: query/pagination variants of one
+  // page (?category=, ?page=2) all declare the same canonical, and search
+  // engines consolidate them — flagging those as duplicates is a false
+  // positive. A group only counts when it spans >1 distinct canonical target.
+  const canonKey = (u: string): string => canonicalOf.get(u) ?? u;
+  const dupGroups = (groups: Map<string, string[]>): SiteIssueGroup[] =>
+    [...groups.entries()]
+      .map(([value, urls]) => {
+        const seen = new Set<string>();
+        const distinct = urls.filter((u) => {
+          const k = canonKey(u);
+          if (seen.has(k)) return false;
+          seen.add(k);
+          return true;
+        });
+        return { value, urls: distinct };
+      })
+      .filter((g) => g.urls.length > 1)
+      .sort((a, b) => b.urls.length - a.urls.length)
+      .slice(0, 20);
+  const duplicateTitles: SiteIssueGroup[] = dupGroups(titleGroups);
+  const duplicateMetas: SiteIssueGroup[] = dupGroups(metaGroups);
 
   // Scores. Page score: 100 − 15/fail − 5/warn. Categories group check ids.
   const pageScore = (p: SitePageResult) =>
