@@ -2,6 +2,7 @@ import { desc, eq, and } from "drizzle-orm";
 import { adminDb, seoMonitors, type SeoMonitor } from "@prismcore/db";
 import { runDeepSiteAudit } from "@/lib/seo-site-audit";
 import { validateAuditUrl } from "@/lib/seo-audit";
+import { saveSiteAudit } from "@/lib/seo-audit-store";
 
 /**
  * PrismOptimize weekly monitoring.
@@ -90,6 +91,9 @@ export async function runMonitorSweep(): Promise<SweepResult> {
       const report = await runDeepSiteAudit(monitor.siteUrl);
       if (report.error) throw new Error(report.error);
       result.audited++;
+      // The weekly crawl lands in the member's saved reports too, so the
+      // email's "open the full report" link has something to open.
+      await saveSiteAudit(monitor.clerkUserId, report);
 
       await sendReportEmail(monitor, report.score, {
         summary: report.summary,
