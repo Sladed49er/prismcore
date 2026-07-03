@@ -21,6 +21,8 @@ const isPublicRoute = createRouteMatcher([
   // Public eSign ceremony — reached by a per-request token, no user session.
   "/sign(.*)",
   "/api/sign(.*)",
+  // PrismSEO — the free public audit tool, rate-limited per IP.
+  "/prismseo(.*)",
 ]);
 
 export default clerkMiddleware(async (auth, req) => {

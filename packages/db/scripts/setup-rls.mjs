@@ -175,6 +175,11 @@ const TENANT_TABLES = [
   "contract_documents",
   "migration_field_mappings",
   "website_request_comments",
+  "seo_keywords",
+  "seo_rankings",
+  "seo_content_drafts",
+  "seo_visibility_checks",
+  "seo_settings",
 ];
 
 const owner = neon(ownerUrl);
