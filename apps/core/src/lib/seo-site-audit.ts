@@ -461,6 +461,7 @@ export async function runDeepSiteAudit(
   const linkReferrers = new Map<string, string>(); // internal href → first page it was found on
   let fetchErrors = 0;
   let redirectingUrls = 0;
+  let variantUrls = 0;
   let truncated = false;
 
   const stats = {
@@ -528,12 +529,38 @@ export async function runDeepSiteAudit(
 
     crawledOk.add(pageUrl);
     const signals = analyze(new URL(pageUrl), html);
+    let queryVariant = false;
     if (signals.canonical) {
       try {
-        canonicalOf.set(pageUrl, new URL(signals.canonical, pageUrl).href);
+        const canon = new URL(signals.canonical, pageUrl);
+        canonicalOf.set(pageUrl, canon.href);
+        // A ?query view whose canonical is its own path (?category=,
+        // ?page=2, ?id=) is not independently indexable — search engines
+        // consolidate it into the canonical page. Scoring its warns as a
+        // separate page is a false positive. Deliberately narrow: only
+        // same-origin, same-path, query-only differences qualify, so a
+        // site that mistakenly canonicals everything to "/" is unaffected.
+        const self = new URL(pageUrl);
+        queryVariant =
+          canon.href !== self.href &&
+          canon.origin === self.origin &&
+          canon.pathname.replace(/\/$/, "") ===
+            self.pathname.replace(/\/$/, "") &&
+          self.search !== "";
       } catch {
         // Malformed canonical — fall back to the page URL itself.
       }
+    }
+    if (queryVariant) {
+      variantUrls++;
+      // Still feed the BFS — variants often link content pages (pagination).
+      for (const link of extractLinks(html, pageUrl)) {
+        if (siteKey(new URL(link).hostname) !== site) continue;
+        if (!linkReferrers.has(link)) linkReferrers.set(link, pageUrl);
+        if (Date.now() < deadline) enqueue(link);
+        else truncated = true;
+      }
+      return;
     }
     const checks = buildChecks(signals);
     const noindex = /<meta[^>]+name=["']robots["'][^>]*content=["'][^"']*noindex/i.test(html);
