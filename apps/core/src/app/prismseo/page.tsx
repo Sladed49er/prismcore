@@ -3,15 +3,17 @@ import { SeoAuditPanel } from "@/components/seo-audit-panel";
 import { publicAudit } from "./actions";
 
 export const metadata: Metadata = {
-  title: "PrismSEO — Free Website SEO Check",
+  title: "PrismOptimize — Free Website SEO Check",
   description:
     "Run a free on-page SEO audit of any page: title, meta, headings, alt text, social tags, and AI-prioritized suggestions. By PrismAMS.",
 };
 
 /**
- * PrismSEO — the public, no-login audit tool. A lead magnet for the full
- * SEO Engine module: five free audits an hour, real suggestions, and a
- * pointer to Prism for everything the one-off check can't do.
+ * PrismOptimize — the public, no-login audit tool, served at the root of
+ * prismoptimize.com (rewritten in next.config) and at /prismseo on the app
+ * domain. A lead magnet for the full SEO Engine module: five free audits an
+ * hour, real suggestions, and a pointer to Prism for everything the one-off
+ * check can't do.
  */
 export default function PrismSeoPage() {
   return (
@@ -19,7 +21,7 @@ export default function PrismSeoPage() {
       <div className="mx-auto max-w-3xl px-4 py-16">
         <header className="text-center">
           <p className="text-sm font-semibold uppercase tracking-wide text-indigo-600">
-            PrismSEO
+            PrismOptimize
           </p>
           <h1 className="mt-2 text-3xl font-bold text-gray-900">
             Free website SEO check
