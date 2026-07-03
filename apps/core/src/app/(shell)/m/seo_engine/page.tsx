@@ -4,6 +4,7 @@ import {
   listSeoDrafts,
   getSeoSettings,
   listSeoVisibilityChecks,
+  listSeoRankings,
 } from "@/lib/seo";
 import {
   SeoKeywordsPanel,
@@ -24,10 +25,15 @@ import {
   type VisibilityCheckDTO,
 } from "@/components/seo-visibility-panel";
 import {
+  SeoRankingsPanel,
+  type RankingRowDTO,
+} from "@/components/seo-rankings-panel";
+import {
   auditUrl,
   deepAuditSite,
   loadSavedTenantAudit,
   runVisibilityChecks,
+  refreshRankings,
 } from "./actions";
 import { listSiteAudits } from "@/lib/seo-audit-store";
 
@@ -41,14 +47,41 @@ export const maxDuration = 800;
 export default async function SeoEnginePage() {
   await requireModule("seo_engine");
   const { config } = await loadCurrentTenant();
-  const [keywordRows, draftRows, settingsRow, savedAudits, visibilityRows] =
-    await Promise.all([
-      listSeoKeywords(config.id),
-      listSeoDrafts(config.id),
-      getSeoSettings(config.id),
-      listSiteAudits(`tenant:${config.id}`),
-      listSeoVisibilityChecks(config.id),
-    ]);
+  const [
+    keywordRows,
+    draftRows,
+    settingsRow,
+    savedAudits,
+    visibilityRows,
+    rankingRows,
+  ] = await Promise.all([
+    listSeoKeywords(config.id),
+    listSeoDrafts(config.id),
+    getSeoSettings(config.id),
+    listSiteAudits(`tenant:${config.id}`),
+    listSeoVisibilityChecks(config.id),
+    listSeoRankings(config.id),
+  ]);
+
+  // Latest + previous position per keyword — rows arrive newest-first.
+  const phraseById = new Map(keywordRows.map((k) => [k.id, k.phrase]));
+  const rankingsByKeyword = new Map<string, RankingRowDTO>();
+  for (const ranking of rankingRows) {
+    const phrase = phraseById.get(ranking.keywordId);
+    if (!phrase) continue;
+    const existing = rankingsByKeyword.get(ranking.keywordId);
+    if (!existing) {
+      rankingsByKeyword.set(ranking.keywordId, {
+        phrase,
+        position: ranking.position,
+        previousPosition: null,
+        checkedAt: ranking.checkedAt.toISOString(),
+      });
+    } else if (existing.previousPosition === null) {
+      existing.previousPosition = ranking.position;
+    }
+  }
+  const rankings = [...rankingsByKeyword.values()];
 
   // Latest check per query — the rows arrive newest-first.
   const latestChecks: VisibilityCheckDTO[] = [];
@@ -109,6 +142,7 @@ export default async function SeoEnginePage() {
       </header>
       <SeoDraftsPanel drafts={drafts} />
       <SeoKeywordsPanel keywords={keywords} />
+      <SeoRankingsPanel rows={rankings} refresh={refreshRankings} />
       <SeoVisibilityPanel checks={latestChecks} run={runVisibilityChecks} />
       <SeoSiteAuditPanel
         action={deepAuditSite}

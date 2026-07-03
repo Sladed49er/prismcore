@@ -18,6 +18,7 @@ import {
 } from "@/lib/seo";
 import { generateArticleDraft } from "@/lib/seo-content-engine";
 import { runTenantVisibilityChecks } from "@/lib/seo-visibility";
+import { collectTenantRankings } from "@/lib/seo-rank-tracker";
 import { publishDraft } from "@/lib/seo-publisher";
 import {
   runSeoAudit,
@@ -249,6 +250,27 @@ export async function runVisibilityChecks(): Promise<GenerateResult> {
       ok: false,
       message:
         error instanceof Error ? error.message : "Visibility check failed.",
+    };
+  }
+}
+
+export async function refreshRankings(): Promise<GenerateResult> {
+  const tenant = await getCurrentTenant();
+  try {
+    const run = await collectTenantRankings(tenant.id);
+    revalidatePath(PATH);
+    return {
+      ok: true,
+      message:
+        run.checked === 0
+          ? "No tracked keywords — add keywords first."
+          : `Checked ${run.checked} keywords — ${run.ranking} currently ranking on Google.`,
+    };
+  } catch (error) {
+    return {
+      ok: false,
+      message:
+        error instanceof Error ? error.message : "Rank refresh failed.",
     };
   }
 }
