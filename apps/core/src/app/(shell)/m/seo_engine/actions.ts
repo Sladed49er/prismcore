@@ -17,6 +17,7 @@ import {
 } from "@/lib/seo";
 import { generateArticleDraft } from "@/lib/seo-content-engine";
 import { publishDraft } from "@/lib/seo-publisher";
+import { runSeoAudit, type AuditReport } from "@/lib/seo-audit";
 
 const PATH = "/m/seo_engine";
 
@@ -175,6 +176,23 @@ export async function publishApprovedDraft(
     return {
       ok: false,
       message: error instanceof Error ? error.message : "Publish failed.",
+    };
+  }
+}
+
+/* ── One-off audit ────────────────────────────────────────────────── */
+
+export async function auditUrl(url: string): Promise<AuditReport> {
+  await getCurrentTenant(); // authenticated use only; result is not persisted
+  try {
+    return await runSeoAudit(url);
+  } catch (error) {
+    return {
+      url,
+      fetched: false,
+      error: error instanceof Error ? error.message : "Audit failed.",
+      checks: [],
+      suggestions: [],
     };
   }
 }

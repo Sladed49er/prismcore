@@ -16,6 +16,8 @@ import {
   SeoSettingsPanel,
   type SeoSettingsDTO,
 } from "@/components/seo-settings-panel";
+import { SeoAuditPanel } from "@/components/seo-audit-panel";
+import { auditUrl } from "./actions";
 
 /**
  * SEO Engine module — tracked keywords drive AI article drafts; a human
@@ -71,6 +73,7 @@ export default async function SeoEnginePage() {
       </header>
       <SeoDraftsPanel drafts={drafts} />
       <SeoKeywordsPanel keywords={keywords} />
+      <SeoAuditPanel action={auditUrl} />
       <SeoSettingsPanel settings={settings} />
     </div>
   );
