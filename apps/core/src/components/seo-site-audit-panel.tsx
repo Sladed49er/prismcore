@@ -30,10 +30,21 @@ const IMPACT_STYLES: Record<string, string> = {
   low: "bg-gray-100 text-gray-700",
 };
 
+export interface SavedAuditDTO {
+  id: string;
+  siteUrl: string;
+  score: number;
+  createdAt: string;
+}
+
 export function SeoSiteAuditPanel({
   action,
+  saved = [],
+  load,
 }: {
-  action: (url: string) => Promise<SiteAuditReport>;
+  action: (url: string, force?: boolean) => Promise<SiteAuditReport>;
+  saved?: SavedAuditDTO[];
+  load?: (id: string) => Promise<SiteAuditReport | null>;
 }) {
   const [url, setUrl] = useState("");
   const [report, setReport] = useState<SiteAuditReport | null>(null);
@@ -58,23 +69,33 @@ export function SeoSiteAuditPanel({
     };
   }, [pending]);
 
-  function run(): void {
-    if (!url.trim() || pending) return;
+  function run(force = false, target?: string): void {
+    const site = (target ?? url).trim();
+    if (!site || pending) return;
     setReport(null);
     startTransition(async () => {
-      setReport(await action(url.trim()));
+      setReport(await action(site, force));
     });
   }
 
-  function downloadMarkdown(): void {
+  function view(id: string): void {
+    if (!load || pending) return;
+    setReport(null);
+    startTransition(async () => {
+      const loaded = await load(id);
+      if (loaded) {
+        setReport(loaded);
+        if (loaded.root) setUrl(loaded.root);
+      }
+    });
+  }
+
+  async function downloadPdf(): Promise<void> {
     if (!report) return;
-    const md = toMarkdown(report);
-    const blob = new Blob([md], { type: "text/markdown" });
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = `seo-site-audit-${new URL(report.root).hostname}.md`;
-    a.click();
-    URL.revokeObjectURL(a.href);
+    const { buildPdf } = await import("./seo-site-audit-pdf");
+    buildPdf(report).save(
+      `seo-site-audit-${new URL(report.root).hostname}.pdf`,
+    );
   }
 
   const stage =
@@ -101,7 +122,7 @@ export function SeoSiteAuditPanel({
           disabled={pending}
         />
         <button
-          onClick={run}
+          onClick={() => run()}
           disabled={pending || !url.trim()}
           className="whitespace-nowrap rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-500 disabled:opacity-50"
         >
@@ -122,8 +143,56 @@ export function SeoSiteAuditPanel({
         </p>
       )}
 
+      {!pending && !report && saved.length > 0 && (
+        <div className="mt-4">
+          <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+            Recent reports
+          </h3>
+          <ul className="mt-2 divide-y divide-gray-100">
+            {saved.map((s) => (
+              <li key={s.id} className="flex items-center gap-3 py-2 text-sm">
+                <span className="min-w-0 flex-1 break-all text-gray-900">
+                  {s.siteUrl}
+                </span>
+                <span className={`font-semibold ${scoreColor(s.score)}`}>
+                  {s.score}
+                </span>
+                <span className="text-xs text-gray-400">
+                  {new Date(s.createdAt).toLocaleDateString()}
+                </span>
+                {load && (
+                  <button
+                    onClick={() => view(s.id)}
+                    className="text-xs font-semibold text-indigo-600 hover:text-indigo-500"
+                  >
+                    View
+                  </button>
+                )}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       {report && !report.error && (
         <div className="mt-6 space-y-6">
+          {report.fromCache && (
+            <div className="flex flex-wrap items-center gap-2 rounded-lg border border-emerald-100 bg-emerald-50 px-3 py-2 text-sm text-emerald-900">
+              <span>
+                Saved report from{" "}
+                {report.generatedAt
+                  ? new Date(report.generatedAt).toLocaleString()
+                  : "earlier"}{" "}
+                — served instantly, no crawl needed.
+              </span>
+              <button
+                onClick={() => run(true, report.root)}
+                className="font-semibold text-emerald-700 underline hover:text-emerald-600"
+              >
+                Run a fresh analysis
+              </button>
+            </div>
+          )}
           <div className="flex flex-wrap items-center gap-6">
             <div>
               <div className={`text-5xl font-bold ${scoreColor(report.score)}`}>
@@ -153,10 +222,10 @@ export function SeoSiteAuditPanel({
               </div>
               <div>{Math.round(report.durationMs / 1000)}s</div>
               <button
-                onClick={downloadMarkdown}
+                onClick={downloadPdf}
                 className="mt-1 font-semibold text-indigo-600 hover:text-indigo-500"
               >
-                Download report
+                Download PDF report
               </button>
             </div>
           </div>
@@ -307,47 +376,4 @@ export function SeoSiteAuditPanel({
       )}
     </section>
   );
-}
-
-function toMarkdown(r: SiteAuditReport): string {
-  const lines = [
-    `# SEO Site Audit — ${r.root}`,
-    "",
-    `**Score: ${r.score}/100** · ${r.pagesCrawled} pages crawled${r.truncated ? " (capped)" : ""}`,
-    "",
-    ...r.categoryScores.map((c) => `- ${c.label}: ${c.score}/100`),
-    "",
-    "## Summary",
-    r.summary || "(n/a)",
-    "",
-    "## Action plan",
-    ...r.actions.map(
-      (a, i) => `${i + 1}. **[${a.impact.toUpperCase()}] ${a.title}** — ${a.detail}`,
-    ),
-    "",
-    "## Site-wide stats",
-    `- Missing titles: ${r.stats.missingTitle}`,
-    `- Missing meta descriptions: ${r.stats.missingMeta}`,
-    `- Missing H1s: ${r.stats.missingH1}`,
-    `- Thin pages: ${r.stats.thinPages}`,
-    `- Images without alt text: ${r.stats.imagesMissingAlt}/${r.stats.imagesTotal}`,
-    `- Broken internal links: ${r.brokenLinks.length}`,
-    `- Duplicate title groups: ${r.duplicateTitles.length}`,
-    `- Pages without structured data: ${r.stats.missingStructuredData}`,
-    "",
-    "## Broken links",
-    ...(r.brokenLinks.length
-      ? r.brokenLinks.map((l) => `- [${l.status}] ${l.url} (on ${l.foundOn})`)
-      : ["(none found)"]),
-    "",
-    "## Pages needing work",
-    ...r.pages
-      .filter((p) => p.failCount + p.warnCount > 0)
-      .slice(0, 25)
-      .flatMap((p) => [
-        `### ${p.url}`,
-        ...p.findings.map((f) => `- ${f.status.toUpperCase()}: ${f.label} — ${f.detail}`),
-      ]),
-  ];
-  return lines.join("\n");
 }

@@ -68,6 +68,10 @@ export interface SiteAction {
 export interface SiteAuditReport {
   root: string;
   error?: string;
+  /** Set when this report was served from storage rather than a live crawl. */
+  fromCache?: boolean;
+  /** ISO timestamp of when the crawl actually ran. */
+  generatedAt?: string;
   durationMs: number;
   pagesDiscovered: number;
   pagesCrawled: number;
@@ -648,5 +652,11 @@ export async function runDeepSiteAudit(rawUrl: string): Promise<SiteAuditReport>
     // The deterministic report stands on its own if the AI pass fails.
   }
 
-  return { ...base, summary, actions, durationMs: Date.now() - started };
+  return {
+    ...base,
+    summary,
+    actions,
+    durationMs: Date.now() - started,
+    generatedAt: new Date().toISOString(),
+  };
 }

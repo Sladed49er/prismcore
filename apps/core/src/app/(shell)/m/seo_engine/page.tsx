@@ -18,7 +18,8 @@ import {
 } from "@/components/seo-settings-panel";
 import { SeoAuditPanel } from "@/components/seo-audit-panel";
 import { SeoSiteAuditPanel } from "@/components/seo-site-audit-panel";
-import { auditUrl, deepAuditSite } from "./actions";
+import { auditUrl, deepAuditSite, loadSavedTenantAudit } from "./actions";
+import { listSiteAudits } from "@/lib/seo-audit-store";
 
 /** The deep site crawl runs minutes — give the server actions headroom. */
 export const maxDuration = 300;
@@ -30,10 +31,11 @@ export const maxDuration = 300;
 export default async function SeoEnginePage() {
   await requireModule("seo_engine");
   const { config } = await loadCurrentTenant();
-  const [keywordRows, draftRows, settingsRow] = await Promise.all([
+  const [keywordRows, draftRows, settingsRow, savedAudits] = await Promise.all([
     listSeoKeywords(config.id),
     listSeoDrafts(config.id),
     getSeoSettings(config.id),
+    listSiteAudits(`tenant:${config.id}`),
   ]);
 
   const keywords: SeoKeywordDTO[] = keywordRows.map((k) => ({
@@ -81,7 +83,11 @@ export default async function SeoEnginePage() {
       </header>
       <SeoDraftsPanel drafts={drafts} />
       <SeoKeywordsPanel keywords={keywords} />
-      <SeoSiteAuditPanel action={deepAuditSite} />
+      <SeoSiteAuditPanel
+        action={deepAuditSite}
+        saved={savedAudits}
+        load={loadSavedTenantAudit}
+      />
       <SeoAuditPanel action={auditUrl} />
       <SeoSettingsPanel settings={settings} />
     </div>

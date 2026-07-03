@@ -16,6 +16,7 @@ import {
   integer,
   boolean,
   timestamp,
+  jsonb,
   index,
   uniqueIndex,
 } from "drizzle-orm/pg-core";
@@ -227,6 +228,34 @@ export const seoMonitors = pgTable(
   (t) => [uniqueIndex("seo_monitors_user_site_uq").on(t.clerkUserId, t.siteUrl)],
 );
 
+/**
+ * Saved deep-audit reports — every crawl is persisted so repeat views are
+ * served from storage instead of re-crawling (and re-paying the AI pass).
+ * `owner_key` is a Clerk user id for PrismOptimize members or
+ * `tenant:<uuid>` for SEO Engine module runs.
+ */
+export const seoSiteAudits = pgTable(
+  "seo_site_audits",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    ownerKey: text("owner_key").notNull(),
+    siteUrl: text("site_url").notNull(),
+    score: integer("score").notNull(),
+    report: jsonb("report").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    index("seo_site_audits_owner_site_idx").on(
+      t.ownerKey,
+      t.siteUrl,
+      t.createdAt,
+    ),
+  ],
+);
+
+export type SeoSiteAudit = typeof seoSiteAudits.$inferSelect;
 export type SeoMonitor = typeof seoMonitors.$inferSelect;
 export type SeoKeyword = typeof seoKeywords.$inferSelect;
 export type NewSeoKeyword = typeof seoKeywords.$inferInsert;

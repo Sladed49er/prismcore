@@ -5,8 +5,14 @@ import {
   runDeepSiteAudit,
   type SiteAuditReport,
 } from "@/lib/seo-site-audit";
+import { validateAuditUrl } from "@/lib/seo-audit";
 import { getPrismOptimizeMembership } from "@/lib/prismoptimize-membership";
 import { addMonitor, removeMonitor } from "@/lib/seo-monitoring";
+import {
+  freshSiteAudit,
+  saveSiteAudit,
+  getSiteAudit,
+} from "@/lib/seo-audit-store";
 import { revalidatePath } from "next/cache";
 
 /**
@@ -43,7 +49,10 @@ export async function publicAudit(url: string): Promise<AuditReport> {
   }
 }
 
-export async function deepAudit(url: string): Promise<SiteAuditReport> {
+export async function deepAudit(
+  url: string,
+  force = false,
+): Promise<SiteAuditReport> {
   const membership = await getPrismOptimizeMembership();
   if (!membership.entitled) {
     return failedSiteAudit(
@@ -54,13 +63,34 @@ export async function deepAudit(url: string): Promise<SiteAuditReport> {
     );
   }
   try {
-    return await runDeepSiteAudit(url);
+    const origin = validateAuditUrl(url).origin;
+    if (!force) {
+      const saved = await freshSiteAudit(membership.userId, origin);
+      if (saved) return saved;
+    }
+    const report = await runDeepSiteAudit(origin);
+    if (!report.error) {
+      await saveSiteAudit(membership.userId, report);
+      revalidatePath("/prismseo");
+    }
+    return report;
   } catch (error) {
     return failedSiteAudit(
       url,
       error instanceof Error ? error.message : "The site analysis failed.",
     );
   }
+}
+
+export async function loadSavedAudit(
+  id: string,
+): Promise<SiteAuditReport> {
+  const membership = await getPrismOptimizeMembership();
+  if (!membership.entitled) {
+    return failedSiteAudit("", "Members only.");
+  }
+  const saved = await getSiteAudit(membership.userId, id);
+  return saved ?? failedSiteAudit("", "That report is no longer available.");
 }
 
 export async function addSiteMonitor(url: string): Promise<string> {

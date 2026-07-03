@@ -18,11 +18,20 @@ import {
 } from "@/lib/seo";
 import { generateArticleDraft } from "@/lib/seo-content-engine";
 import { publishDraft } from "@/lib/seo-publisher";
-import { runSeoAudit, type AuditReport } from "@/lib/seo-audit";
+import {
+  runSeoAudit,
+  validateAuditUrl,
+  type AuditReport,
+} from "@/lib/seo-audit";
 import {
   runDeepSiteAudit,
   type SiteAuditReport,
 } from "@/lib/seo-site-audit";
+import {
+  freshSiteAudit,
+  saveSiteAudit,
+  getSiteAudit,
+} from "@/lib/seo-audit-store";
 
 const PATH = "/m/seo_engine";
 
@@ -203,9 +212,27 @@ export async function auditUrl(url: string): Promise<AuditReport> {
   }
 }
 
-export async function deepAuditSite(url: string): Promise<SiteAuditReport> {
-  await getCurrentTenant(); // authenticated module use; result is not persisted
-  return runDeepSiteAudit(url);
+export async function deepAuditSite(
+  url: string,
+  force = false,
+): Promise<SiteAuditReport> {
+  const tenant = await getCurrentTenant();
+  const ownerKey = `tenant:${tenant.id}`;
+  const origin = validateAuditUrl(url).origin;
+  if (!force) {
+    const saved = await freshSiteAudit(ownerKey, origin);
+    if (saved) return saved;
+  }
+  const report = await runDeepSiteAudit(origin);
+  if (!report.error) await saveSiteAudit(ownerKey, report);
+  return report;
+}
+
+export async function loadSavedTenantAudit(
+  id: string,
+): Promise<SiteAuditReport | null> {
+  const tenant = await getCurrentTenant();
+  return (await getSiteAudit(`tenant:${tenant.id}`, id)) ?? null;
 }
 
 /* ── Settings ─────────────────────────────────────────────────────── */
