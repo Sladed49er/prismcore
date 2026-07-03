@@ -141,7 +141,12 @@ async function publishPostsJson({
 
   const categorySlug = settings.urlPrefix.replace(/^\/|\/$/g, "");
   const date = pacificStamp();
-  const html = await marked.parse(draft.body, { async: true });
+  // The site template renders the title as the page H1 — a leading H1 in the
+  // body would duplicate it (and fail our own audit).
+  const html = (await marked.parse(draft.body, { async: true })).replace(
+    /^\s*<h1[^>]*>[\s\S]*?<\/h1>\s*/i,
+    "",
+  );
 
   const post = {
     slug,

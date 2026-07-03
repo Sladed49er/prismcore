@@ -43,7 +43,7 @@ const ARTICLE_SCHEMA: Anthropic.Tool.InputSchema = {
     body: {
       type: "string",
       description:
-        "The full article in Markdown. H2/H3 section headings, 900-1400 words.",
+        "The full article in Markdown. Do NOT repeat the title or use an H1 — the site renders the title itself; start with a paragraph and use H2/H3 section headings. 900-1400 words.",
     },
   },
   required: ["title", "slug", "metaDescription", "body"],
