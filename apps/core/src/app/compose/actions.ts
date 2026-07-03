@@ -4,6 +4,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { WORKSPACE_COOKIE } from "@/lib/tenant";
 import { createTenant } from "@/lib/tenant-store";
+import { isPlatformAdmin } from "@/lib/auth";
 
 /**
  * Provision a workspace from a composer selection: insert the tenant and its
@@ -13,6 +14,9 @@ export async function createWorkspace(
   name: string,
   moduleIds: string[],
 ): Promise<void> {
+  if (!(await isPlatformAdmin())) {
+    throw new Error("Creating workspaces requires a platform admin.");
+  }
   const cleanName = name.trim() || "My Agency";
   const baseSlug =
     cleanName

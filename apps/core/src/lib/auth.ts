@@ -8,6 +8,9 @@ import { notFound } from "next/navigation";
 export const PLATFORM_ADMINS = [
   "matt@prismams.com",
   "polina@prismams.com",
+  "matt@slade.guru",
+  "matt@everysolutionit.com",
+  "matt.slade@netstarinc.com",
 ];
 
 export interface Viewer {
@@ -42,4 +45,9 @@ export async function requireAdmin(): Promise<Viewer> {
   const viewer = await getViewer();
   if (!viewer?.isAdmin) notFound();
   return viewer;
+}
+
+/** Non-throwing admin check, for softer fallbacks (e.g. demo workspace). */
+export async function isPlatformAdmin(): Promise<boolean> {
+  return (await getViewer())?.isAdmin ?? false;
 }
