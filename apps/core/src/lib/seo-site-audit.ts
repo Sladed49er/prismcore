@@ -68,6 +68,8 @@ export interface SiteAction {
 export interface SiteAuditReport {
   root: string;
   error?: string;
+  /** Same-site URLs that answered with a redirect — followed, not audited. */
+  redirectingUrls?: number;
   /** Set when this report was served from storage rather than a live crawl. */
   fromCache?: boolean;
   /** ISO timestamp of when the crawl actually ran. */
@@ -433,6 +435,7 @@ export async function runDeepSiteAudit(rawUrl: string): Promise<SiteAuditReport>
   const crawledOk = new Set<string>();
   const linkReferrers = new Map<string, string>(); // internal href → first page it was found on
   let fetchErrors = 0;
+  let redirectingUrls = 0;
   let truncated = false;
 
   const stats = {
@@ -452,8 +455,26 @@ export async function runDeepSiteAudit(rawUrl: string): Promise<SiteAuditReport>
     let html: string;
     let status = 0;
     try {
-      const res = await fetchWithTimeout(pageUrl, PAGE_TIMEOUT_MS);
+      // Redirects are plumbing, not pages: audit the destination under its
+      // own URL instead of blaming the source for the destination's content
+      // (which faked missing-title and duplicate-title findings).
+      const res = await fetchWithTimeout(pageUrl, PAGE_TIMEOUT_MS, {
+        redirect: "manual",
+      });
       status = res.status;
+      if (status >= 300 && status < 400) {
+        redirectingUrls++;
+        const location = res.headers.get("location");
+        const target = location ? normalizeUrl(location, pageUrl) : null;
+        if (
+          target &&
+          siteKey(new URL(target).hostname) === site &&
+          Date.now() < deadline
+        ) {
+          enqueue(target);
+        }
+        return;
+      }
       const type = res.headers.get("content-type") ?? "";
       if (!res.ok || !type.includes("html")) {
         if (!res.ok) fetchErrors++;
@@ -625,6 +646,7 @@ export async function runDeepSiteAudit(rawUrl: string): Promise<SiteAuditReport>
 
   const base: Omit<SiteAuditReport, "summary" | "actions"> = {
     root: origin,
+    redirectingUrls,
     durationMs: Date.now() - started,
     pagesDiscovered: queued.size + Math.max(0, discovery.seeds.length - queued.size),
     pagesCrawled: pages.length,
