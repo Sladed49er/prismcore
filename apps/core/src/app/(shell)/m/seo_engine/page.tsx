@@ -59,6 +59,10 @@ export default async function SeoEnginePage() {
     repoName: settingsRow?.repoName ?? "",
     repoBranch: settingsRow?.repoBranch ?? "main",
     contentDir: settingsRow?.contentDir ?? "",
+    publishFormat:
+      settingsRow?.publishFormat === "posts_json"
+        ? "posts_json"
+        : "markdown_file",
     urlPrefix: settingsRow?.urlPrefix ?? "",
   };
 

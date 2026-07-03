@@ -1,0 +1,1 @@
+ALTER TABLE "seo_settings" ADD COLUMN "publish_format" text DEFAULT 'markdown_file' NOT NULL;

@@ -14,6 +14,7 @@ import {
   type SeoKeywordStatus,
   type SeoDraftStatus,
   type SeoPublishMode,
+  type SeoPublishFormat,
 } from "@/lib/seo";
 import { generateArticleDraft } from "@/lib/seo-content-engine";
 import { publishDraft } from "@/lib/seo-publisher";
@@ -30,6 +31,7 @@ const DRAFT_STATUSES: SeoDraftStatus[] = [
   "discarded",
 ];
 const PUBLISH_MODES: SeoPublishMode[] = ["github_commit", "manual"];
+const PUBLISH_FORMATS: SeoPublishFormat[] = ["markdown_file", "posts_json"];
 const INTENTS = [
   "informational",
   "commercial",
@@ -207,6 +209,7 @@ export interface SeoSettingsForm {
   repoName: string;
   repoBranch: string;
   contentDir: string;
+  publishFormat: string;
   urlPrefix: string;
 }
 
@@ -223,6 +226,11 @@ export async function saveSettings(form: SeoSettingsForm): Promise<void> {
     repoName: form.repoName.trim(),
     repoBranch: form.repoBranch.trim() || "main",
     contentDir: form.contentDir.trim(),
+    publishFormat: PUBLISH_FORMATS.includes(
+      form.publishFormat as SeoPublishFormat,
+    )
+      ? (form.publishFormat as SeoPublishFormat)
+      : "markdown_file",
     urlPrefix: form.urlPrefix.trim(),
   });
   revalidatePath(PATH);

@@ -14,6 +14,7 @@ export interface SeoSettingsDTO {
   repoName: string;
   repoBranch: string;
   contentDir: string;
+  publishFormat: "markdown_file" | "posts_json";
   urlPrefix: string;
 }
 
@@ -117,6 +118,19 @@ export function SeoSettingsPanel({
             onChange={(e) => set("contentDir", e.target.value)}
             placeholder="content/news"
           />
+        </label>
+        <label className="block">
+          <span className={labelClass}>Publish format</span>
+          <select
+            className={inputClass}
+            value={form.publishFormat}
+            onChange={(e) => set("publishFormat", e.target.value)}
+          >
+            <option value="markdown_file">Markdown file with frontmatter</option>
+            <option value="posts_json">
+              Post JSON + posts-index.json (piawest)
+            </option>
+          </select>
         </label>
         <label className="block sm:col-span-2">
           <span className={labelClass}>Article URL prefix</span>

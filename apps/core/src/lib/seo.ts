@@ -35,6 +35,7 @@ export type SeoDraftStatus =
   | "published"
   | "discarded";
 export type SeoPublishMode = "github_commit" | "manual";
+export type SeoPublishFormat = "markdown_file" | "posts_json";
 
 /* ── Keywords ─────────────────────────────────────────────────────── */
 
@@ -290,6 +291,7 @@ export async function upsertSeoSettings(input: {
   repoName: string;
   repoBranch: string;
   contentDir: string;
+  publishFormat: SeoPublishFormat;
   urlPrefix: string;
 }): Promise<void> {
   const { tenantId, ...rest } = input;

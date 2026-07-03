@@ -185,6 +185,14 @@ export const seoSettings = pgTable(
     repoBranch: text("repo_branch").notNull().default("main"),
     /** Directory articles are committed into, e.g. "content/news". */
     contentDir: text("content_dir").notNull().default(""),
+    /**
+     * How articles are written into the repo:
+     * - "markdown_file": one `<contentDir>/<slug>.md` with frontmatter.
+     * - "posts_json": the piawest pattern — `<contentDir>/<slug>.json` with
+     *   HTML content, plus an entry in the sibling `posts-index.json`, both
+     *   in a single commit.
+     */
+    publishFormat: text("publish_format").notNull().default("markdown_file"),
     /** URL prefix articles appear under, e.g. "/news-releases-and-bulletins". */
     urlPrefix: text("url_prefix").notNull().default(""),
     createdAt: timestamp("created_at", { withTimezone: true })

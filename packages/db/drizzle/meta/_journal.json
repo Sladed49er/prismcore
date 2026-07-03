@@ -484,6 +484,13 @@
       "when": 1783104535016,
       "tag": "0068_naive_impossible_man",
       "breakpoints": true
+    },
+    {
+      "idx": 69,
+      "version": "7",
+      "when": 1783106175125,
+      "tag": "0069_sloppy_red_ghost",
+      "breakpoints": true
     }
   ]
 }
