@@ -19,7 +19,7 @@ import { listMonitors } from "@/lib/seo-monitoring";
 import { listSiteAudits } from "@/lib/seo-audit-store";
 
 /** The deep site crawl runs minutes — give the server action headroom. */
-export const maxDuration = 300;
+export const maxDuration = 800;
 
 export const metadata: Metadata = {
   title: "PrismOptimize — Website SEO Audits",

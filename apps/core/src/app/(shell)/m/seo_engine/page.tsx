@@ -32,7 +32,7 @@ import {
 import { listSiteAudits } from "@/lib/seo-audit-store";
 
 /** The deep site crawl runs minutes — give the server actions headroom. */
-export const maxDuration = 300;
+export const maxDuration = 800;
 
 /**
  * SEO Engine module — tracked keywords drive AI article drafts; a human

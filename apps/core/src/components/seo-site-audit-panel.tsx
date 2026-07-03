@@ -13,9 +13,10 @@ import type { SiteAuditReport } from "@/lib/seo-site-audit";
 const STAGES: [number, string][] = [
   [0, "Reading robots.txt and sitemap…"],
   [8, "Crawling pages…"],
-  [60, "Still crawling — bigger site than most…"],
-  [150, "Checking internal links…"],
-  [190, "AI is writing your action plan…"],
+  [120, "Still crawling — bigger site than most…"],
+  [300, "Big site — working through hundreds of pages…"],
+  [620, "Checking internal links…"],
+  [690, "AI is writing your action plan…"],
 ];
 
 function scoreColor(score: number): string {
@@ -108,8 +109,8 @@ export function SeoSiteAuditPanel({
       </h2>
       <p className="text-sm text-gray-500">
         Crawls your whole site — sitemap, every page, internal links — and
-        delivers a graded report with a prioritized action plan. Takes a few
-        minutes.
+        delivers a graded report with a prioritized action plan. A few minutes
+        for most sites; large sites (thousands of pages) can take ten.
       </p>
 
       <div className="mt-4 flex gap-2">

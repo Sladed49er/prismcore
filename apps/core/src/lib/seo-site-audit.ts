@@ -17,19 +17,36 @@ import {
  * redirect problems. One Claude call at the end turns the aggregate into an
  * executive summary and a prioritized action plan.
  *
- * Built for a single serverless invocation: page cap, concurrency pool, and
- * a hard time budget under the route's maxDuration.
+ * Built for a single serverless invocation: concurrency pool and a hard
+ * time budget under the route's maxDuration (page count is uncapped short
+ * of the runaway guard — the clock is the limiter).
  */
 
 const MODEL = "claude-sonnet-4-6";
-const MAX_PAGES = 75;
-const MAX_LINK_CHECKS = 150;
-const CONCURRENCY = 6;
+// No page cap by design — the time budget is the real limiter. MAX_PAGES is
+// only a runaway guard against infinite URL spaces (calendars, faceted nav).
+const MAX_PAGES = 5_000;
+const MAX_LINK_CHECKS = 500;
+const CONCURRENCY = 10;
 const PAGE_TIMEOUT_MS = 8_000;
 const LINK_TIMEOUT_MS = 6_000;
-const TIME_BUDGET_MS = 210_000; // hard stop well under maxDuration=300
+// Interactive audits run under maxDuration=800 (Pro + Fluid Compute); leave
+// ~100s of headroom for the link checks tail, the AI pass, and serialization.
+const TIME_BUDGET_MS = 700_000;
 const MAX_HTML_BYTES = 1_500_000;
 const UA = "PrismOptimize-SiteAudit/1.0 (+https://prismoptimize.com)";
+// The report stores pages with findings (worst-first); clean pages are
+// aggregate-only. Keeps the jsonb row and the action-response payload sane
+// on multi-thousand-page crawls.
+const MAX_REPORT_PAGES = 300;
+
+export interface DeepAuditOptions {
+  /** Crawl+link-check budget in ms. Callers on a tighter maxDuration (the
+      weekly monitor cron) pass a smaller budget. */
+  timeBudgetMs?: number;
+  /** Runaway guard override — the monitor cron keeps the old 75. */
+  maxPages?: number;
+}
 
 const SKIP_EXTENSIONS =
   /\.(pdf|jpe?g|png|gif|svg|webp|avif|ico|css|js|mjs|json|xml|txt|zip|gz|docx?|xlsx?|pptx?|mp3|mp4|webm|mov|woff2?|ttf)$/i;
@@ -192,7 +209,10 @@ interface Discovery {
   robotsFound: boolean;
 }
 
-async function discover(origin: string): Promise<Discovery> {
+async function discover(
+  origin: string,
+  maxSeeds: number,
+): Promise<Discovery> {
   const seeds: string[] = [];
   const disallow: string[] = [];
   let sitemapFound = false;
@@ -221,7 +241,7 @@ async function discover(origin: string): Promise<Discovery> {
 
   const seen = new Set<string>();
   const queue = [...new Set(sitemapUrls)].slice(0, 3);
-  while (queue.length > 0 && seeds.length < MAX_PAGES * 2) {
+  while (queue.length > 0 && seeds.length < maxSeeds) {
     const sitemapUrl = queue.shift()!;
     if (seen.has(sitemapUrl)) continue;
     seen.add(sitemapUrl);
@@ -379,9 +399,14 @@ function fmtBool(v: boolean | null): string {
 
 /* ── The crawl ────────────────────────────────────────────────────── */
 
-export async function runDeepSiteAudit(rawUrl: string): Promise<SiteAuditReport> {
+export async function runDeepSiteAudit(
+  rawUrl: string,
+  options: DeepAuditOptions = {},
+): Promise<SiteAuditReport> {
   const started = Date.now();
-  const deadline = started + TIME_BUDGET_MS;
+  const timeBudgetMs = options.timeBudgetMs ?? TIME_BUDGET_MS;
+  const maxPages = options.maxPages ?? MAX_PAGES;
+  const deadline = started + timeBudgetMs;
   const rootUrl = validateAuditUrl(rawUrl);
   const origin = rootUrl.origin;
   const site = siteKey(rootUrl.hostname);
@@ -413,7 +438,7 @@ export async function runDeepSiteAudit(rawUrl: string): Promise<SiteAuditReport>
     pages: [],
   });
 
-  const discovery = await discover(origin);
+  const discovery = await discover(origin, maxPages * 2);
   const isDisallowed = (url: string): boolean => {
     const path = new URL(url).pathname;
     return discovery.disallow.some((rule) => path.startsWith(rule));
@@ -422,7 +447,7 @@ export async function runDeepSiteAudit(rawUrl: string): Promise<SiteAuditReport>
   const queue: string[] = [];
   const queued = new Set<string>();
   const enqueue = (url: string) => {
-    if (queued.has(url) || queued.size >= MAX_PAGES) return;
+    if (queued.has(url) || queued.size >= maxPages) return;
     if (siteKey(new URL(url).hostname) !== site) return;
     if (isDisallowed(url)) return;
     queued.add(url);
@@ -560,7 +585,7 @@ export async function runDeepSiteAudit(rawUrl: string): Promise<SiteAuditReport>
     cursor = queue.length;
     await pool(wave, CONCURRENCY, crawlPage);
   }
-  if (queued.size >= MAX_PAGES) truncated = true;
+  if (queued.size >= maxPages) truncated = true;
   if (pages.length === 0) return empty("The site could not be crawled — is it up?");
   stats.fetchErrors = fetchErrors;
 
@@ -643,6 +668,12 @@ export async function runDeepSiteAudit(rawUrl: string): Promise<SiteAuditReport>
   pages.sort(
     (a, b) => b.failCount * 15 + b.warnCount * 5 - (a.failCount * 15 + a.warnCount * 5),
   );
+  // Scores and stats above cover every crawled page; the report itself only
+  // carries the pages with findings — on an uncapped multi-thousand-page
+  // crawl, clean pages would bloat the jsonb row and the action response.
+  const reportPages = pages
+    .filter((p) => p.failCount + p.warnCount > 0)
+    .slice(0, MAX_REPORT_PAGES);
 
   const base: Omit<SiteAuditReport, "summary" | "actions"> = {
     root: origin,
@@ -663,7 +694,7 @@ export async function runDeepSiteAudit(rawUrl: string): Promise<SiteAuditReport>
     duplicateTitles,
     duplicateMetas,
     brokenLinks,
-    pages,
+    pages: reportPages,
   };
 
   let summary = "";

@@ -88,7 +88,13 @@ export async function runMonitorSweep(): Promise<SweepResult> {
     // A cut-short sweep resumes tomorrow — oldest lastRunAt goes first.
     if (Date.now() - started > SWEEP_BUDGET_MS) break;
     try {
-      const report = await runDeepSiteAudit(monitor.siteUrl);
+      // The cron runs several sites inside one maxDuration=300 invocation —
+      // keep each audit on the old tight budget rather than the uncapped
+      // interactive default.
+      const report = await runDeepSiteAudit(monitor.siteUrl, {
+        timeBudgetMs: 210_000,
+        maxPages: 75,
+      });
       if (report.error) throw new Error(report.error);
       result.audited++;
       // The weekly crawl lands in the member's saved reports too, so the
