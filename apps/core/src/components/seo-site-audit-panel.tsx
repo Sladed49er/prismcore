@@ -65,6 +65,11 @@ export function SeoSiteAuditPanel({
   // Local copy of the saved-report history so deletes reflect immediately.
   const [history, setHistory] = useState<SavedAuditDTO[]>(saved);
   const [showAll, setShowAll] = useState(false);
+  // Column sorting for the history table. Default: newest first.
+  const [sortKey, setSortKey] = useState<"siteUrl" | "score" | "createdAt">(
+    "createdAt",
+  );
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
   // Two-step delete: first click arms the row, second click deletes.
   const [armed, setArmed] = useState<string | null>(null);
   useEffect(() => setHistory(saved), [saved]);
@@ -129,6 +134,23 @@ export function SeoSiteAuditPanel({
     if (ok) setHistory((h) => h.filter((s) => s.id !== id));
   }
 
+  function toggleSort(key: "siteUrl" | "score" | "createdAt"): void {
+    if (sortKey === key) {
+      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    } else {
+      setSortKey(key);
+      // Sensible first direction per column: sites A-Z, numbers high-first.
+      setSortDir(key === "siteUrl" ? "asc" : "desc");
+    }
+  }
+
+  const sortedHistory = [...history].sort((a, b) => {
+    const dir = sortDir === "asc" ? 1 : -1;
+    if (sortKey === "score") return (a.score - b.score) * dir;
+    if (sortKey === "siteUrl") return a.siteUrl.localeCompare(b.siteUrl) * dir;
+    return a.createdAt.localeCompare(b.createdAt) * dir;
+  });
+
   async function downloadPdf(): Promise<void> {
     if (!report) return;
     const { buildPdf } = await import("./seo-site-audit-pdf");
@@ -190,42 +212,72 @@ export function SeoSiteAuditPanel({
               — every run is kept until you delete it
             </span>
           </h3>
-          <ul className="mt-2 divide-y divide-gray-100">
-            {(showAll ? history : history.slice(0, 12)).map((s) => (
-              <li key={s.id} className="flex items-center gap-3 py-2 text-sm">
-                <span className="min-w-0 flex-1 break-all text-gray-900">
-                  {s.siteUrl}
-                </span>
-                <span className={`font-semibold ${scoreColor(s.score)}`}>
-                  {s.score}
-                </span>
-                <span className="text-xs text-gray-400">
-                  {new Date(s.createdAt).toLocaleString()}
-                </span>
-                {load && (
-                  <button
-                    onClick={() => view(s.id)}
-                    className="text-xs font-semibold text-indigo-600 hover:text-indigo-500"
-                  >
-                    View
-                  </button>
-                )}
-                {remove && (
-                  <button
-                    onClick={() => confirmDelete(s.id)}
-                    onBlur={() => setArmed(null)}
-                    className={
-                      armed === s.id
-                        ? "rounded bg-red-600 px-2 py-0.5 text-xs font-semibold text-white hover:bg-red-500"
-                        : "text-xs font-semibold text-gray-400 hover:text-red-600"
-                    }
-                  >
-                    {armed === s.id ? "Really delete?" : "Delete"}
-                  </button>
-                )}
-              </li>
-            ))}
-          </ul>
+          <table className="mt-2 w-full text-sm">
+            <thead>
+              <tr className="border-b border-gray-200 text-left text-xs text-gray-500">
+                {(
+                  [
+                    ["siteUrl", "Site"],
+                    ["score", "Score"],
+                    ["createdAt", "Date"],
+                  ] as const
+                ).map(([key, label]) => (
+                  <th key={key} className="py-1.5 pr-3 font-semibold">
+                    <button
+                      onClick={() => toggleSort(key)}
+                      className="hover:text-indigo-600"
+                    >
+                      {label}
+                      {sortKey === key ? (sortDir === "asc" ? " ▲" : " ▼") : ""}
+                    </button>
+                  </th>
+                ))}
+                <th className="py-1.5" />
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {(showAll ? sortedHistory : sortedHistory.slice(0, 12)).map(
+                (s) => (
+                  <tr key={s.id}>
+                    <td className="min-w-0 break-all py-2 pr-3 text-gray-900">
+                      {s.siteUrl}
+                    </td>
+                    <td
+                      className={`py-2 pr-3 font-semibold ${scoreColor(s.score)}`}
+                    >
+                      {s.score}
+                    </td>
+                    <td className="whitespace-nowrap py-2 pr-3 text-xs text-gray-400">
+                      {new Date(s.createdAt).toLocaleString()}
+                    </td>
+                    <td className="whitespace-nowrap py-2 text-right">
+                      {load && (
+                        <button
+                          onClick={() => view(s.id)}
+                          className="text-xs font-semibold text-indigo-600 hover:text-indigo-500"
+                        >
+                          View
+                        </button>
+                      )}
+                      {remove && (
+                        <button
+                          onClick={() => confirmDelete(s.id)}
+                          onBlur={() => setArmed(null)}
+                          className={
+                            armed === s.id
+                              ? "ml-3 rounded bg-red-600 px-2 py-0.5 text-xs font-semibold text-white hover:bg-red-500"
+                              : "ml-3 text-xs font-semibold text-gray-400 hover:text-red-600"
+                          }
+                        >
+                          {armed === s.id ? "Really delete?" : "Delete"}
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                ),
+              )}
+            </tbody>
+          </table>
           {history.length > 12 && (
             <button
               onClick={() => setShowAll((v) => !v)}
