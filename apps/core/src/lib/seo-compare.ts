@@ -126,13 +126,20 @@ export async function runComparison(
     return fail(`Compare up to ${MAX_COMPARE_SITES} sites at a time.`);
 
   // All sites crawl in parallel; a saved fresh report short-circuits the
-  // crawl entirely. Wall-clock is the slowest single site.
+  // crawl entirely. Comparisons cap each site at a tighter budget than a
+  // solo audit — several full 700s budgets in parallel could outlive the
+  // function's maxDuration, and a ranking doesn't need exhaustive depth
+  // (150s covers ~2,000 pages at the crawler's pace; bigger sites report
+  // as capped). Run any site solo for its full uncapped report.
+  const COMPARE_SITE_BUDGET_MS = 150_000;
   const reports = await Promise.all(
     origins.map(async (origin): Promise<SiteAuditReport | null> => {
       try {
         const saved = await freshSiteAudit(ownerKey, origin);
         if (saved) return saved;
-        const report = await runDeepSiteAudit(origin);
+        const report = await runDeepSiteAudit(origin, {
+          timeBudgetMs: COMPARE_SITE_BUDGET_MS,
+        });
         if (!report.error) await saveSiteAudit(ownerKey, report);
         return report;
       } catch {
