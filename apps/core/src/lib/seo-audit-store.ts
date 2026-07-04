@@ -55,9 +55,24 @@ export async function freshSiteAudit(
   };
 }
 
+/** Owner-scoped delete. Reports are never removed any other way — every
+ *  crawl is kept permanently until its owner explicitly deletes it. */
+export async function deleteSiteAudit(
+  ownerKey: string,
+  id: string,
+): Promise<boolean> {
+  const res = await adminDb()
+    .delete(seoSiteAudits)
+    .where(
+      and(eq(seoSiteAudits.id, id), eq(seoSiteAudits.ownerKey, ownerKey)),
+    )
+    .returning({ id: seoSiteAudits.id });
+  return res.length > 0;
+}
+
 export async function listSiteAudits(
   ownerKey: string,
-  limit = 12,
+  limit = 500,
 ): Promise<SavedAuditSummary[]> {
   const rows = await adminDb()
     .select({

@@ -10,6 +10,7 @@ import {
   publicAudit,
   deepAudit,
   draftFill,
+  deleteSavedAudit,
   loadSavedAudit,
   addSiteMonitor,
   removeSiteMonitor,
@@ -85,6 +86,7 @@ export default async function PrismSeoPage() {
               <SeoSiteAuditPanel
                 action={deepAudit}
                 draftFill={draftFill}
+                remove={deleteSavedAudit}
                 saved={savedAudits}
                 load={loadSavedAudit}
               />

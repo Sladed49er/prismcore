@@ -34,6 +34,7 @@ import {
   type SiteAuditReport,
 } from "@/lib/seo-site-audit";
 import {
+  deleteSiteAudit,
   freshSiteAudit,
   saveSiteAudit,
   getSiteAudit,
@@ -232,6 +233,13 @@ export async function deepAuditSite(
   const report = await runDeepSiteAudit(origin);
   if (!report.error) await saveSiteAudit(ownerKey, report);
   return report;
+}
+
+export async function deleteSavedTenantAudit(id: string): Promise<boolean> {
+  const tenant = await getCurrentTenant();
+  const removed = await deleteSiteAudit(`tenant:${tenant.id}`, id);
+  if (removed) revalidatePath(PATH);
+  return removed;
 }
 
 export async function draftFillSite(url: string): Promise<ContentFillResult> {

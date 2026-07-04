@@ -32,6 +32,7 @@ import {
   auditUrl,
   deepAuditSite,
   draftFillSite,
+  deleteSavedTenantAudit,
   loadSavedTenantAudit,
   runVisibilityChecks,
   refreshRankings,
@@ -148,6 +149,7 @@ export default async function SeoEnginePage() {
       <SeoSiteAuditPanel
         action={deepAuditSite}
         draftFill={draftFillSite}
+        remove={deleteSavedTenantAudit}
         saved={savedAudits}
         load={loadSavedTenantAudit}
       />

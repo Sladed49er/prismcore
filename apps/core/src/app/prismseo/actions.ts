@@ -14,6 +14,7 @@ import { checkOneQuery } from "@/lib/seo-visibility";
 import { getPrismOptimizeMembership } from "@/lib/prismoptimize-membership";
 import { addMonitor, removeMonitor } from "@/lib/seo-monitoring";
 import {
+  deleteSiteAudit,
   freshSiteAudit,
   saveSiteAudit,
   getSiteAudit,
@@ -85,6 +86,14 @@ export async function deepAudit(
       error instanceof Error ? error.message : "The site analysis failed.",
     );
   }
+}
+
+export async function deleteSavedAudit(id: string): Promise<boolean> {
+  const membership = await getPrismOptimizeMembership();
+  if (!membership.entitled) return false;
+  const removed = await deleteSiteAudit(membership.userId, id);
+  if (removed) revalidatePath("/prismseo");
+  return removed;
 }
 
 export async function draftFill(url: string): Promise<ContentFillResult> {
