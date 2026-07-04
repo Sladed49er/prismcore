@@ -9,6 +9,7 @@ import { AiVisibilityCheckPanel } from "@/components/ai-visibility-check-panel";
 import {
   publicAudit,
   deepAudit,
+  draftFill,
   loadSavedAudit,
   addSiteMonitor,
   removeSiteMonitor,
@@ -83,6 +84,7 @@ export default async function PrismSeoPage() {
             <div className="space-y-6">
               <SeoSiteAuditPanel
                 action={deepAudit}
+                draftFill={draftFill}
                 saved={savedAudits}
                 load={loadSavedAudit}
               />

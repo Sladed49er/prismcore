@@ -2,6 +2,10 @@
 
 import { runSeoAudit, type AuditReport } from "@/lib/seo-audit";
 import {
+  draftContentFill,
+  type ContentFillResult,
+} from "@/lib/seo-content-fill";
+import {
   runDeepSiteAudit,
   type SiteAuditReport,
 } from "@/lib/seo-site-audit";
@@ -80,6 +84,19 @@ export async function deepAudit(
       url,
       error instanceof Error ? error.message : "The site analysis failed.",
     );
+  }
+}
+
+export async function draftFill(url: string): Promise<ContentFillResult> {
+  const membership = await getPrismOptimizeMembership();
+  if (!membership.entitled) return { ok: false, error: "Members only." };
+  try {
+    return await draftContentFill(url);
+  } catch (error) {
+    return {
+      ok: false,
+      error: error instanceof Error ? error.message : "The draft failed.",
+    };
   }
 }
 

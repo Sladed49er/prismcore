@@ -1,6 +1,10 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import {
+  draftContentFill,
+  type ContentFillResult,
+} from "@/lib/seo-content-fill";
 import { getCurrentTenant } from "@/lib/current-tenant";
 import {
   createSeoKeyword,
@@ -228,6 +232,18 @@ export async function deepAuditSite(
   const report = await runDeepSiteAudit(origin);
   if (!report.error) await saveSiteAudit(ownerKey, report);
   return report;
+}
+
+export async function draftFillSite(url: string): Promise<ContentFillResult> {
+  await getCurrentTenant(); // gate: must be in a workspace
+  try {
+    return await draftContentFill(url);
+  } catch (error) {
+    return {
+      ok: false,
+      error: error instanceof Error ? error.message : "The draft failed.",
+    };
+  }
 }
 
 export async function runVisibilityChecks(): Promise<GenerateResult> {

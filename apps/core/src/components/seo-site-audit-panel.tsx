@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, useTransition } from "react";
 import type { SiteAuditReport } from "@/lib/seo-site-audit";
+import type { ContentFillResult } from "@/lib/seo-content-fill";
 
 /**
  * Deep site analysis panel — kicks off the whole-site crawl and renders the
@@ -42,14 +43,22 @@ export function SeoSiteAuditPanel({
   action,
   saved = [],
   load,
+  draftFill,
 }: {
   action: (url: string, force?: boolean) => Promise<SiteAuditReport>;
   saved?: SavedAuditDTO[];
   load?: (id: string) => Promise<SiteAuditReport | null>;
+  /** AI filler-copy drafter for thin-content findings (optional). */
+  draftFill?: (url: string) => Promise<ContentFillResult>;
 }) {
   const [url, setUrl] = useState("");
   const [report, setReport] = useState<SiteAuditReport | null>(null);
   const [pending, startTransition] = useTransition();
+  // AI filler drafts, keyed by page URL: undefined = untouched,
+  // "loading" = in flight, otherwise the action's result.
+  const [fills, setFills] = useState<
+    Record<string, "loading" | ContentFillResult>
+  >({});
   const [elapsed, setElapsed] = useState(0);
   const timer = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -89,6 +98,15 @@ export function SeoSiteAuditPanel({
         if (loaded.root) setUrl(loaded.root);
       }
     });
+  }
+
+  async function requestFill(url: string): Promise<void> {
+    if (!draftFill || fills[url] === "loading") return;
+    setFills((f) => ({ ...f, [url]: "loading" }));
+    const result = await draftFill(url).catch(
+      (): ContentFillResult => ({ ok: false, error: "The draft failed." }),
+    );
+    setFills((f) => ({ ...f, [url]: result }));
   }
 
   async function downloadPdf(): Promise<void> {
@@ -379,6 +397,57 @@ export function SeoSiteAuditPanel({
                           </li>
                         ))}
                       </ul>
+                      {draftFill &&
+                        p.findings.some((f) => f.id === "content") && (
+                          <div className="mt-3">
+                            {(() => {
+                              const fill = fills[p.url];
+                              if (!fill)
+                                return (
+                                  <button
+                                    onClick={() => requestFill(p.url)}
+                                    className="rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-xs font-semibold text-indigo-700 hover:bg-indigo-100"
+                                  >
+                                    ✨ Draft filler copy with AI
+                                  </button>
+                                );
+                              if (fill === "loading")
+                                return (
+                                  <p className="text-xs text-indigo-600">
+                                    Reading the page and drafting…
+                                  </p>
+                                );
+                              if (!fill.ok)
+                                return (
+                                  <p className="text-xs text-red-600">
+                                    {fill.error}
+                                  </p>
+                                );
+                              return (
+                                <div className="rounded-lg border border-indigo-100 bg-indigo-50/50 p-3">
+                                  <p className="mb-1 text-xs font-semibold text-indigo-900">
+                                    Paste below your existing copy — grounded
+                                    in what the page already says, nothing
+                                    invented:
+                                  </p>
+                                  <p className="whitespace-pre-wrap text-xs text-gray-800">
+                                    {fill.draft}
+                                  </p>
+                                  <button
+                                    onClick={() =>
+                                      navigator.clipboard.writeText(
+                                        fill.draft ?? "",
+                                      )
+                                    }
+                                    className="mt-2 text-xs font-semibold text-indigo-600 hover:text-indigo-500"
+                                  >
+                                    Copy to clipboard
+                                  </button>
+                                </div>
+                              );
+                            })()}
+                          </div>
+                        )}
                     </details>
                   </li>
                 ))}

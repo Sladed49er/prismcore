@@ -31,6 +31,7 @@ import {
 import {
   auditUrl,
   deepAuditSite,
+  draftFillSite,
   loadSavedTenantAudit,
   runVisibilityChecks,
   refreshRankings,
@@ -146,6 +147,7 @@ export default async function SeoEnginePage() {
       <SeoVisibilityPanel checks={latestChecks} run={runVisibilityChecks} />
       <SeoSiteAuditPanel
         action={deepAuditSite}
+        draftFill={draftFillSite}
         saved={savedAudits}
         load={loadSavedTenantAudit}
       />
