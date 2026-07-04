@@ -562,8 +562,20 @@ export async function runDeepSiteAudit(
       }
       return;
     }
-    const checks = buildChecks(signals);
     const noindex = /<meta[^>]+name=["']robots["'][^>]*content=["'][^"']*noindex/i.test(html);
+    if (noindex) {
+      // Search engines won't index this page, so its on-page findings can't
+      // affect rankings — count it, follow its links, but don't score it.
+      stats.noindexPages++;
+      for (const link of extractLinks(html, pageUrl)) {
+        if (siteKey(new URL(link).hostname) !== site) continue;
+        if (!linkReferrers.has(link)) linkReferrers.set(link, pageUrl);
+        if (Date.now() < deadline) enqueue(link);
+        else truncated = true;
+      }
+      return;
+    }
+    const checks = buildChecks(signals);
     const hasStructuredData = /<script[^>]+type=["']application\/ld\+json["']/i.test(html);
     const hasLang = /<html[^>]+\blang\s*=/i.test(html);
 
@@ -581,7 +593,6 @@ export async function runDeepSiteAudit(
     if (signals.wordCount < 150) stats.thinPages++;
     stats.imagesTotal += signals.imgCount;
     stats.imagesMissingAlt += signals.imgMissingAlt;
-    if (noindex) stats.noindexPages++;
     if (!signals.canonical) stats.missingCanonical++;
     if (!signals.hasOgTitle || !signals.hasOgImage) stats.missingOg++;
     if (!hasStructuredData) stats.missingStructuredData++;
