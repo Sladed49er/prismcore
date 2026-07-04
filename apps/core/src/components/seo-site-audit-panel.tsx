@@ -234,6 +234,27 @@ export function SeoSiteAuditPanel({
                 </div>
               ))}
             </div>
+            {(() => {
+              // Site-level penalties are subtracted from the page-score mean —
+              // surface them so a 95 under all-100 tiles is never a mystery.
+              const pens: string[] = [];
+              if (report.brokenLinks.length > 0)
+                pens.push(
+                  `broken links −${Math.min(10, report.brokenLinks.length)}`,
+                );
+              if (report.duplicateTitles.length > 0)
+                pens.push("duplicate titles −5");
+              if (!report.technical.sitemapFound) pens.push("no sitemap −5");
+              if (report.technical.httpRedirectsToHttps === false)
+                pens.push("no https redirect −5");
+              if (report.technical.wwwVariantRedirects === false)
+                pens.push("www variant −3");
+              return pens.length > 0 ? (
+                <div className="basis-full text-xs text-amber-700">
+                  Site-wide penalties: {pens.join(", ")}
+                </div>
+              ) : null;
+            })()}
             <div className="ml-auto text-right text-xs text-gray-500">
               <div>
                 {report.pagesCrawled} pages crawled
