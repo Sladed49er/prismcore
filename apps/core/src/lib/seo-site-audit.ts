@@ -486,9 +486,19 @@ export async function runDeepSiteAudit(
       // Redirects are plumbing, not pages: audit the destination under its
       // own URL instead of blaming the source for the destination's content
       // (which faked missing-title and duplicate-title findings).
-      const res = await fetchWithTimeout(pageUrl, PAGE_TIMEOUT_MS, {
-        redirect: "manual",
-      });
+      // One retry with a longer timeout: a cold ISR/serverless render can
+      // exceed the first window, and a transient miss showing up as a
+      // "fetch error" finding is noise the site owner can't act on.
+      let res: Response;
+      try {
+        res = await fetchWithTimeout(pageUrl, PAGE_TIMEOUT_MS, {
+          redirect: "manual",
+        });
+      } catch {
+        res = await fetchWithTimeout(pageUrl, PAGE_TIMEOUT_MS * 2, {
+          redirect: "manual",
+        });
+      }
       status = res.status;
       if (status >= 300 && status < 400) {
         redirectingUrls++;
