@@ -62,9 +62,23 @@ export function validateAuditUrl(raw: string): URL {
   return url;
 }
 
+/** Decode the entities that show up in titles/metas so length checks
+ *  measure what users and Google actually see ("&amp;" is 1 char, not 5). */
+function decodeEntities(text: string): string {
+  return text
+    .replace(/&#(\d+);/g, (_, n) => String.fromCodePoint(Number(n)))
+    .replace(/&#x([0-9a-f]+);/gi, (_, n) => String.fromCodePoint(parseInt(n, 16)))
+    .replace(/&amp;/g, "&")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;|&apos;/g, "'")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">");
+}
+
 function extract(html: string, pattern: RegExp): string {
   const match = html.match(pattern);
-  return match?.[1]?.trim() ?? "";
+  return decodeEntities(match?.[1]?.trim() ?? "");
 }
 
 function countMatches(html: string, pattern: RegExp): number {
