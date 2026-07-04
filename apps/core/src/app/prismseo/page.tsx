@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { SeoAuditPanel } from "@/components/seo-audit-panel";
 import { SeoSiteAuditPanel } from "@/components/seo-site-audit-panel";
+import { SeoComparePanel } from "@/components/seo-compare-panel";
 import {
   SeoMonitorPanel,
   type MonitorDTO,
@@ -11,6 +12,7 @@ import {
   deepAudit,
   draftFill,
   deleteSavedAudit,
+  compareSites,
   loadSavedAudit,
   addSiteMonitor,
   removeSiteMonitor,
@@ -90,6 +92,7 @@ export default async function PrismSeoPage() {
                 saved={savedAudits}
                 load={loadSavedAudit}
               />
+              <SeoComparePanel action={compareSites} />
               <AiVisibilityCheckPanel action={checkAiVisibility} />
               <SeoMonitorPanel
                 monitors={monitors}

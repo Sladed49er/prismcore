@@ -5,6 +5,7 @@ import {
   draftContentFill,
   type ContentFillResult,
 } from "@/lib/seo-content-fill";
+import { runComparison, type CompareResult } from "@/lib/seo-compare";
 import {
   runDeepSiteAudit,
   type SiteAuditReport,
@@ -85,6 +86,33 @@ export async function deepAudit(
       url,
       error instanceof Error ? error.message : "The site analysis failed.",
     );
+  }
+}
+
+export async function compareSites(urls: string[]): Promise<CompareResult> {
+  const membership = await getPrismOptimizeMembership();
+  if (!membership.entitled) {
+    return {
+      ok: false,
+      error: "Members only.",
+      sites: [],
+      summary: "",
+      generatedAt: new Date().toISOString(),
+    };
+  }
+  try {
+    const result = await runComparison(urls, membership.userId);
+    // fresh crawls landed in the member's history
+    if (result.ok) revalidatePath("/prismseo");
+    return result;
+  } catch (error) {
+    return {
+      ok: false,
+      error: error instanceof Error ? error.message : "The comparison failed.",
+      sites: [],
+      summary: "",
+      generatedAt: new Date().toISOString(),
+    };
   }
 }
 
