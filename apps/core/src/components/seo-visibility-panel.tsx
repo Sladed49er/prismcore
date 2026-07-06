@@ -45,7 +45,9 @@ export function SeoVisibilityPanel({
           </h2>
           <p className="text-sm text-gray-500">
             When someone asks an AI assistant your tracked questions, do you
-            come up? Checked weekly, or on demand.
+            come up? Checked weekly, or on demand. This is &quot;GEO&quot;
+            (generative engine optimization) — being the business AI
+            assistants recommend, the way SEO gets you into Google results.
           </p>
         </div>
         <button

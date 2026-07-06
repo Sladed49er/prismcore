@@ -1,5 +1,6 @@
 import { jsPDF } from "jspdf";
 import type { SiteAuditReport } from "@/lib/seo-site-audit";
+import { SEO_GLOSSARY } from "@/lib/seo-glossary";
 
 /**
  * PDF rendering for the deep site audit — a client-side, brand-styled report
@@ -136,6 +137,12 @@ export function buildPdf(r: SiteAuditReport): jsPDF {
 
   /* Stats */
   heading("Site-wide findings");
+  paragraph(
+    "Counts across every page crawled. Every term below is explained in the plain-English glossary on the last page.",
+    8.5,
+    GRAY,
+  );
+  y += 6;
   const stats: [string, string | number][] = [
     ["Pages missing a title", r.stats.missingTitle],
     ["Pages missing a meta description", r.stats.missingMeta],
@@ -175,6 +182,12 @@ export function buildPdf(r: SiteAuditReport): jsPDF {
   /* Broken links */
   if (r.brokenLinks.length > 0) {
     heading(`Broken internal links (${r.brokenLinks.length})`);
+    paragraph(
+      "Links on the site that lead to dead pages — visitors hit an error, and Google reads it as neglect. Fix the link or the page it points to.",
+      8.5,
+      GRAY,
+    );
+    y += 4;
     for (const link of r.brokenLinks.slice(0, 40)) {
       paragraph(`[${link.status}] ${link.url}  —  found on ${link.foundOn}`, 8, [75, 85, 99]);
       y += 2;
@@ -184,6 +197,12 @@ export function buildPdf(r: SiteAuditReport): jsPDF {
   /* Duplicate titles */
   if (r.duplicateTitles.length > 0) {
     heading(`Duplicate titles (${r.duplicateTitles.length} groups)`);
+    paragraph(
+      "These pages share the same headline in Google, so they compete with each other. Give each page a title that says what makes it different.",
+      8.5,
+      GRAY,
+    );
+    y += 4;
     for (const group of r.duplicateTitles.slice(0, 10)) {
       ensure(16);
       doc.setFont("helvetica", "bold");
@@ -200,6 +219,12 @@ export function buildPdf(r: SiteAuditReport): jsPDF {
   const worst = r.pages.filter((p) => p.failCount + p.warnCount > 0).slice(0, 20);
   if (worst.length > 0) {
     heading("Pages needing the most work");
+    paragraph(
+      "✗ marks a failed check, ! marks a warning. Each check is explained in the glossary on the last page.",
+      8.5,
+      GRAY,
+    );
+    y += 4;
     for (const p of worst) {
       ensure(24);
       doc.setFont("helvetica", "bold");
@@ -217,6 +242,27 @@ export function buildPdf(r: SiteAuditReport): jsPDF {
       }
       y += 6;
     }
+  }
+
+  /* Glossary — always the last section, so the report needs no translator. */
+  doc.addPage();
+  y = MARGIN;
+  heading("Plain-English glossary — what these terms mean");
+  paragraph(
+    "Every technical term used in this report, in everyday language. Hand this report to anyone — no SEO background needed.",
+    9,
+    GRAY,
+  );
+  y += 8;
+  for (const entry of SEO_GLOSSARY) {
+    ensure(30);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(9.5);
+    doc.setTextColor(...DARK);
+    doc.text(entry.term, MARGIN, y);
+    y += 12;
+    paragraph(entry.plain, 8.5, [75, 85, 99], 12);
+    y += 6;
   }
 
   /* Footer: page numbers + brand */

@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, useTransition } from "react";
 import type { SiteAuditReport } from "@/lib/seo-site-audit";
 import type { ContentFillResult } from "@/lib/seo-content-fill";
+import { CHECK_EXPLAINERS, SEO_GLOSSARY } from "@/lib/seo-glossary";
 
 /**
  * Deep site analysis panel — kicks off the whole-site crawl and renders the
@@ -414,27 +415,61 @@ export function SeoSiteAuditPanel({
           )}
 
           <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            {[
-              ["Missing titles", report.stats.missingTitle],
-              ["Missing meta descriptions", report.stats.missingMeta],
-              ["Missing H1s", report.stats.missingH1],
-              ["Thin pages", report.stats.thinPages],
+            {(
               [
-                "Images w/o alt text",
-                `${report.stats.imagesMissingAlt}/${report.stats.imagesTotal}`,
-              ],
-              ["Broken internal links", report.brokenLinks.length],
-              ["Duplicate titles", report.duplicateTitles.length],
-              ["No structured data", report.stats.missingStructuredData],
-            ].map(([label, value]) => (
+                [
+                  "Missing titles",
+                  report.stats.missingTitle,
+                  "The title is the clickable blue headline on a Google result. Every page needs its own.",
+                ],
+                [
+                  "Missing meta descriptions",
+                  report.stats.missingMeta,
+                  "The blurb Google shows under the headline. Without one, Google improvises.",
+                ],
+                [
+                  "Missing H1s",
+                  report.stats.missingH1,
+                  "The page's main on-page headline. Use exactly one per page.",
+                ],
+                [
+                  "Thin pages",
+                  report.stats.thinPages,
+                  "Under ~150 words of text. Pages with little to say rarely rank.",
+                ],
+                [
+                  "Images w/o alt text",
+                  `${report.stats.imagesMissingAlt}/${report.stats.imagesTotal}`,
+                  "Alt text describes an image for screen readers and for Google.",
+                ],
+                [
+                  "Broken internal links",
+                  report.brokenLinks.length,
+                  "Links on the site that lead to dead pages (404 errors).",
+                ],
+                [
+                  "Duplicate titles",
+                  report.duplicateTitles.length,
+                  "Pages sharing one title compete with each other in Google.",
+                ],
+                [
+                  "No structured data",
+                  report.stats.missingStructuredData,
+                  "Machine-readable business facts that unlock rich Google results.",
+                ],
+              ] as const
+            ).map(([label, value, explain]) => (
               <div
-                key={label as string}
+                key={label}
                 className="rounded-lg border border-gray-200 p-3"
               >
                 <dt className="text-xs text-gray-500">{label}</dt>
                 <dd className="text-lg font-semibold text-gray-900">
                   {value}
                 </dd>
+                <p className="mt-1 text-[11px] leading-snug text-gray-400">
+                  {explain}
+                </p>
               </div>
             ))}
           </dl>
@@ -444,6 +479,11 @@ export function SeoSiteAuditPanel({
               <summary className="cursor-pointer text-sm font-semibold text-gray-900">
                 Broken internal links ({report.brokenLinks.length})
               </summary>
+              <p className="mt-1 text-xs text-gray-400">
+                Links on your own site that lead to dead pages — visitors hit
+                an error, and Google reads it as neglect. Fix the link or the
+                page it points to.
+              </p>
               <ul className="mt-2 space-y-1 text-xs text-gray-600">
                 {report.brokenLinks.map((l) => (
                   <li key={l.url} className="break-all">
@@ -461,6 +501,11 @@ export function SeoSiteAuditPanel({
               <summary className="cursor-pointer text-sm font-semibold text-gray-900">
                 Duplicate titles ({report.duplicateTitles.length} groups)
               </summary>
+              <p className="mt-1 text-xs text-gray-400">
+                These pages share the same headline in Google, so they compete
+                with each other and Google can&apos;t tell them apart. Give
+                each page a title that says what makes it different.
+              </p>
               <ul className="mt-2 space-y-2 text-xs text-gray-600">
                 {report.duplicateTitles.map((g) => (
                   <li key={g.value}>
@@ -502,7 +547,13 @@ export function SeoSiteAuditPanel({
                       </summary>
                       <ul className="mt-2 space-y-1 text-xs text-gray-600">
                         {p.findings.map((f) => (
-                          <li key={f.id}>
+                          <li
+                            key={f.id}
+                            title={CHECK_EXPLAINERS[f.id]}
+                            className={
+                              CHECK_EXPLAINERS[f.id] ? "cursor-help" : ""
+                            }
+                          >
                             <span
                               className={
                                 f.status === "fail"
@@ -572,6 +623,25 @@ export function SeoSiteAuditPanel({
                 ))}
             </ul>
           </div>
+
+          <details className="rounded-lg border border-gray-200 bg-gray-50/60 p-3">
+            <summary className="cursor-pointer text-sm font-semibold text-gray-900">
+              What these terms mean — plain-English glossary
+            </summary>
+            <p className="mt-1 text-xs text-gray-400">
+              Every technical term in this report, explained. Also included on
+              the last page of the PDF, so the report travels without a
+              translator.
+            </p>
+            <dl className="mt-3 space-y-2.5 text-xs">
+              {SEO_GLOSSARY.map((g) => (
+                <div key={g.term}>
+                  <dt className="font-semibold text-gray-800">{g.term}</dt>
+                  <dd className="mt-0.5 text-gray-600">{g.plain}</dd>
+                </div>
+              ))}
+            </dl>
+          </details>
         </div>
       )}
     </section>

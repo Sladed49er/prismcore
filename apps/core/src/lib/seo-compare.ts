@@ -86,7 +86,7 @@ async function comparativeSummary(sites: CompareSite[]): Promise<string> {
 
 ${table}
 
-Write 2-3 short paragraphs: (1) how the first site ranks against the others and the single biggest gap or lead, (2) what the strongest competitor does best and where each other site is weakest, (3) the highest-impact next step for the first site. Plain prose, no headings or bullets, grounded ONLY in the numbers above — do not invent facts about the businesses.`,
+Write 2-3 short paragraphs: (1) how the first site ranks against the others and the single biggest gap or lead, (2) what the strongest competitor does best and where each other site is weakest, (3) the highest-impact next step for the first site. Plain prose, no headings or bullets, grounded ONLY in the numbers above — do not invent facts about the businesses. The reader is a non-technical operations person: use plain everyday language and define any technical term (meta description, H1, alt text, thin pages) in a few words the first time it appears — no unexplained jargon or acronyms.`,
       },
     ],
   });

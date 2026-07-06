@@ -42,7 +42,9 @@ export function AiVisibilityCheckPanel({
       </h2>
       <p className="text-sm text-gray-500">
         When a prospect asks an AI assistant, do you come up? We ask the
-        question with live web search and check the answer for you.
+        question with live web search and check the answer for you. This is
+        &quot;GEO&quot; (generative engine optimization) — being the business
+        AI assistants recommend, the way SEO gets you into Google results.
       </p>
 
       <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">

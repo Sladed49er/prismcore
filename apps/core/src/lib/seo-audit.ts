@@ -302,7 +302,7 @@ async function suggest(
     model: MODEL,
     max_tokens: 1024,
     system:
-      "You are an SEO consultant. Given a page's on-page signals and failed checks, return a short prioritized list of concrete improvements. Be specific to THIS page — reference its actual title and content. Never invent facts about the business.",
+      "You are an SEO consultant advising a non-technical reader. Given a page's on-page signals and failed checks, return a short prioritized list of concrete improvements. Write in plain everyday language — define any technical term (meta description, H1, alt text, canonical, Open Graph) in a few words the first time you use it, and never use an unexplained acronym. Be specific to THIS page — reference its actual title and content. Never invent facts about the business.",
     messages: [
       {
         role: "user",

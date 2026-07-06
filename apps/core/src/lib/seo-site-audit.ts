@@ -296,18 +296,22 @@ const PLAN_SCHEMA: Anthropic.Tool.InputSchema = {
     summary: {
       type: "string",
       description:
-        "A 3-5 sentence executive summary of the site's SEO health, written for the site owner. Concrete numbers, no fluff.",
+        "A 3-5 sentence executive summary of the site's SEO health, written in plain everyday language for a non-technical reader. Concrete numbers, no fluff, no unexplained jargon.",
     },
     actions: {
       type: "array",
       items: {
         type: "object",
         properties: {
-          title: { type: "string", description: "Short imperative headline." },
+          title: {
+            type: "string",
+            description:
+              "Short imperative headline in plain language (jargon-free where possible).",
+          },
           detail: {
             type: "string",
             description:
-              "1-2 sentences: what to do and why it matters, referencing this site's actual findings.",
+              "2-3 sentences: what to do and why it matters, referencing this site's actual findings. Define any technical term in a few words the first time it appears — the reader works in operations, not SEO.",
           },
           impact: { type: "string", enum: ["high", "medium", "low"] },
         },
@@ -338,7 +342,7 @@ async function synthesize(
     model: MODEL,
     max_tokens: 2048,
     system:
-      "You are a senior SEO consultant delivering a site-wide audit. Turn the crawl findings into an executive summary and a prioritized action plan. Reference the site's real numbers. Never invent facts about the business, and never recommend anything the data doesn't support.",
+      "You are a senior SEO consultant delivering a site-wide audit to a non-technical operations team. Turn the crawl findings into an executive summary and a prioritized action plan. Write in plain everyday language: assume the reader has never heard SEO jargon, so the first time you use any technical term — meta description, H1, canonical, Open Graph, structured data, sitemap, alt text, noindex — define it in a few words right in the sentence, e.g. \"meta descriptions (the short blurb Google shows under your link in search results)\". No unexplained acronyms, ever. Reference the site's real numbers. Never invent facts about the business, and never recommend anything the data doesn't support.",
     messages: [
       {
         role: "user",
