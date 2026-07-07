@@ -116,6 +116,36 @@ export const SEO_GLOSSARY: GlossaryEntry[] = [
     plain:
       "A tag that tells search engines to leave a page out of their results on purpose — normal for login screens and thank-you pages. These pages are counted but not graded.",
   },
+  {
+    term: "AI crawlers (GPTBot, ClaudeBot, PerplexityBot, Google-Extended)",
+    plain:
+      "The automated visitors the AI assistants send to read your site — GPTBot is ChatGPT's, ClaudeBot is Claude's, and so on. If your robots.txt file blocks them, those assistants literally can't see your site and won't mention you when someone asks. This report checks whether each one is let in.",
+  },
+  {
+    term: "llms.txt",
+    plain:
+      "A new, optional plain-text file (like a simpler robots.txt) that points AI models at your most important pages. It's early days for the standard, but it's cheap to add and signals you're AI-ready.",
+  },
+  {
+    term: "Answer-readiness",
+    plain:
+      "How easy it is for an AI assistant to lift a clean answer off your page. Pages score higher when they open with a direct one-sentence answer, use headings phrased as real questions, include specific numbers or quotes, and use bulleted lists — the shapes AI engines quote from.",
+  },
+  {
+    term: "Question-style headings",
+    plain:
+      "Section headings written the way people actually ask — \"How much does E&O insurance cost?\" instead of \"Pricing.\" AI answer engines match content to the question, so phrasing headings as questions helps you get picked.",
+  },
+  {
+    term: "FAQ schema",
+    plain:
+      "Structured data that labels a page's questions and answers so Google and AI assistants can pull them directly into an answer. It's the single highest-leverage schema for AI visibility.",
+  },
+  {
+    term: "Business schema & NAP",
+    plain:
+      "Machine-readable facts about the business — Organization (or LocalBusiness) structured data carrying the Name, Address, and Phone (\"NAP\"). It's how AI models confirm who you are and recommend you for a location. Missing or inconsistent NAP makes models unsure you're a real, local business.",
+  },
 ];
 
 /**
