@@ -5,6 +5,13 @@ import {
   validateAuditUrl,
   type AuditCheck,
 } from "@/lib/seo-audit";
+import {
+  analyzeGeoPage,
+  buildGeoReport,
+  hasNapSchema,
+  type GeoPageSignal,
+  type GeoReport,
+} from "@/lib/seo-geo";
 
 /**
  * The deep site audit — crawls a whole site and grades it.
@@ -124,6 +131,8 @@ export interface SiteAuditReport {
   brokenLinks: BrokenLink[];
   /** Worst pages first. */
   pages: SitePageResult[];
+  /** GEO (AI-answer optimization) layer — computed from the same crawl. */
+  geo?: GeoReport;
 }
 
 /* ── Small utilities ──────────────────────────────────────────────── */
@@ -207,6 +216,10 @@ interface Discovery {
   disallow: string[];
   sitemapFound: boolean;
   robotsFound: boolean;
+  /** Raw robots.txt (for GEO's AI-crawler parsing). */
+  robotsText: string;
+  /** Whether an llms.txt file is published at the root. */
+  llmsTxt: boolean;
 }
 
 async function discover(
@@ -217,13 +230,20 @@ async function discover(
   const disallow: string[] = [];
   let sitemapFound = false;
   let robotsFound = false;
+  let robotsText = "";
   const sitemapUrls = [`${origin}/sitemap.xml`];
+
+  // llms.txt (emerging AI-guidance standard) — a cheap parallel probe.
+  const llmsProbe = fetchWithTimeout(`${origin}/llms.txt`, 5_000)
+    .then((r) => r.ok)
+    .catch(() => false);
 
   try {
     const res = await fetchWithTimeout(`${origin}/robots.txt`, 5_000);
     if (res.ok) {
       robotsFound = true;
       const text = (await res.text()).slice(0, 100_000);
+      robotsText = text;
       let appliesToUs = false;
       for (const line of text.split("\n")) {
         const [rawKey, ...rest] = line.split(":");
@@ -265,7 +285,8 @@ async function discover(
     }
   }
 
-  return { seeds, disallow, sitemapFound, robotsFound };
+  const llmsTxt = await llmsProbe;
+  return { seeds, disallow, sitemapFound, robotsFound, robotsText, llmsTxt };
 }
 
 /* ── Redirect sanity ──────────────────────────────────────────────── */
@@ -461,6 +482,8 @@ export async function runDeepSiteAudit(
   for (const seed of discovery.seeds) enqueue(seed);
 
   const pages: SitePageResult[] = [];
+  const geoSignals: GeoPageSignal[] = []; // GEO answer-readiness, per crawled page
+  let napFound = false; // any page carries complete name/address/phone schema
   const crawledOk = new Set<string>();
   const linkReferrers = new Map<string, string>(); // internal href → first page it was found on
   let fetchErrors = 0;
@@ -626,6 +649,10 @@ export async function runDeepSiteAudit(
       findings,
     });
 
+    // GEO: answer-readiness + schema for this page, from the same HTML.
+    geoSignals.push(analyzeGeoPage(pageUrl, html));
+    if (!napFound && hasNapSchema(html)) napFound = true;
+
     for (const link of extractLinks(html, pageUrl)) {
       if (siteKey(new URL(link).hostname) !== site) continue;
       if (!linkReferrers.has(link)) linkReferrers.set(link, pageUrl);
@@ -771,6 +798,12 @@ export async function runDeepSiteAudit(
     duplicateMetas,
     brokenLinks,
     pages: reportPages,
+    geo: buildGeoReport(geoSignals, {
+      robotsText: discovery.robotsText,
+      robotsFound: discovery.robotsFound,
+      llmsTxt: discovery.llmsTxt,
+      napHtmlSample: napFound,
+    }),
   };
 
   let summary = "";

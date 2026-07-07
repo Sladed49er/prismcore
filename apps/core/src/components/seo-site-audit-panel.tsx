@@ -523,6 +523,140 @@ export function SeoSiteAuditPanel({
             </details>
           )}
 
+          {report.geo && (
+            <div className="rounded-xl border border-indigo-200 bg-indigo-50/40 p-4">
+              <div className="flex items-center justify-between gap-3">
+                <h3 className="text-sm font-semibold text-gray-900">
+                  AI Visibility — GEO
+                </h3>
+                <span className={`text-2xl font-bold ${scoreColor(report.geo.score)}`}>
+                  {report.geo.score}
+                  <span className="text-xs font-normal text-gray-400">/100</span>
+                </span>
+              </div>
+              <p className="mt-1 text-xs text-gray-500">
+                GEO (Generative Engine Optimization) measures whether AI assistants
+                like ChatGPT and Claude can reach your site, understand who you are,
+                and lift a clean answer off your pages to cite. It&apos;s the AI-answer
+                counterpart to the SEO score above.
+              </p>
+
+              {/* Crawler access */}
+              <div className="mt-3">
+                <h4 className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                  AI crawler access
+                </h4>
+                <p className="text-[11px] text-gray-400">
+                  Whether each AI assistant&apos;s crawler is allowed to read your site
+                  (via robots.txt). Blocked = that assistant can&apos;t see you.
+                </p>
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  {report.geo.crawler.bots.map((b) => (
+                    <span
+                      key={b.name}
+                      className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${
+                        b.allowed === false
+                          ? "bg-red-100 text-red-700"
+                          : b.allowed === true
+                            ? "bg-emerald-100 text-emerald-700"
+                            : "bg-gray-100 text-gray-500"
+                      }`}
+                    >
+                      {b.name}
+                      {b.allowed === false ? " ✕" : b.allowed === true ? " ✓" : " ?"}
+                    </span>
+                  ))}
+                  <span
+                    className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${
+                      report.geo.crawler.llmsTxt
+                        ? "bg-emerald-100 text-emerald-700"
+                        : "bg-gray-100 text-gray-500"
+                    }`}
+                    title="An emerging plain-text file that guides AI models to your key pages."
+                  >
+                    llms.txt {report.geo.crawler.llmsTxt ? "✓" : "—"}
+                  </span>
+                </div>
+              </div>
+
+              {/* Schema / entity */}
+              <div className="mt-3">
+                <h4 className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                  Business schema &amp; entity
+                </h4>
+                <p className="text-[11px] text-gray-400">
+                  Machine-readable facts that let AI models confirm who you are and
+                  recommend you. NAP = name, address, phone.
+                </p>
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  {(
+                    [
+                      ["Organization", report.geo.schema.organization || report.geo.schema.localBusiness],
+                      ["Name/Address/Phone", report.geo.schema.hasNap],
+                      ["FAQ schema", report.geo.schema.faq],
+                      ["Article schema", report.geo.schema.article],
+                      ["Breadcrumbs", report.geo.schema.breadcrumb],
+                    ] as const
+                  ).map(([label, ok]) => (
+                    <span
+                      key={label}
+                      className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${
+                        ok ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"
+                      }`}
+                    >
+                      {label} {ok ? "✓" : "✕"}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              {/* Answer-readiness */}
+              <div className="mt-3">
+                <h4 className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                  Answer-readiness
+                </h4>
+                <p className="text-[11px] text-gray-400">
+                  How easy it is for an AI to quote your pages: a direct opening answer,
+                  question-style headings, and citable stats.
+                </p>
+                <dl className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">
+                  {(
+                    [
+                      ["Avg answer score", `${report.geo.answerReadiness.avg}/100`],
+                      ["Lead with an answer", `${report.geo.answerReadiness.pagesLeadingWithAnswer}/${report.geo.schema.pagesTotal}`],
+                      ["Question headings", `${report.geo.answerReadiness.pagesWithQuestionHeadings}/${report.geo.schema.pagesTotal}`],
+                      ["Pages with stats", `${report.geo.answerReadiness.pagesWithStats}/${report.geo.schema.pagesTotal}`],
+                    ] as const
+                  ).map(([label, value]) => (
+                    <div key={label} className="rounded-lg border border-gray-200 bg-white p-2.5">
+                      <dt className="text-[11px] text-gray-500">{label}</dt>
+                      <dd className="text-base font-semibold text-gray-900">{value}</dd>
+                    </div>
+                  ))}
+                </dl>
+              </div>
+
+              {/* GEO findings */}
+              {report.geo.findings.length > 0 && (
+                <ol className="mt-3 space-y-2">
+                  {report.geo.findings.map((f, i) => (
+                    <li key={i} className="rounded-lg border border-gray-200 bg-white p-3 text-sm">
+                      <div className="flex items-center gap-2">
+                        <span
+                          className={`rounded px-1.5 py-0.5 text-xs font-semibold uppercase ${IMPACT_STYLES[f.impact] ?? IMPACT_STYLES.low}`}
+                        >
+                          {f.impact}
+                        </span>
+                        <span className="font-semibold text-gray-900">{f.title}</span>
+                      </div>
+                      <p className="mt-1 text-gray-600">{f.detail}</p>
+                    </li>
+                  ))}
+                </ol>
+              )}
+            </div>
+          )}
+
           <div>
             <h3 className="text-sm font-semibold text-gray-900">
               Pages needing the most work
