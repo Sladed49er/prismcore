@@ -187,15 +187,10 @@ export function analyzeGeoPage(url: string, html: string): GeoPageSignal {
 
   let score = 0;
   if (leadsWithAnswer) score += 30;
-  else notes.push("No direct-answer opening line");
   if (questionHeadings > 0) score += 25;
-  else notes.push("No question-style headings");
   if (hasStats) score += 20;
-  else notes.push("No citable stats or quotes");
   if (hasList) score += 15;
-  else notes.push("No extractable list");
   if (schemaTypes.length > 0) score += 10;
-  else notes.push("No structured data");
 
   return {
     url,
