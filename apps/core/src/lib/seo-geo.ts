@@ -160,12 +160,10 @@ const QUESTION_RE =
   /^\s*(who|what|why|how|when|where|which|can|do|does|is|are|should|will)\b|\?\s*$/i;
 
 export function analyzeGeoPage(url: string, html: string): GeoPageSignal {
-  const notes: string[] = [];
-
   // Question-phrased section headings (H2/H3).
   let questionHeadings = 0;
   for (const m of html.matchAll(/<h[23][^>]*>([\s\S]*?)<\/h[23]>/gi)) {
-    const t = m[1].replace(/<[^>]+>/g, "").trim();
+    const t = (m[1] ?? "").replace(/<[^>]+>/g, "").trim();
     if (t && QUESTION_RE.test(t)) questionHeadings++;
   }
 
@@ -174,7 +172,7 @@ export function analyzeGeoPage(url: string, html: string): GeoPageSignal {
   let leadsWithAnswer = false;
   const firstP = html.match(/<p[^>]*>([\s\S]*?)<\/p>/i);
   if (firstP) {
-    const t = firstP[1].replace(/<[^>]+>/g, "").replace(/\s+/g, " ").trim();
+    const t = (firstP[1] ?? "").replace(/<[^>]+>/g, "").replace(/\s+/g, " ").trim();
     if (t.length >= 40 && t.length <= 360 && !/\?\s*$/.test(t)) leadsWithAnswer = true;
   }
 
